@@ -172,8 +172,8 @@ class Agent(object):
 
         self.x, self.y = 1, 1
         self.total_score = 0
-        self.bomb_timer = s.bomb_timer
-        self.explosion_timer = s.explosion_timer
+        self.bomb_timer = s.bomb_timer + 1
+        self.explosion_timer = s.explosion_timer + 1
         self.bomb_power = s.bomb_power
         self.bomb_type = Bomb
 

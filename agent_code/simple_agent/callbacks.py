@@ -115,7 +115,7 @@ def act(self):
     valid_tiles, valid_actions = [], []
     for d in directions:
         if ((arena[d] == 0) and
-            (self.game_state['explosions'][d] < 1) and
+            (self.game_state['explosions'][d] <= 1) and
             (bomb_map[d] > 0) and
             (not d in others) and
             (not d in bomb_xys)):

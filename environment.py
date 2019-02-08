@@ -305,7 +305,7 @@ class BombeRLeWorld(object):
         # Bombs
         for bomb in self.bombs:
             # Explode when timer is finished
-            if bomb.timer < 0:
+            if bomb.timer <= 0:
                 self.logger.info(f'Agent <{bomb.owner.name}>\'s bomb at {(bomb.x, bomb.y)} explodes')
                 bomb.owner.events.append(e.BOMB_EXPLODED)
                 blast_coords = bomb.get_blast_coords(self.arena)
@@ -334,7 +334,7 @@ class BombeRLeWorld(object):
         agents_hit = set()
         for explosion in self.explosions:
             # Kill agents
-            if explosion.timer > 0:
+            if explosion.timer > 1:
                 for a in self.active_agents:
                     if (not a.dead) and (a.x, a.y) in explosion.blast_coords:
                         agents_hit.add(a)
@@ -350,7 +350,7 @@ class BombeRLeWorld(object):
                             explosion.owner.events.append(e.KILLED_OPPONENT)
                             explosion.owner.trophies.append(smoothscale(a.avatar, (15,15)))
             # Show smoke for a little longer
-            if explosion.timer < 0:
+            if explosion.timer <= 0:
                 explosion.active = False
             # Progress countdown
             explosion.timer -= 1

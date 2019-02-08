@@ -80,7 +80,7 @@ class Explosion(Item):
         self.stages = [pygame.image.load(f'assets/explosion_{i}.png') for i in range(6)]
 
     def render(self, screen):
-        img = rotate(self.stages[self.timer+1], (-50*time()) % 360)
+        img = rotate(self.stages[self.timer], (-50*time()) % 360)
         rect = img.get_rect()
         for (x,y) in self.screen_coords:
             rect.center = x+15, y+15
