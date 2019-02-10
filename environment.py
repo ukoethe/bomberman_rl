@@ -392,7 +392,6 @@ class BombeRLeWorld(object):
 
     def end_round(self):
         if self.running:
-            self.running = False
             # Wait in case there is still a game step running
             sleep(s.update_interval)
 
@@ -421,6 +420,8 @@ class BombeRLeWorld(object):
                 self.replay['n_steps'] = self.step
                 with open(f'replays/{self.round_id}.pt', 'wb') as f:
                     pickle.dump(self.replay, f)
+            # Mark round as ended
+            self.running = False
         else:
             self.logger.warn('End-of-round requested while no round was running')
 
@@ -429,6 +430,8 @@ class BombeRLeWorld(object):
 
 
     def end(self):
+        if self.running:
+            self.end_round()
         self.logger.info('SHUT DOWN')
         for a in self.agents:
             # Send exit message to shut down agent
