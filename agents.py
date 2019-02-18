@@ -193,7 +193,7 @@ class Agent(object):
 
     def get_state(self):
         """Provide information about this agent for the global game state."""
-        return (self.x, self.y, self.name, self.bombs_left)
+        return (self.x, self.y, self.name, self.bombs_left, self.score)
 
     def update_score(self, delta):
         """Add delta to both the current round's score and the total score."""
