@@ -90,9 +90,10 @@ class AgentProcess(mp.Process):
                     self.wlogger.debug('Receive event queue')
                     self.fake_self.events = self.pipe_to_world.recv()
                     self.wlogger.debug(f'Received event queue {self.fake_self.events}')
-                    self.wlogger.info('Process intermediate rewards')
                     try:
-                        self.code.reward_update(self.fake_self)
+                        if self.fake_self.game_state['step'] > 1:
+                            self.wlogger.info('Process intermediate rewards')
+                            self.code.reward_update(self.fake_self)
                     except Exception as e:
                         self.wlogger.exception(f'Error in callback function: {e}')
                     self.wlogger.debug('Set flag to indicate readiness')
