@@ -108,3 +108,5 @@ venv.bak/
 screenshots/*.png
 screenshots/*.mp4
 screenshots/*.webm
+
+replays/

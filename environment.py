@@ -539,7 +539,7 @@ class ReplayWorld(BombeRLeWorld):
         # Recreate the agents
         self.colors = ['blue', 'green', 'yellow', 'pink']
         self.agents = [ReplayAgent(name, self.colors.pop(), x, y)
-            for (x,y,name,b) in self.replay['agents']]
+            for (x,y,name,b,s) in self.replay['agents']]
         for i,t in enumerate(self.replay['times']):
             self.agents[i].mean_time = t
 
@@ -555,7 +555,6 @@ class ReplayWorld(BombeRLeWorld):
 
         # Bookkeeping
         self.step = 0
-        self.active_agents = []
         self.bombs = []
         self.explosions = []
         self.running = True

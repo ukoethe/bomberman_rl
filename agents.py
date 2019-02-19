@@ -223,15 +223,16 @@ class ReplayAgent(Agent):
         self.x, self.y = x, y
         self.color = color
 
-        # Load custom avatar or standard robot avatar of assigned color
+        # Load standard robot avatar of assigned color
         self.avatar = pygame.image.load(f'assets/robot_{self.color}.png')
+        self.bomb_sprite = None
         # Prepare overlay that will indicate dead agent on the scoreboard
         self.shade = pygame.Surface((30,30), SRCALPHA)
         self.shade.fill((0,0,0,208))
 
         self.total_score = 0
-        self.bomb_timer = s.bomb_timer
-        self.explosion_timer = s.explosion_timer
+        self.bomb_timer = s.bomb_timer + 1
+        self.explosion_timer = s.explosion_timer + 1
         self.bomb_power = s.bomb_power
         self.bomb_type = Bomb
 
