@@ -175,6 +175,7 @@ class BombeRLeWorld(object):
         state['step'] = self.step
         state['arena'] = np.array(self.arena)
         state['self'] = agent.get_state()
+        state['train'] = agent.train_flag.is_set()
         state['others'] = [other.get_state() for other in self.active_agents if other is not agent]
         state['bombs'] = [bomb.get_state() for bomb in self.bombs]
         state['coins'] = [coin.get_state() for coin in self.coins if coin.collectable]
