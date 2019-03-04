@@ -55,6 +55,9 @@ class AgentProcess(mp.Process):
         self.wlogger.info(f'Import agent code from "agent_code/{self.agent_dir}/callbacks.py"')
         self.code = importlib.import_module('agent_code.' + self.agent_dir + '.callbacks')
 
+        # Make agent directory the working directory for this process
+        os.chdir(f'agent_code/{self.agent_dir}/')
+
         # Initialize custom code
         self.wlogger.info('Initialize agent code')
         try:
