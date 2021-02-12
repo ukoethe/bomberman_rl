@@ -66,6 +66,7 @@ class ReplayWorld(GenericWorld):
         return time_to_stop
 
     def end_round(self):
+        super().end_round()
         if self.running:
             self.running = False
             # Wait in case there is still a game step running

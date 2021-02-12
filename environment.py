@@ -216,7 +216,23 @@ class GenericWorld:
         self.explosions = [exp for exp in self.explosions if exp.active]
 
     def end_round(self):
-        raise NotImplementedError()
+        # Turn screenshots into videos
+        if self.args.make_video:
+            self.logger.debug(f'Turning screenshots into video files')
+            import subprocess, os, glob
+            subprocess.call(['ffmpeg', '-y', '-framerate', f'{self.args.fps}',
+                             '-f', 'image2', '-pattern_type', 'glob', '-i', f'screenshots/{self.round_id}_*.png',
+                             '-preset', 'veryslow', '-tune', 'animation', '-crf', '5', '-c:v', 'libx264', '-pix_fmt',
+                             'yuv420p',
+                             f'screenshots/{self.round_id}_video.mp4'])
+            subprocess.call(['ffmpeg', '-y', '-framerate', f'{self.args.fps}',
+                             '-f', 'image2', '-pattern_type', 'glob', '-i', f'screenshots/{self.round_id}_*.png',
+                             '-threads', '2', '-tile-columns', '2', '-frame-parallel', '0', '-g', '100', '-speed', '1',
+                             '-pix_fmt', 'yuv420p', '-qmin', '0', '-qmax', '10', '-crf', '5', '-b:v', '2M', '-c:v',
+                             'libvpx-vp9',
+                             f'screenshots/{self.round_id}_video.webm'])
+            for f in glob.glob(f'screenshots/{self.round_id}_*.png'):
+                os.remove(f)
 
     def time_to_stop(self):
         # Check round stopping criteria
@@ -248,7 +264,7 @@ class GenericWorld:
         # Save screenshot
         if self.args.make_video:
             self.logger.debug(f'Saving screenshot for frame {self.gui.frame}')
-            pygame.image.save(self.gui.screen, f'screenshots/{self.round_id}_{self.gui.frame:05d}.png')
+            pygame.image.save(self.gui.screen, dirname(__file__) + f'/screenshots/{self.round_id}_{self.gui.frame:05d}.png')
 
     def end(self):
         # Turn screenshots into videos
@@ -440,6 +456,7 @@ class BombeRLeWorld(GenericWorld):
 
     def end_round(self):
         assert self.running, "End of round requested while not running"
+        super().end_round()
 
         self.logger.info(f'WRAPPING UP ROUND #{self.round}')
         # Clean up survivors

@@ -1,18 +1,15 @@
 import sys
+import threading
 from argparse import ArgumentParser
 from time import sleep, time
 
-import threading
-
-from fallbacks import pygame, tqdm
-from environment import BombeRLeWorld, GenericWorld
 import settings as s
-
-
-# Function to run the game logic in a separate thread
+from environment import BombeRLeWorld, GenericWorld
+from fallbacks import pygame, tqdm
 from replay import ReplayWorld
 
 
+# Function to run the game logic in a separate thread
 def game_logic(world: GenericWorld, user_inputs, args):
     last_update = time()
     while True:
@@ -56,13 +53,13 @@ def main(args):
     for sub in [play_parser, replay_parser]:
         sub.add_argument("--fps", type=int, default=15, help="FPS of the GUI (does not change game)")
         sub.add_argument("--turn-based", default=False, action="store_true",
-                            help="Wait for key press until next movement")
+                         help="Wait for key press until next movement")
         sub.add_argument("--update-interval", type=float, default=0.1,
-                            help="How often agents take steps (ignored without GUI)")
+                         help="How often agents take steps (ignored without GUI)")
 
         # Video?
-        # sub.add_argument("--make-video", default=False, action="store_true",
-        #                         help="Make a video from the game")
+        sub.add_argument("--make-video", default=False, action="store_true",
+                         help="Make a video from the game")
 
     args = parser.parse_args()
     if args.command_name == "replay":
