@@ -61,8 +61,8 @@ def main(args):
                             help="How often agents take steps (ignored without GUI)")
 
         # Video?
-        sub.add_argument("--make-video", default=False, action="store_true",
-                                 help="Make a video from the game")
+        # sub.add_argument("--make-video", default=False, action="store_true",
+        #                         help="Make a video from the game")
 
     args = parser.parse_args()
     if args.command_name == "replay":
