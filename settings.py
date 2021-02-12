@@ -1,83 +1,46 @@
-
-from collections import namedtuple
-import pygame
-from pygame.locals import *
 import logging
 
+from fallbacks import pygame
 
-settings = {
-    # Display
-    'width': 1000,
-    'height': 600,
-    'gui': True,
-    'fps': 15,
+# Game properties
+COLS = 17
+ROWS = 17
+CRATE_DENSITY = 0.75
+MAX_AGENTS = 4
 
-    # Main loop
-    'update_interval': 0.1, # 0.33,
-    'turn_based': False,
-    'n_rounds': 10,
-    'save_replay': False,
-    'make_video_from_replay': False,
+# Round properties
+MAX_STEPS = 400
 
-    # Game properties
-    'cols': 17,
-    'rows': 17,
-    'grid_size': 30,
-    'crate_density': 0.75,
-    'actions': ['UP', 'DOWN', 'LEFT', 'RIGHT', 'BOMB', 'WAIT'],
-    'max_agents': 4,
-    'max_steps': 400,
-    'stop_if_not_training': False,
-    'bomb_power': 3,
-    'bomb_timer': 4,
-    'explosion_timer': 2,
+# GUI properties
+GRID_SIZE = 30
+WIDTH = 1000
+HEIGHT = 600
+GRID_OFFSET = [(HEIGHT - ROWS * GRID_SIZE) // 2] * 2
 
-    # Rules for agents
-    'timeout': 5.0,
-    'reward_kill': 5,
-    'reward_coin': 1,
-    'reward_slow': -1,
+AGENT_COLORS = ['blue', 'green', 'yellow', 'pink']
 
-    # User input
-    'input_map': {
-        K_UP: 'UP',
-        K_DOWN: 'DOWN',
-        K_LEFT: 'LEFT',
-        K_RIGHT: 'RIGHT',
-        K_RETURN: 'WAIT',
-        K_SPACE: 'BOMB',
-    },
+# Game rules
+BOMB_POWER = 3
+BOMB_TIMER = 4
+EXPLOSION_TIMER = 2
 
-    # Logging levels
-    'log_game': logging.INFO,
-    'log_agent_wrapper': logging.INFO,
-    'log_agent_code': logging.DEBUG,
+# Rules for agents
+TIMEOUT = 0.5
+REWARD_KILL = 5
+REWARD_COIN = 1
+
+# User input
+INPUT_MAP = {
+    pygame.K_UP: 'UP',
+    pygame.K_DOWN: 'DOWN',
+    pygame.K_LEFT: 'LEFT',
+    pygame.K_RIGHT: 'RIGHT',
+    pygame.K_RETURN: 'WAIT',
+    pygame.K_SPACE: 'BOMB',
 }
-settings['grid_offset'] = [(settings['height'] - settings['rows']*settings['grid_size'])//2] * 2
-s = namedtuple("Settings", settings.keys())(*settings.values())
 
-
-events = [
-    'MOVED_LEFT',
-    'MOVED_RIGHT',
-    'MOVED_UP',
-    'MOVED_DOWN',
-    'WAITED',
-    'INTERRUPTED',
-    'INVALID_ACTION',
-
-    'BOMB_DROPPED',
-    'BOMB_EXPLODED',
-
-    'CRATE_DESTROYED',
-    'COIN_FOUND',
-    'COIN_COLLECTED',
-
-    'KILLED_OPPONENT',
-    'KILLED_SELF',
-
-    'GOT_KILLED',
-    'OPPONENT_ELIMINATED',
-    'SURVIVED_ROUND',
-]
-e = namedtuple('Events', events)(*range(len(events)))
+# Logging levels
+LOG_GAME = logging.INFO
+LOG_AGENT_WRAPPER = logging.DEBUG
+LOG_AGENT_CODE = logging.DEBUG
+LOG_MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB

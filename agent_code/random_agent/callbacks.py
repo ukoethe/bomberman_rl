@@ -1,16 +1,10 @@
-
 import numpy as np
 
 
-def setup(agent):
+def setup(self):
     np.random.seed()
 
-def act(agent):
+
+def act(agent, game_state: dict):
     agent.logger.info('Pick action at random')
     agent.next_action = np.random.choice(['RIGHT', 'LEFT', 'UP', 'DOWN', 'BOMB'], p=[.23, .23, .23, .23, .08])
-
-def reward_update(agent):
-    pass
-
-def end_of_episode(agent):
-    pass
