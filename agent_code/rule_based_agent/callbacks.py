@@ -79,12 +79,6 @@ def act(self, game_state):
     You can find out about the state of the game environment via game_state,
     which is a dictionary. Consult 'get_state_for_agent' in environment.py to see
     what it contains.
-
-    Set the action you wish to perform by assigning the relevant string to
-    self.next_action. You can assign to this variable multiple times during
-    your computations. If this method takes longer than the time limit specified
-    in settings.py, execution is interrupted by the game and the current value
-    of self.next_action will be used. The default value is 'WAIT'.
     """
     self.logger.info('Picking action according to rule set')
 
