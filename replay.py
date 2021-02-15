@@ -41,7 +41,12 @@ class ReplayWorld(GenericWorld):
 
         # Game world and objects
         self.arena = np.array(self.replay['arena'])
-        self.coins = [Coin(xy) for xy in self.replay['coins']]
+        self.coins = []
+        for xy in self.replay['coins']:
+            if self.arena[xy] == 0:
+                self.coins.append(Coin(xy, True))
+            else:
+                self.coins.append(Coin(xy, False))
         self.active_agents = [a for a in self.agents]
         for i, agent in enumerate(self.agents):
             agent.start_round()
