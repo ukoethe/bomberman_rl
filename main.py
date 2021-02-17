@@ -5,7 +5,7 @@ from time import sleep, time
 
 import settings as s
 from environment import BombeRLeWorld, GenericWorld
-from fallbacks import pygame, tqdm
+from fallbacks import pygame, tqdm, LOADED_PYGAME
 from replay import ReplayWorld
 
 
@@ -68,6 +68,8 @@ def main(args):
 
     has_gui = not args.no_gui
     if has_gui:
+        if not LOADED_PYGAME:
+            raise ValueError("pygame could not loaded, cannot run with GUI")
         pygame.init()
 
     # Initialize environment and agents

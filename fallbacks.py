@@ -12,8 +12,10 @@ class QuietFallback:
 try:
     with contextlib.redirect_stdout(None):
         import pygame
+        LOADED_PYGAME = True
 except ModuleNotFoundError:
     pygame = QuietFallback()
+    LOADED_PYGAME = True
 
 try:
     from tqdm import tqdm
