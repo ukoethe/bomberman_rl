@@ -35,18 +35,14 @@ def setup(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
-    self.exploration_rate = EXPLORATION_MAX
-
-    self.action_space = len(ACTIONS)
-    
-
-    self.isFit = False
+    self.action_size = len(ACTIONS) #Get size of the action
         
     if self.train or not os.path.isfile("my-saved-model.pt"):
         self.logger.info("Setting up model from scratch.")
-        #self.model = MultiOutputRegressor(LGBMRegressor(n_estimators=100, n_jobs=-1))
+        # self.model = MultiOutputRegressor(LGBMRegressor(n_estimators=100, n_jobs=-1))
         self.model = KNeighborsRegressor(n_jobs=-1)
-        #self.model = MultiOutputRegressor(SVR(), n_jobs=8)
+        # self.model = MultiOutputRegressor(SVR(), n_jobs=8)
+        self.isFit = False
     else:
         self.logger.info("Loading model from saved state.")
         with open("my-saved-model.pt", "rb") as file:
@@ -62,34 +58,32 @@ def act(self, game_state: dict) -> str:
     :param game_state: The dictionary that describes everything on the board.
     :return: The action to take as a string.
     """    
-    # print(game_state)
+
     # todo Exploration vs exploitation
-    random_prob = .5
-    if self.train and random.random() < random_prob:
-        self.logger.debug("Choosing action purely at random.")
-        # 80%: walk in any direction. 10% wait. 10% bomb.
-        return np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
     if self.train:
+        random_prob = self.epsilon
+        if random.random() < random_prob:
+            self.logger.debug("Choosing action purely at random.")
+            return np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+        
         if self.isFit == True:
             q_values = self.model.predict(state_to_features(game_state).reshape(1, -1))
             execute_action = ACTIONS[np.argmax(q_values[0])]
         else:
-            q_values = np.zeros(self.action_space).reshape(1, -1) 
+            q_values = np.zeros(self.action_size).reshape(1, -1) 
             execute_action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
 
         self.logger.debug("Querying model for action.") 
-
         return execute_action
+    
     else:
-        random_prob = .1
+        random_prob = .01
         if random.random() < random_prob:
             self.logger.debug("Choosing action purely at random.")
-            # 80%: walk in any direction. 10% wait. 10% bomb.
-            return np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+            return np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, 0])
         
         q_values = self.model.predict(state_to_features(game_state).reshape(1, -1))
         execute_action = ACTIONS[np.argmax(q_values[0])]
-        print(q_values[0])
         return execute_action
         
 
@@ -121,16 +115,18 @@ def state_to_features( game_state: dict) -> np.array:
     coins = game_state['coins']
     bomb_map = game_state['explosion_map']
         
-    # break down state into one image
-    X = arena
-    X[x,y] = 50
+    # break down state into one image (feature possibility A):
+    Y = arena
+    Y[x,y] = 50
     for coin in coins:
-        X[coin] = 10
+        Y[coin] = 10
     for bomb in bombs:
-        X[bomb[0]] = -10*(bomb[1]+1)
-    np.where(bomb_map != 0, X, -10)
+        Y[bomb[0]] = -10*(bomb[1]+1)
+    np.where(bomb_map != 0, Y, -10)
     
-    # break down into the follwoing features:
+    Y = Y.reshape(1, -1)
+    
+    # break down into the follwoing features (feature possibility B):
     ''' 
         ['distance_agent_to_center_lr', 'distance_agent_to_center_ud', 'total_distance_center',
         'steps_to_closest_coin_lr', 'steps_to_closest_coin_ud', 'total_distance_closest_coin',
@@ -167,7 +163,13 @@ def state_to_features( game_state: dict) -> np.array:
     coins_info = sorted(coins_info, key=itemgetter(2))
     
     # (4) bomb_distance, dead zone:
-    if bomb_map[x,y] != 0:
+    bomb_map = np.ones(arena.shape) * 5
+    for (xb, yb), t in bombs:
+        for (i, j) in [(xb + h, yb) for h in range(-3, 4)] + [(xb, yb + h) for h in range(-3, 4)]:
+            if (0 < i < bomb_map.shape[0]) and (0 < j < bomb_map.shape[1]):
+                bomb_map[i, j] = min(bomb_map[i, j], t)
+
+    if bomb_map[x,y] != 5:
         dead_zone = 1
     else: dead_zone = 0
         
@@ -182,7 +184,7 @@ def state_to_features( game_state: dict) -> np.array:
         bombs_info.append((99,99,99))
     bombs_info = sorted(bombs_info, key=itemgetter(2))
         
-    # (3) valid actions
+    # (5) valid actions
     directions = [(x, y), (x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
     valid_tiles, valid_actions = [], []
     for d in directions:
@@ -209,10 +211,15 @@ def state_to_features( game_state: dict) -> np.array:
     channels = []
    
     channels.append(agent_info)
-    for coin_info in coins_info:
-        channels.append(coin_info)
-    for bomb_info in bombs_info:
-        channels.append(bomb_info)
+    #for coin_info in coins_info:
+    #    channels.append(coin_info)
+    # only closest coin distance:
+    channels.append(coins_info[0])
+    
+    # only closest bomb distance:
+    #for bomb_info in bombs_info:
+    #    channels.append(bomb_info)
+    channels.append(bombs_info[0])
     channels.append(valid_actions[:3])
     channels.append(valid_actions[3:])
     # concatenate them as a feature tensor (they must have the same shape), ...

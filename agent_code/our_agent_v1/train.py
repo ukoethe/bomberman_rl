@@ -9,27 +9,27 @@ import events as e
 from .callbacks import state_to_features
 import numpy as np
 
+
 # This is only an example!
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
 # Hyper parameters -- DO modify
-TRANSITION_HISTORY_SIZE = 30 # keep only ... last transitions
+
+TRANSITION_HISTORY_SIZE = 2000 # keep only ... last transitions
 RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
+BATCH_SIZE = 16
+
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT','BOMB']
-GAMMA = 0.95
+GAMMA = 0.99
 LEARNING_RATE = 0.001
 
-MEMORY_SIZE = 1000
-BATCH_SIZE = 15
-
 EXPLORATION_MAX = 1.0
-EXPLORATION_MIN = 0.05
-EXPLORATION_DECAY = 0.999
+EXPLORATION_MIN = 0.1
+EXPLORATION_DECAY = 0.9999
 
 # Events
 PLACEHOLDER_EVENT = "PLACEHOLDER"
-
 
 def setup_training(self):
     """
@@ -39,20 +39,35 @@ def setup_training(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
+   
+    self.action_size = len(ACTIONS) #Get size of the action
+
+    #Hyperparameters
+    self.discount_factor = GAMMA #Disocunt Factor
+    self.learning_rate = LEARNING_RATE #Learning Rate
+
+    #Hyperparameters to adjust the Exploitation-Explore tradeoff
+    self.epsilon = EXPLORATION_MAX  #Setting the epislon (0= Explore, 1= Exploit)
+    self.epsilon_decay = EXPLORATION_DECAY #Adjusting how our epsilon will decay
+    self.epsilon_min = EXPLORATION_MIN #Min Epsilon
+
+    self.batch_size = BATCH_SIZE #Batch Size for training the neural network
+    self.train_start = TRANSITION_HISTORY_SIZE/2 #If Agent's memory is less, no training is done
+    
     # Example: Setup an array that will note transition tuples
     # (s, a, r, s')
     self.transitions = deque(maxlen=TRANSITION_HISTORY_SIZE)
-    self.exploration_rate = EXPLORATION_MAX
-    self.action_space =  len(ACTIONS)
-    #self.model = MultiOutputRegressor(LGBMRegressor(n_estimators=100, n_jobs=-1))
-    self.model = KNeighborsRegressor(n_jobs=-1)
-    #self.model = MultiOutputRegressor(SVR(), n_jobs=8)
-    self.isFit = False
+
+    # For Training evaluation purposes:
+    self.score_in_round = 0
+    self.number_game = 0
 
 
-def remember(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
+def append_sample(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
     self.transitions.append(Transition(state_to_features(old_game_state),
                                        self_action, state_to_features(new_game_state), reward_from_events(self, events)))
+    if self.epsilon > self.epsilon_min:
+        self.epsilon *= self.epsilon_decay
 
     
 def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
@@ -79,7 +94,8 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
         events.append(PLACEHOLDER_EVENT)
 
     # add transition to remembered transisions:
-    remember(self, old_game_state, self_action, new_game_state, events)
+    append_sample(self, old_game_state, self_action, new_game_state, events)
+    self.score_in_round += reward_from_events(self, events)
 
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
@@ -96,31 +112,30 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     """
     self.logger.debug(f'Encountered event(s) {", ".join(map(repr, events))} in final step')
     
-    remember(self, last_game_state, last_action, None, events)
-    #print('In the last game the follwing actions where executed:' , events)
-    #print('The reward of the last game was:' , reward_from_events(self, events))
+    append_sample(self, last_game_state, last_action, None, events)
 
-    if len(self.transitions) < BATCH_SIZE:
+    if len(self.transitions) < self.train_start:
+        self.number_game += 1
         return
     
-    batch = random.sample(self.transitions, BATCH_SIZE)
+    batch = random.sample(self.transitions, self.batch_size)
     X = []
     targets = []
 
     for state, action, state_next, reward in batch:
         q_update = reward
-        #print(reward)
+        
         if state is not None:
             if state_next is not None:
                 if self.isFit:
-                    q_update = (reward + GAMMA * np.amax(self.model.predict(state_next.reshape(1, -1))[0]))
+                    q_update = (reward + self.discount_factor * np.amax(self.model.predict(state_next.reshape(1, -1))[0]))
                 else:
                     q_update = reward
 
             if self.isFit:
                 q_values = self.model.predict(state.reshape(1, -1))
             else:
-                q_values = np.zeros(self.action_space).reshape(1, -1)
+                q_values = np.zeros(self.action_size).reshape(1, -1)
 
 
             q_values[0][ACTIONS.index(action)] = q_update
@@ -130,12 +145,24 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     
     self.model.fit(X, targets)
     self.isFit = True
-    self.exploration_rate *= EXPLORATION_DECAY
-    self.exploration_rate = max(EXPLORATION_MIN, self.exploration_rate)
     
     # Store the model
     with open("my-saved-model.pt", "wb") as file:
         pickle.dump(self.model, file)
+        
+    with open("my-saved-KNeighborsRegressor-model.pt", "wb") as file:
+        pickle.dump(self.model, file)
+        
+    # For training validation purposes:
+    score = np.sum(self.score_in_round)
+    game = self.number_game
+    
+    if game%100 == 0:
+        print("game number:", game, "  score:", score, "  memory length:",
+                 len(self.transitions), "  epsilon:", self.epsilon)
+    
+    self.score_in_round = 0
+    self.number_game += 1 
 
 
 def reward_from_events(self, events: List[str]) -> int:
@@ -151,9 +178,9 @@ def reward_from_events(self, events: List[str]) -> int:
         e.MOVED_UP:-0.1,
         e.MOVED_DOWN: -0.1,
         e.WAITED: -0.1,
-        e.INVALID_ACTION: -1,
+        e.INVALID_ACTION: -5,
 
-        e.BOMB_DROPPED: 0,
+        e.BOMB_DROPPED: -5,
         e.BOMB_EXPLODED: 0,
 
         e.CRATE_DESTROYED: 0,
@@ -161,11 +188,11 @@ def reward_from_events(self, events: List[str]) -> int:
         e.COIN_COLLECTED: 500,
 
         e.KILLED_OPPONENT: 0,
-        e.KILLED_SELF: -200,
+        e.KILLED_SELF: -500,
 
         e.GOT_KILLED: 0,
         e.OPPONENT_ELIMINATED: 0,
-        e.SURVIVED_ROUND: 100,
+        e.SURVIVED_ROUND: 5,
     }
     
     reward_sum = 0
