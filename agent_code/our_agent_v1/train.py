@@ -17,9 +17,9 @@ Transition = namedtuple('Transition',
 
 # Hyper parameters -- DO modify
 
-TRANSITION_HISTORY_SIZE = 2000 # keep only ... last transitions
+TRANSITION_HISTORY_SIZE = 50 # keep only ... last transitions
 RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
-BATCH_SIZE = 16
+BATCH_SIZE = 6
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
@@ -178,15 +178,17 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
 
             X.append(state)
             targets.append(q_values[0])
-    
-    self.model.fit(X, targets)
+            
+    #print(X, targets)
+    #self.model.fit(X, targets)
+    self.model.partial_fit(X, targets)
     self.isFit = True
     
     # Store the model
     with open("my-saved-model.pt", "wb") as file:
         pickle.dump(self.model, file)
         
-    with open("my-saved-KNeighborsRegressor-model.pt", "wb") as file:
+    with open("my-saved-SGDRegressor-model.pt", "wb") as file:
         pickle.dump(self.model, file)
         
     # For training validation purposes:
@@ -209,13 +211,13 @@ def reward_from_events(self, events: List[str]) -> int:
     certain behavior.
     """
 
-    survive_step = 0.3
+    survive_step = 0.2
     #add reward, if distance to closest coin is decreased 
     game_rewards = {
         # my Events:
         SURVIVED_STEP:  survive_step,
         DIED_DIRECT_NEXT_TO_BOMB: -2*survive_step,
-        ALREADY_KNOW_FIELD: -0.1,
+        ALREADY_KNOW_FIELD: -10,
         CLOSER_TO_COIN: 0.2,
         
         e.MOVED_LEFT: 0,
@@ -225,7 +227,7 @@ def reward_from_events(self, events: List[str]) -> int:
         e.WAITED: 0,
         e.INVALID_ACTION: -survive_step,
         
-        e.BOMB_DROPPED: 0,
+        e.BOMB_DROPPED: -0.1,
         e.BOMB_EXPLODED: 0,
 
         e.CRATE_DESTROYED: 1,

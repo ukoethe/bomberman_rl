@@ -7,6 +7,8 @@ from sklearn.neighbors import KNeighborsRegressor
 import numpy as np
 import settings as s
 from operator import itemgetter
+from sklearn.linear_model import LinearRegression, SGDRegressor
+#from sklearn.preprocessing import PolynomialFeatures
 
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
@@ -39,10 +41,12 @@ def setup(self):
         
     if self.train or not os.path.isfile("my-saved-model.pt"):
         self.logger.info("Setting up model from scratch.")
-        # self.model = MultiOutputRegressor(LGBMRegressor(n_estimators=100, n_jobs=-1))
-        self.model = KNeighborsRegressor(n_jobs=-1)
+        self.model = MultiOutputRegressor(LGBMRegressor(n_estimators=100, n_jobs=-1))
+        #self.model = KNeighborsRegressor(n_jobs=-1)
         # self.model = MultiOutputRegressor(SVR(), n_jobs=8)
         self.isFit = False
+        #self.model = LinearRegression()
+        #self.model = MultiOutputRegressor(SGDRegressor( alpha = LEARNING_RATE ))
     else:
         self.logger.info("Loading model from saved state.")
         with open("my-saved-model.pt", "rb") as file:
@@ -101,7 +105,9 @@ def act(self, game_state: dict) -> str:
         if random.random() < random_prob:
             self.logger.debug("Choosing action purely at random.")
             #print("random choice epsilon greedy" , np.random.choice(VALIDE_ACTIONS, p=p))
-            return np.random.choice(VALIDE_ACTIONS, p=p)
+            execute_action = np.random.choice(VALIDE_ACTIONS, p=p)
+            #print ("random choice epsilon greedy" , VALIDE_ACTIONS, execute_action)
+            return execute_action
         
         if self.isFit == True:
             q_values = self.model.predict(state_to_features(game_state).reshape(1, -1))
@@ -109,13 +115,15 @@ def act(self, game_state: dict) -> str:
             mask_arr = np.ma.masked_array(q_values[0], mask = ~msk)
             # applying MaskedArray.argmax methods to mask array 
             execute_action = ACTIONS[mask_arr.argmax()]
+            
             #print("max q value choice " , execute_action)
             
         else:
             q_values = np.zeros(self.action_size).reshape(1, -1) 
             execute_action = np.random.choice(VALIDE_ACTIONS, p=p)
             #print("not training yet- choice ", execute_action)
-
+            
+        #print ("max q value choice " , VALIDE_ACTIONS, execute_action)
         self.logger.debug("Querying model for action.") 
         return execute_action
     
@@ -126,10 +134,13 @@ def act(self, game_state: dict) -> str:
             return np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, 0])
         
         q_values = self.model.predict(state_to_features(game_state).reshape(1, -1))
+        print(q_values)
         # choose only from q_values which are valid actions: 
         mask_arr = np.ma.masked_array(q_values[0], mask = ~msk)
         # applying MaskedArray.argmax methods to mask array 
         execute_action = ACTIONS[mask_arr.argmax()]
+        print ("max q value choice " , VALIDE_ACTIONS, execute_action)
+        
         return execute_action
         
 
@@ -250,5 +261,6 @@ def state_to_features( game_state: dict) -> np.array:
     # and return them as a vector    
     X = np.append(stacked_channels.reshape(-1), dead_zone)
     
+    #print(X)
     #print(X)
     return X
