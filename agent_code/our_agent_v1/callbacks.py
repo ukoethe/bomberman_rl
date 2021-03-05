@@ -58,20 +58,63 @@ def act(self, game_state: dict) -> str:
     :param game_state: The dictionary that describes everything on the board.
     :return: The action to take as a string.
     """    
-
+    # (5) valid actions
+    # Gather information about the game state
+    arena = game_state['field']
+    _, score, bombs_left, (x, y) = game_state['self']
+    bombs = game_state['bombs']
+    bomb_xys = [xy for (xy, t) in bombs]
+    others = [xy for (n, s, b, xy) in game_state['others']]
+    coins = game_state['coins']
+    bomb_map = game_state['explosion_map']
+    
+    directions = [(x, y), (x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+    valid_tiles, valid_actions = [], []
+    for d in directions:
+        if ((arena[d] == 0) and
+            (game_state['explosion_map'][d] <= 1) and
+            (not d in others) and
+            (not d in bomb_xys)):
+            valid_tiles.append(d)
+    if (x , y + 1) in valid_tiles: valid_actions.append(1)
+    else: valid_actions.append(0)
+    if (x + 1, y) in valid_tiles: valid_actions.append(1)
+    else: valid_actions.append(0)   
+    if (x, y - 1) in valid_tiles: valid_actions.append(1)
+    else: valid_actions.append(0)
+    if (x -1 , y ) in valid_tiles: valid_actions.append(1)
+    else: valid_actions.append(0)
+    if (x, y) in valid_tiles: valid_actions.append(1)
+    else: valid_actions.append(0)
+    if (bombs_left > 0) : valid_actions.append(1)
+    else: valid_actions.append(0)
+    
+    mask = valid_actions
+    msk = (np.array(mask)==1)
+    VALIDE_ACTIONS = np.array(ACTIONS)[msk]
+    p = np.random.dirichlet(np.ones(len(VALIDE_ACTIONS)),size=1)[0] 
+    #print(VALIDE_ACTIONS)
+    
     # todo Exploration vs exploitation
     if self.train:
         random_prob = self.epsilon
         if random.random() < random_prob:
             self.logger.debug("Choosing action purely at random.")
-            return np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+            #print("random choice epsilon greedy" , np.random.choice(VALIDE_ACTIONS, p=p))
+            return np.random.choice(VALIDE_ACTIONS, p=p)
         
         if self.isFit == True:
             q_values = self.model.predict(state_to_features(game_state).reshape(1, -1))
-            execute_action = ACTIONS[np.argmax(q_values[0])]
+            # choose only from q_values which are valid actions: 
+            mask_arr = np.ma.masked_array(q_values[0], mask = ~msk)
+            # applying MaskedArray.argmax methods to mask array 
+            execute_action = ACTIONS[mask_arr.argmax()]
+            #print("max q value choice " , execute_action)
+            
         else:
             q_values = np.zeros(self.action_size).reshape(1, -1) 
-            execute_action = np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+            execute_action = np.random.choice(VALIDE_ACTIONS, p=p)
+            #print("not training yet- choice ", execute_action)
 
         self.logger.debug("Querying model for action.") 
         return execute_action
@@ -83,7 +126,10 @@ def act(self, game_state: dict) -> str:
             return np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .2, 0])
         
         q_values = self.model.predict(state_to_features(game_state).reshape(1, -1))
-        execute_action = ACTIONS[np.argmax(q_values[0])]
+        # choose only from q_values which are valid actions: 
+        mask_arr = np.ma.masked_array(q_values[0], mask = ~msk)
+        # applying MaskedArray.argmax methods to mask array 
+        execute_action = ACTIONS[mask_arr.argmax()]
         return execute_action
         
 
@@ -183,28 +229,6 @@ def state_to_features( game_state: dict) -> np.array:
     while len(bombs_info) < 4:
         bombs_info.append((99,99,99))
     bombs_info = sorted(bombs_info, key=itemgetter(2))
-        
-    # (5) valid actions
-    directions = [(x, y), (x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
-    valid_tiles, valid_actions = [], []
-    for d in directions:
-        if ((arena[d] == 0) and
-            (game_state['explosion_map'][d] <= 1) and
-            (not d in others) and
-            (not d in bomb_xys)):
-            valid_tiles.append(d)
-    if (x - 1, y) in valid_tiles: valid_actions.append(1)
-    else: valid_actions.append(0)
-    if (x + 1, y) in valid_tiles: valid_actions.append(1)
-    else: valid_actions.append(0)   
-    if (x, y - 1) in valid_tiles: valid_actions.append(1)
-    else: valid_actions.append(0)
-    if (x, y + 1) in valid_tiles: valid_actions.append(1)
-    else: valid_actions.append(0)
-    if (x, y) in valid_tiles: valid_actions.append(1)
-    else: valid_actions.append(0)
-    if (bombs_left > 0) : valid_actions.append(1)
-    else: valid_actions.append(0)
 
     
     # For example, you could construct several channels of equal shape, ...
@@ -220,13 +244,11 @@ def state_to_features( game_state: dict) -> np.array:
     #for bomb_info in bombs_info:
     #    channels.append(bomb_info)
     channels.append(bombs_info[0])
-    channels.append(valid_actions[:3])
-    channels.append(valid_actions[3:])
     # concatenate them as a feature tensor (they must have the same shape), ...
     stacked_channels = np.stack(channels)
-    # and return them as a vector
     
-    
+    # and return them as a vector    
     X = np.append(stacked_channels.reshape(-1), dead_zone)
-
+    
+    #print(X)
     return X

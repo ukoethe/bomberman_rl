@@ -8,6 +8,7 @@ from sklearn.neighbors import KNeighborsRegressor
 import events as e
 from .callbacks import state_to_features
 import numpy as np
+from itertools import islice 
 
 
 # This is only an example!
@@ -20,7 +21,8 @@ TRANSITION_HISTORY_SIZE = 2000 # keep only ... last transitions
 RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
 BATCH_SIZE = 16
 
-ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT','BOMB']
+ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
+
 GAMMA = 0.99
 LEARNING_RATE = 0.001
 
@@ -29,7 +31,10 @@ EXPLORATION_MIN = 0.1
 EXPLORATION_DECAY = 0.9999
 
 # Events
-PLACEHOLDER_EVENT = "PLACEHOLDER"
+SURVIVED_STEP = "SURVIVED_STEP"
+DIED_DIRECT_NEXT_TO_BOMB = "DIED_DIRECT_NEXT_TO_BOMB"
+ALREADY_KNOW_FIELD = "ALREADY_KNOW_FIELD"
+CLOSER_TO_COIN = "CLOSER_TO_COIN"
 
 def setup_training(self):
     """
@@ -41,7 +46,8 @@ def setup_training(self):
     """
    
     self.action_size = len(ACTIONS) #Get size of the action
-
+    self.coordinate_history = deque([], 20)
+    
     #Hyperparameters
     self.discount_factor = GAMMA #Disocunt Factor
     self.learning_rate = LEARNING_RATE #Learning Rate
@@ -90,12 +96,42 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
 
     # Idea: Add your own events to hand out rewards
-    if not events:
-        events.append(PLACEHOLDER_EVENT)
+    
+    if old_game_state:
+        _, score, bombs_left, (x, y) = old_game_state['self']
+        # penalty on loops:
+        # If agent has been in the same location three times recently, it's a loop
+        if self.coordinate_history.count((x, y)) > 2:
+            events.append(ALREADY_KNOW_FIELD)
 
+        self.coordinate_history.append((x, y))
+        # check whether closer to closest coin
+        if new_game_state:
+            if (state_to_features(old_game_state) - state_to_features(new_game_state))[5] < 0:
+                events.append(CLOSER_TO_COIN)
+        
+        if 'GOT_KILLED' in events:
+            # closer to bomb gives higher penalty:
+            bombs = old_game_state['bombs']
+            bomb_xys = [xy for (xy, t) in bombs]
+
+            step_distance_bombs = []
+            for bomb in bombs:
+                x_rel_bomb = bomb[0][0] - x
+                y_rel_bomb = bomb[0][1] - y
+                step_distance_bombs.append(np.abs(x_rel_bomb) +  np.abs(y_rel_bomb))
+            step_distance_closest_bomb = sorted(step_distance_bombs)[0]
+
+            if step_distance_closest_bomb < 2:
+                events.append(DIED_DIRECT_NEXT_TO_BOMB)
+                
+    if not 'GOT_KILLED' in events:
+        events.append(SURVIVED_STEP)
+        
     # add transition to remembered transisions:
     append_sample(self, old_game_state, self_action, new_game_state, events)
     self.score_in_round += reward_from_events(self, events)
+    #print(events)
 
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
@@ -172,27 +208,36 @@ def reward_from_events(self, events: List[str]) -> int:
     Here you can modify the rewards your agent get so as to en/discourage
     certain behavior.
     """
-    game_rewards = {
-        e.MOVED_LEFT: -0.1,
-        e.MOVED_RIGHT: -0.1,
-        e.MOVED_UP:-0.1,
-        e.MOVED_DOWN: -0.1,
-        e.WAITED: -0.1,
-        e.INVALID_ACTION: -5,
 
-        e.BOMB_DROPPED: -5,
+    survive_step = 0.3
+    #add reward, if distance to closest coin is decreased 
+    game_rewards = {
+        # my Events:
+        SURVIVED_STEP:  survive_step,
+        DIED_DIRECT_NEXT_TO_BOMB: -2*survive_step,
+        ALREADY_KNOW_FIELD: -0.1,
+        CLOSER_TO_COIN: 0.2,
+        
+        e.MOVED_LEFT: 0,
+        e.MOVED_RIGHT: 0,
+        e.MOVED_UP: 0,
+        e.MOVED_DOWN: 0,
+        e.WAITED: 0,
+        e.INVALID_ACTION: -survive_step,
+        
+        e.BOMB_DROPPED: 0,
         e.BOMB_EXPLODED: 0,
 
-        e.CRATE_DESTROYED: 0,
-        e.COIN_FOUND: 0,
-        e.COIN_COLLECTED: 500,
+        e.CRATE_DESTROYED: 1,
+        e.COIN_FOUND: 1,
+        e.COIN_COLLECTED: 5,
 
         e.KILLED_OPPONENT: 0,
-        e.KILLED_SELF: -500,
+        e.KILLED_SELF: -6* survive_step,   # maybe include later that distance to bomb is included in penatly 
 
         e.GOT_KILLED: 0,
         e.OPPONENT_ELIMINATED: 0,
-        e.SURVIVED_ROUND: 5,
+        e.SURVIVED_ROUND: survive_step,
     }
     
     reward_sum = 0
