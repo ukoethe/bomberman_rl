@@ -20,7 +20,7 @@ TRANSITION_HISTORY_SIZE = 3  # keep only ... last transitions
 RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
 EXPLORATION_MAX = 1
 EXPLORATION_MIN = 0.2
-EXPLORATION_DECAY = 0.9995
+EXPLORATION_DECAY = 0.9999
 LEARNING_RATE = 0.1
 GAMMA = 0.99
 
@@ -168,7 +168,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
         self.epsilon *= EXPLORATION_DECAY
     
     ################# (2) Store learned q-table: #################
-    np.save("my-q-table_allcorners.npy", self.q_table)
+    np.save("my-q-table_increase_featurespace.npy", self.q_table)
     
     ################# (3) For evaluation purposes: #################
     score = np.sum(self.score_in_round)
@@ -205,7 +205,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
         ax3 = plt.subplot(313, sharex=ax1)
         ax3.title.set_text('Exploration rate $\epsilon$')
         plt.plot(self.games, self.exploration_rate)
-        plt.savefig('TrainingEvaluation_SimpleQLearning_allcorners.png') 
+        plt.savefig('TrainingEvaluation_SimpleQLearning__increase_featurespace.png') 
         
     
 

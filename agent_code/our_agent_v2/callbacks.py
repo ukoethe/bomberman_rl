@@ -30,11 +30,11 @@ def setup(self):
         
     if self.train:
         self.logger.info("Setting up model from scratch.")
-        self.q_table = np.zeros((4*((s.COLS-2)*(s.ROWS-2)), self.action_size))   #initi a q_table which has as many states as possible distances to coin possible
+        self.q_table = np.zeros((3*4*((s.COLS-2)*(s.ROWS-2)), self.action_size))   #initi a q_table which has as many states as possible distances to coin possible
         
     else:
         self.logger.info("Loading model from saved state.")
-        self.q_table = np.load("my-q-table_allcorners.npy")
+        self.q_table = np.load("my-q-table_increase_featurespace.npy")
 
 
 def act(self, game_state: dict) -> str:
@@ -46,6 +46,7 @@ def act(self, game_state: dict) -> str:
     :param game_state: The dictionary that describes everything on the board.
     :return: The action to take as a string.
     """
+    
     ########### (1) only allow valid actions: #############
     mask, VALIDE_ACTIONS, p =  get_valide_action(game_state)
     
@@ -78,7 +79,7 @@ def act(self, game_state: dict) -> str:
         
         # choose only from q_values which are valid actions: 
         q_values = self.q_table[state_to_features(game_state)][mask]
-        print(q_values, state_to_features(game_state))
+        #print(q_values, state_to_features(game_state))
         execute_action = VALIDE_ACTIONS[np.argmax(q_values)]
         self.logger.debug("Querying model for action.")
         return execute_action
@@ -119,7 +120,7 @@ def state_to_features(game_state: dict) -> np.array:
     max_distance_x = s.ROWS - 2 #s.ROWS - 3 ? 
     max_distance_y = s.COLS - 2
 
-    # get relative step distances to closest coin as one auto hot encoder
+    # (1) get relative step distances to closest coin as one auto hot encoder
     coins_info = []
     for coin in coins:
         x_coin_dis = coin[0] - x
@@ -132,18 +133,34 @@ def state_to_features(game_state: dict) -> np.array:
 
     h = closest_coin_info[0] + max_distance_x  
     v = closest_coin_info[1] + max_distance_y 
-
+    
+    # (2) encounter for relative postion of agent in arena: 
+    # is between two invalide field horizontal (not L and R, do U and D)
+    # is between two invalide field vertical (do L and R, not U and D)
+    # somewhere else (not L and R, not U and D)
+    # will increase number of states with a factor 3
+    mask, VALIDE_ACTIONS, p =  get_valide_action(game_state)
+    
+    relative_position = 0
+    
+    if 'RIGHT' not in VALIDE_ACTIONS and 'LEFT' not in VALIDE_ACTIONS:
+        relative_position = 1  # between_invalide_horizintal
+    
+    if 'UP' not in VALIDE_ACTIONS and 'DOWN' not in VALIDE_ACTIONS:
+        relative_position = 2  # between_invalide_vertical
+    
     # do encoding
-    grid = np.zeros((2*(s.COLS-2),2*(s.ROWS-2)))
+    grid = np.zeros((2*(s.COLS-2),2*(s.ROWS-2), 3))
     l = 0
     for i in range (len(grid)):
         for j in range (len(grid[0])):
-            grid[i,j] = l
-            l+=1
-
-    state_number = int(grid[h,v])
+            for k in range (len(grid[0][0])):
+                grid[i,j,k] = l
+                l+=1
     
-    # print(closest_coin_info[0], closest_coin_info[1], state_number )
+    state_number = int(grid[h,v,relative_position])
+    #print(grid)
+    #print(closest_coin_info[0], closest_coin_info[1],relative_position, state_number )
     return state_number
 
 
