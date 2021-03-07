@@ -9,7 +9,7 @@ import events as e
 from .callbacks import state_to_features
 import numpy as np
 from itertools import islice 
-
+import matplotlib.pyplot as plt
 
 # This is only an example!
 Transition = namedtuple('Transition',
@@ -24,17 +24,18 @@ BATCH_SIZE = 6
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
 GAMMA = 0.99
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.01
 
 EXPLORATION_MAX = 1.0
 EXPLORATION_MIN = 0.1
-EXPLORATION_DECAY = 0.9999
+EXPLORATION_DECAY = 0.9999992
 
 # Events
 SURVIVED_STEP = "SURVIVED_STEP"
 DIED_DIRECT_NEXT_TO_BOMB = "DIED_DIRECT_NEXT_TO_BOMB"
 ALREADY_KNOW_FIELD = "ALREADY_KNOW_FIELD"
 CLOSER_TO_COIN = "CLOSER_TO_COIN"
+AWAY_FROM_COIN = "AWAY_FROM_COIN"
 
 def setup_training(self):
     """
@@ -67,13 +68,19 @@ def setup_training(self):
     # For Training evaluation purposes:
     self.score_in_round = 0
     self.number_game = 0
+    self.collected_coins_in_game  = 0
+    
+    self.scores = []
+    self.games = []
+    self.exploration_rate = []
+    self.collected_coins = []
 
 
 def append_sample(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
     self.transitions.append(Transition(state_to_features(old_game_state),
                                        self_action, state_to_features(new_game_state), reward_from_events(self, events)))
-    if self.epsilon > self.epsilon_min:
-        self.epsilon *= self.epsilon_decay
+    #if self.epsilon > self.epsilon_min:
+    #    self.epsilon *= self.epsilon_decay
 
     
 def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
@@ -99,6 +106,8 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     
     if old_game_state:
         _, score, bombs_left, (x, y) = old_game_state['self']
+        closest_coin_info_old = closets_coin_distance(old_game_state)
+        
         # penalty on loops:
         # If agent has been in the same location three times recently, it's a loop
         if self.coordinate_history.count((x, y)) > 2:
@@ -107,8 +116,12 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
         self.coordinate_history.append((x, y))
         # check whether closer to closest coin
         if new_game_state:
-            if (state_to_features(old_game_state) - state_to_features(new_game_state))[5] < 0:
+            closest_coin_info_new = closets_coin_distance(new_game_state)
+            
+            if (closest_coin_info_old - closest_coin_info_new) < 0:
                 events.append(CLOSER_TO_COIN)
+            else:
+                events.append(AWAY_FROM_COIN)
         
         if 'GOT_KILLED' in events:
             # closer to bomb gives higher penalty:
@@ -129,12 +142,89 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
         events.append(SURVIVED_STEP)
         
     # add transition to remembered transisions:
-    append_sample(self, old_game_state, self_action, new_game_state, events)
+    # append_sample(self, old_game_state, self_action, new_game_state, events)
     self.score_in_round += reward_from_events(self, events)
+    if 'COIN_COLLECTED' in events:
+        self.collected_coins_in_game += 1
     #print(events)
+    
+    # do q-learning with q_table:
+    if old_game_state:
+        if new_game_state:
+            old_state_x = state_to_features(old_game_state)
+            new_state_x = state_to_features(new_game_state)
 
+            reward = reward_from_events(self, events)
+            old_value = self.q_table[old_state_x, ACTIONS.index(self_action)]
+            maximal_response = np.max(self.q_table[new_state_x])
 
+            # update q_table
+            new_value = (1 - self.learning_rate) * old_value + self.learning_rate * (reward + self.discount_factor *  maximal_response)
+            self.q_table[old_state_x, ACTIONS.index(self_action)] = new_value
+    
+    self.isFit = True
+    if self.epsilon > self.epsilon_min:
+        self.epsilon *= self.epsilon_decay
+      
+    
+def closets_coin_distance(game_state: dict):
+    _, score, bombs_left, (x, y) = game_state['self']
+    coins = game_state['coins']
+    coins_dis = []
+    for coin in coins:
+        total_step_distance = abs(coin[0]-x) + abs(coin[1]-y)
+        coin_dis = (total_step_distance)
+        coins_dis.append(coin_dis)
+    closest_coin_dis = sorted(coins_dis)[0]
+    return closest_coin_dis 
+        
+    
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
+    # print(self.q_table)
+    # print(np.argwhere(self.q_table != 0))
+    # For training validation purposes:
+    score = np.sum(self.score_in_round)
+    game = self.number_game
+    
+    if game%100 == 0:
+        print("game number:", game, "  score:", score, "  memory length:",
+                 len(self.transitions), "  epsilon:", self.epsilon)
+    
+    
+    self.scores.append(score)
+    self.games.append(game)
+    self.exploration_rate.append(self.epsilon)
+    self.collected_coins.append(self.collected_coins_in_game)
+    #with open("my-q-table.npy", "wb") as file:
+    np.save("my-q-table-longer.npy", self.q_table)
+    
+    self.score_in_round = 0
+    self.number_game += 1 
+    self.collected_coins_in_game = 0
+    
+    if game%5000 == 0:       
+        plt.title('Training Evaluation for simple Q learning')       
+        ax1 = plt.subplot(311)
+        ax1.title.set_text('Total Score')
+        plt.plot(self.games, self.scores)
+        # plt.setp(ax1.get_xticklabels(), fontsize=6)
+
+        # share x only
+        ax2 = plt.subplot(312, sharex=ax1)
+        ax2.title.set_text('Number of collected Coins')
+        plt.plot(self.games, self.collected_coins)
+        # make these tick labels invisible
+        plt.setp(ax2.get_xticklabels(), visible=False)
+        
+        ax3 = plt.subplot(313, sharex=ax1)
+        ax3.title.set_text('Exploration rate $\epsilon$')
+        plt.plot(self.games, self.exploration_rate)
+        plt.savefig('TrainingEvaluation_SimpleQLearning.png') 
+        
+    pass
+
+
+def end_of_round_old(self, last_game_state: dict, last_action: str, events: List[str]):
     """
     Called at the end of each game or when the agent died to hand out final rewards.
 
@@ -181,16 +271,16 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
             
     #print(X, targets)
     #self.model.fit(X, targets)
-    self.model.partial_fit(X, targets)
+    #self.model.partial_fit(X, targets)
     self.isFit = True
     
     # Store the model
-    with open("my-saved-model.pt", "wb") as file:
-        pickle.dump(self.model, file)
+    #with open("my-saved-model.pt", "wb") as file:
+    #    pickle.dump(self.model, file)
         
-    with open("my-saved-SGDRegressor-model.pt", "wb") as file:
-        pickle.dump(self.model, file)
-        
+    #with open("my-saved-SGDRegressor-model.pt", "wb") as file:
+    #    pickle.dump(self.model, file)
+    
     # For training validation purposes:
     score = np.sum(self.score_in_round)
     game = self.number_game
@@ -200,7 +290,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
                  len(self.transitions), "  epsilon:", self.epsilon)
     
     self.score_in_round = 0
-    self.number_game += 1 
+    self.number_game += 1
 
 
 def reward_from_events(self, events: List[str]) -> int:
@@ -217,8 +307,9 @@ def reward_from_events(self, events: List[str]) -> int:
         # my Events:
         SURVIVED_STEP:  survive_step,
         DIED_DIRECT_NEXT_TO_BOMB: -2*survive_step,
-        ALREADY_KNOW_FIELD: -10,
+        ALREADY_KNOW_FIELD: -0.2,
         CLOSER_TO_COIN: 0.2,
+        AWAY_FROM_COIN: -0.2,
         
         e.MOVED_LEFT: 0,
         e.MOVED_RIGHT: 0,
@@ -232,7 +323,7 @@ def reward_from_events(self, events: List[str]) -> int:
 
         e.CRATE_DESTROYED: 1,
         e.COIN_FOUND: 1,
-        e.COIN_COLLECTED: 5,
+        e.COIN_COLLECTED: 10,
 
         e.KILLED_OPPONENT: 0,
         e.KILLED_SELF: -6* survive_step,   # maybe include later that distance to bomb is included in penatly 
