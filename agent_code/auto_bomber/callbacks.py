@@ -70,6 +70,36 @@ def state_to_features(game_state: dict) -> np.array:
     if game_state is None:
         return None
 
+    # TODO IDEAS
+    # * Feature reduction/feature importance/feature selection:
+    #   - PCA
+    # * (no. bombs (in radius))
+    # * distance to bombs (take only bombs in consideration that are dangerous for us, i.e. in our trajectory, exclude
+    #   bombs behind crates or stone walls)
+    # * distance to explosions (compare our position with all explosion tiles and get the nearest one)
+    # * angle to nearest explosion (to indicate direction take opposite direction of explosion)
+    # * no. coins
+    # * distance to coins
+    # * distance to opponents
+    # * distance to crates
+
+    agent_x, agent_y = game_state['self'][3]
+    danger_bombs = False
+    for bomb in game_state['bombs']:
+        bomb_x, bomb_y = bomb[0]
+        # Check if bomb is in our trajectory
+        # TODO Include upcoming explosion trajectory
+        # TODO Exclude bombs behind crates and stone walls
+        if not bomb_x == agent_x or not bomb_y == agent_y:
+            continue
+        danger_bombs = True
+        # TODO Compute the distance to the danger bomb
+        # TODO Account for multiple danger bombs
+        break
+
+    # TODO Set auxiliary reward for moving away from a danger zone
+
+
     # For example, you could construct several channels of equal shape, ...
     channels = []
     channels.append(...)
