@@ -21,7 +21,7 @@ RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
 EXPLORATION_MAX = 1
 EXPLORATION_MIN = 0.2
 EXPLORATION_DECAY = 0.9999
-LEARNING_RATE = 0.01  # test 0.05
+LEARNING_RATE = 0.1  # test 0.05
 GAMMA = 0.99
 
 
@@ -96,7 +96,6 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
         # penalty on going away from coin vs reward for going closer: 
         if new_game_state:
             closest_coin_info_new = closets_coin_distance(new_game_state)
-
             if (closest_coin_info_old - closest_coin_info_new) < 0:
                 events.append(CLOSER_TO_COIN)
             else:
@@ -168,7 +167,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
         self.epsilon *= EXPLORATION_DECAY
     
     ################# (2) Store learned q-table: #################
-    np.save("my-q-table_agentv12_1coin.npy", self.q_table)
+    np.save("my-q-table_agentv13.npy", self.q_table)
     
     ################# (3) For evaluation purposes: #################
     score = np.sum(self.score_in_round)
@@ -187,7 +186,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     self.number_game += 1
     self.collected_coins_in_game = 0
     
-    if game%2000 == 0:
+    if game%500 == 0:
         
         plt.title('Training Evaluation for simple Q learning')       
         ax1 = plt.subplot(311)
@@ -205,7 +204,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
         ax3 = plt.subplot(313, sharex=ax1)
         ax3.title.set_text('Exploration rate $\epsilon$')
         plt.plot(self.games, self.exploration_rate)
-        plt.savefig('TrainingEvaluation_SimpleQLearning__agentv12_1coin.png') 
+        plt.savefig('TrainingEvaluation_SimpleQLearning_agentv13.png') 
         
     
 
