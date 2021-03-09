@@ -32,5 +32,3 @@ class LinearAutoBomberModel:
             agent_self.logger.info("Model is empty init with random weights.")
             new_weights = np.random.rand(len(config.ACTIONS), len(features_x))
             self.weights = new_weights / new_weights.sum(axis=0)  # all weights are 0 < weight < 1
-
-
