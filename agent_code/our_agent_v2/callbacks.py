@@ -31,10 +31,11 @@ def setup(self):
     if self.train:
         self.logger.info("Setting up model from scratch.")
         self.q_table = np.zeros((3*4*((s.COLS-2)*(s.ROWS-2)), self.action_size))   #initi a q_table which has as many states as possible distances to coin possible
+        #self.q_table = np.load("my-q-table_increase_featurespace-alpha=0.01.npy")
         
     else:
         self.logger.info("Loading model from saved state.")
-        self.q_table = np.load("my-q-table_increase_featurespace.npy")
+        self.q_table = np.load("my-q-table_agentv12_1coin.npy")
 
 
 def act(self, game_state: dict) -> str:
@@ -70,7 +71,8 @@ def act(self, game_state: dict) -> str:
 
     ########### (3) When in Game mode: #############
     else:
-        random_prob = 0.1
+        
+        random_prob = 0.81
         if random.random() < random_prob:
             self.logger.debug("Choosing action purely at random.")
             execute_action = np.random.choice(VALIDE_ACTIONS)
