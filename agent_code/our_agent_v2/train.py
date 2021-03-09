@@ -16,13 +16,14 @@ Transition = namedtuple('Transition',
 
 
 # Hyper parameters -- DO modify
-TRANSITION_HISTORY_SIZE = 3  # keep only ... last transitions
+TRANSITION_HISTORY_SIZE = 600  # keep only ... last transitions
+BATCH_SIZE = 128
 RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
 EXPLORATION_MAX = 1
 EXPLORATION_MIN = 0.2
 EXPLORATION_DECAY = 0.9999
-LEARNING_RATE = 0.1  # test 0.05
-GAMMA = 0.99
+#LEARNING_RATE = 0.01  # test 0.05
+GAMMA = 0.90
 
 
 # Events
@@ -47,6 +48,7 @@ def setup_training(self):
     self.transitions = deque(maxlen=TRANSITION_HISTORY_SIZE) # long term memory of complete step
     self.coordinate_history = deque([], 10)  # short term memory of agent position
     self.epsilon = EXPLORATION_MAX
+    self.is_init = True
     
     # For Training evaluation purposes:
     self.score_in_round = 0
@@ -96,6 +98,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
         # penalty on going away from coin vs reward for going closer: 
         if new_game_state:
             closest_coin_info_new = closets_coin_distance(new_game_state)
+
             if (closest_coin_info_old - closest_coin_info_new) < 0:
                 events.append(CLOSER_TO_COIN)
             else:
@@ -123,22 +126,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     if 'COIN_COLLECTED' in events:
         self.collected_coins_in_game += 1
     
-    ################## (2) Do q-learning: #################
-    
-    if old_game_state:
-        old_state_x = state_to_features(old_game_state)
-        reward = reward_from_events(self, events)
-        old_value = self.q_table[old_state_x, self.actions.index(self_action)]
-        
-        if new_game_state:
-            new_state_x = state_to_features(new_game_state)
-            maximal_response = np.max(self.q_table[new_state_x])
-            
-        else: maximal_response = 0
-
-        # update q_table
-        new_value = (1 - LEARNING_RATE) * old_value + LEARNING_RATE * (reward + GAMMA *  maximal_response)
-        self.q_table[old_state_x, self.actions.index(self_action)] = new_value
+    ################## (2) Store Transision: #################
     
     # state_to_features is defined in callbacks.py
     self.transitions.append(Transition(state_to_features(old_game_state), self_action, state_to_features(new_game_state), reward_from_events(self, events)))
@@ -165,11 +153,41 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     ################# (1) Decrease the exploration rate: #################
     if self.epsilon > EXPLORATION_MIN:
         self.epsilon *= EXPLORATION_DECAY
+        
+    ################## (2) Do q-learning with batch: #################
     
-    ################# (2) Store learned q-table: #################
-    np.save("my-q-table_agentv13.npy", self.q_table)
+    batch = random.sample(self.transitions, BATCH_SIZE)
+    X = []
+    targets = []
+
+    for state, action, state_next, reward in batch:
+        q_update = reward
+        if state is not None:
+            if state_next is not None:
+                if self.is_init:
+                    q_update = reward
+                else:
+                    maximal_response = np.max(self.model.predict(state_next.reshape(1, -1)))
+                    q_update = (reward + GAMMA * maximal_response)
+                    
+            if self.is_init: q_values = np.zeros(self.action_size).reshape(1, -1)
+                
+            else: q_values = self.model.predict(state.reshape(1, -1))
+                
+            q_values[0][self.actions.index(action)] = q_update
+
+            X.append(state)
+            targets.append(q_values[0])
+
+    self.model.partial_fit(X, targets)
+    self.is_init = False
     
-    ################# (3) For evaluation purposes: #################
+    ################# (3) Store learned model: #################
+
+    with open("my-q-learning_Mulit_SGD_agentv12.pt", "wb") as file:
+        pickle.dump(self.model, file)
+    
+    ################# (4) For evaluation purposes: #################
     score = np.sum(self.score_in_round)
     game = self.number_game
     
@@ -186,25 +204,30 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     self.number_game += 1
     self.collected_coins_in_game = 0
     
-    if game%500 == 0:
+    if game%200 == 0:
         
-        plt.title('Training Evaluation for simple Q learning')       
+        f = plt.figure(figsize=(10,10))
+             
         ax1 = plt.subplot(311)
         ax1.title.set_text('Total Score')
         plt.plot(self.games, self.scores)
-        # plt.setp(ax1.get_xticklabels(), fontsize=6)
+        plt.ylabel("total score")
+        plt.setp(ax1.get_xticklabels(), visible=False)
 
         # share x only
         ax2 = plt.subplot(312, sharex=ax1)
         ax2.title.set_text('Number of collected Coins')
         plt.plot(self.games, self.collected_coins)
+        plt.ylabel("Number Coins")
         # make these tick labels invisible
         plt.setp(ax2.get_xticklabels(), visible=False)
         
         ax3 = plt.subplot(313, sharex=ax1)
         ax3.title.set_text('Exploration rate $\epsilon$')
+        plt.ylabel('Exploration rate $\epsilon$')
+        plt.xlabel("game")
         plt.plot(self.games, self.exploration_rate)
-        plt.savefig('TrainingEvaluation_SimpleQLearning_agentv13.png') 
+        plt.savefig('TrainingEvaluation_Mulit_SGD_agentv12.png') 
         
     
 
