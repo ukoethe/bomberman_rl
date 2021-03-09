@@ -35,7 +35,7 @@ def setup(self):
         self.logger.info("Setting up model from scratch.")
         #self.q_table = np.zeros((3*4*((s.COLS-2)*(s.ROWS-2)), self.action_size))   #initi a q_table which has as many states as possible distances to coin possible
         #self.q_table = np.load("my-q-table_increase_featurespace-alpha=0.01.npy")
-        self.model = MultiOutputRegressor(SGDRegressor(alpha=0.1))
+        self.model = MultiOutputRegressor(SGDRegressor(alpha=0.0001))
         
     else:
         self.logger.info("Loading model from saved state.")
@@ -61,7 +61,7 @@ def act(self, game_state: dict) -> str:
     # todo Exploration vs exploitation: take a decaying exploration rate
     if self.train:
         random_prob = self.epsilon 
-        if random.random() < random_prob:
+        if random.random() < random_prob or self.is_init:
             self.logger.debug("Choosing action purely at random.")
             execute_action = np.random.choice(VALIDE_ACTIONS)
             #print(VALIDE_ACTIONS, execute_action , p)
@@ -127,7 +127,7 @@ def state_to_features(game_state: dict) -> np.array:
     max_distance_x = s.ROWS - 2 #s.ROWS - 3 ? 
     max_distance_y = s.COLS - 2
 
-    # (1) get relative step distances to closest coin as one auto hot encoder
+    # (1) get relative,normlaized step distances to closest coin
     coins_info = []
     for coin in coins:
         x_coin_dis = coin[0] - x
@@ -137,10 +137,14 @@ def state_to_features(game_state: dict) -> np.array:
         coins_info.append(coin_info)
 
     closest_coin_info = sorted(coins_info, key=itemgetter(2))[0]
+    #print(closest_coin_info)
+    if closest_coin_info[2] == 0:
+        h = 0
+        v = 0
+    else:
+        h = closest_coin_info[0]/closest_coin_info[2]  #normalize with total difference to coin   
+        v = closest_coin_info[1]/closest_coin_info[2]  
 
-    h = closest_coin_info[0]   
-    v = closest_coin_info[1]  
-    
     # (2) encounter for relative postion of agent in arena: 
     # is between two invalide field horizontal (not L and R, do U and D)
     # is between two invalide field vertical (do L and R, not U and D)
@@ -158,7 +162,7 @@ def state_to_features(game_state: dict) -> np.array:
         relative_position_vertical = 1  # between_invalide_vertical
     
     features = np.array([h , v , relative_position_horizintal , relative_position_vertical])
-    #print(features.reshape(-1))
+    # print(features.reshape(-1))
     return features.reshape(-1)
 
 

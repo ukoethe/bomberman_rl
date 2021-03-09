@@ -16,12 +16,12 @@ Transition = namedtuple('Transition',
 
 
 # Hyper parameters -- DO modify
-TRANSITION_HISTORY_SIZE = 600  # keep only ... last transitions
-BATCH_SIZE = 128
+TRANSITION_HISTORY_SIZE = 5000  # keep only ... last transitions
+BATCH_SIZE = 3000
 RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
 EXPLORATION_MAX = 1
 EXPLORATION_MIN = 0.2
-EXPLORATION_DECAY = 0.9999
+EXPLORATION_DECAY = 0.9995
 #LEARNING_RATE = 0.01  # test 0.05
 GAMMA = 0.90
 
@@ -156,32 +156,33 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
         
     ################## (2) Do q-learning with batch: #################
     
-    batch = random.sample(self.transitions, BATCH_SIZE)
-    X = []
-    targets = []
+    if len(self.transitions) > BATCH_SIZE: 
+        #print('start training')
+        batch = random.sample(self.transitions, BATCH_SIZE)
+        X = []
+        targets = []
+        for state, action, state_next, reward in batch:
+            q_update = reward
+            if state is not None:
+                if state_next is not None:
+                    if self.is_init:
+                        q_update = reward
+                    else:
+                        maximal_response = np.max(self.model.predict(state_next.reshape(1, -1)))
+                        q_update = (reward + GAMMA * maximal_response)
 
-    for state, action, state_next, reward in batch:
-        q_update = reward
-        if state is not None:
-            if state_next is not None:
-                if self.is_init:
-                    q_update = reward
-                else:
-                    maximal_response = np.max(self.model.predict(state_next.reshape(1, -1)))
-                    q_update = (reward + GAMMA * maximal_response)
-                    
-            if self.is_init: q_values = np.zeros(self.action_size).reshape(1, -1)
-                
-            else: q_values = self.model.predict(state.reshape(1, -1))
-                
-            q_values[0][self.actions.index(action)] = q_update
+                if self.is_init: q_values = np.zeros(self.action_size).reshape(1, -1)
 
-            X.append(state)
-            targets.append(q_values[0])
+                else: q_values = self.model.predict(state.reshape(1, -1))
 
-    self.model.partial_fit(X, targets)
-    self.is_init = False
-    
+                q_values[0][self.actions.index(action)] = q_update
+
+                X.append(state)
+                targets.append(q_values[0])
+
+        self.model.partial_fit(X, targets)
+        self.is_init = False
+
     ################# (3) Store learned model: #################
 
     with open("my-q-learning_Mulit_SGD_agentv12.pt", "wb") as file:
@@ -246,7 +247,7 @@ def reward_from_events(self, events: List[str]) -> int:
         ALREADY_KNOW_FIELD: -0.1,
         CLOSER_TO_COIN: 0.2,
         AWAY_FROM_COIN: -0.25,
-        BACK_AND_FORTH: -0.4,
+        BACK_AND_FORTH: -0.5,
         
         # AWAY_FROM_COIN + ALREADY_KNOW_FIELD + survive_step = - (CLOSER_TO_COIN + survive_step) + survive_step
         # 2*AWAY_FROM_COIN + ALREADY_KNOW_FIELD + survive_step = - (CLOSER_TO_COIN + survive_step) + survive_step
@@ -263,7 +264,7 @@ def reward_from_events(self, events: List[str]) -> int:
 
         e.CRATE_DESTROYED: 1,
         e.COIN_FOUND: 1,
-        e.COIN_COLLECTED: 15,
+        e.COIN_COLLECTED: 20,
 
         e.KILLED_OPPONENT: 0,
         e.KILLED_SELF: -6* survive_step,   # maybe include later that distance to bomb is included in penatly 
