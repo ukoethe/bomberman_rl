@@ -1,11 +1,8 @@
-import os
-import pickle
 import random
+import agent_code.auto_bomber.auto_bomber_config as config
 
 import numpy as np
-
-
-ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
+from agent_code.auto_bomber.model import LinearAutoBomberModel
 
 
 def setup(self):
@@ -22,14 +19,7 @@ def setup(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
-    if self.train or not os.path.isfile("my-saved-model.pt"):
-        self.logger.info("Setting up model from scratch.")
-        weights = np.random.rand(len(ACTIONS))
-        self.model = weights / weights.sum()
-    else:
-        self.logger.info("Loading model from saved state.")
-        with open("my-saved-model.pt", "rb") as file:
-            self.model = pickle.load(file)
+    self.model = LinearAutoBomberModel(feature_extractor=lambda x: state_to_features(x))
 
 
 def act(self, game_state: dict) -> str:
@@ -41,15 +31,15 @@ def act(self, game_state: dict) -> str:
     :param game_state: The dictionary that describes everything on the board.
     :return: The action to take as a string.
     """
-    # todo Exploration vs exploitation
-    random_prob = .1
-    if self.train and random.random() < random_prob:
+
+    # todo right now epsilon greedy - change to softmax to avoid local maxima
+    if self.train and random.random() < config.EPSILON:
         self.logger.debug("Choosing action purely at random.")
         # 80%: walk in any direction. 10% wait. 10% bomb.
-        return np.random.choice(ACTIONS, p=[.2, .2, .2, .2, .1, .1])
-
-    self.logger.debug("Querying model for action.")
-    return np.random.choice(ACTIONS, p=self.model)
+        return np.random.choice(config.ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+    else:
+        self.logger.debug("Querying model for action.")
+        return self.model.select_best_action(game_state, self)
 
 
 def state_to_features(game_state: dict) -> np.array:
@@ -76,4 +66,5 @@ def state_to_features(game_state: dict) -> np.array:
     # concatenate them as a feature tensor (they must have the same shape), ...
     stacked_channels = np.stack(channels)
     # and return them as a vector
-    return stacked_channels.reshape(-1)
+    return np.random.rand(27)
+    # return stacked_channels.reshape(-1)
