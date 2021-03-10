@@ -32,7 +32,7 @@ def act(self, game_state: dict) -> str:
     :return: The action to take as a string.
     """
 
-    # todo right now epsilon greedy - change to softmax to avoid local maxima
+    # todo right now epsilon-greedy - change to softmax to avoid local maxima
     if self.train and random.random() < config.EPSILON:
         self.logger.debug("Choosing action purely at random.")
         # 80%: walk in any direction. 10% wait. 10% bomb.
@@ -58,7 +58,8 @@ def state_to_features(game_state: dict) -> np.array:
     """
     # This is the dict before the game begins and after it ends
     if game_state is None:
-        return None
+        # todo we need another representation for final state here!
+        return np.random.rand(27)
 
     # For example, you could construct several channels of equal shape, ...
     channels = []

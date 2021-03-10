@@ -5,12 +5,7 @@ import events as e
 from agent_code.auto_bomber.callbacks import state_to_features
 
 # This is only an example!
-Transition = namedtuple('Transition',
-                        ('state', 'next_state', 'reward'))
-
-# Hyper parameters -- DO modify
-TRANSITION_HISTORY_SIZE = 400  # keep only ... last transitions
-RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
+from agent_code.auto_bomber.transitions import Transitions
 
 
 def setup_training(self):
@@ -22,8 +17,7 @@ def setup_training(self):
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
     # Example: Setup an array that will note transition tuples
-    # { a1: [(s, s', r), ..], a2: [] }
-    self.transitions = defaultdict(list)
+    self.transitions = Transitions(state_to_features)
 
 
 def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_state: dict, events: List[str]):
@@ -47,9 +41,7 @@ def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
 
     # state_to_features is defined in callbacks.py
-    self.transitions[last_action].append(
-        Transition(state_to_features(old_game_state), state_to_features(new_game_state),
-                   reward_from_events(self, events)))
+    self.transitions.add_transition(old_game_state, last_action, new_game_state, reward_from_events(self, events))
 
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
@@ -68,10 +60,9 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     :param events: events occurred before end of round (q: all events or all since last game_events_occurred(..) call?)
     """
     self.logger.debug(f'Encountered event(s) {", ".join(map(repr, events))} in final step')
-    # todo how to handle None in regression?
-    self.transitions[last_action].append(
-        Transition(state_to_features(last_game_state), None, reward_from_events(self, events)))
+    self.transitions.add_transition(last_game_state, last_action, None, reward_from_events(self, events))
 
+    self.model.fit_model_with_transition_batch(self.transitions)
     self.model.store()
     # clear experience buffer for next round
     self.transitions.clear()

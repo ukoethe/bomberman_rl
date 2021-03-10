@@ -2,6 +2,7 @@ import os
 import pickle
 import numpy as np
 import agent_code.auto_bomber.auto_bomber_config as config
+from agent_code.auto_bomber.transitions import Transitions
 
 
 class LinearAutoBomberModel:
@@ -27,16 +28,22 @@ class LinearAutoBomberModel:
         choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
         return config.ACTIONS[choice]
 
-    def train_with_batch(self, transitions: dict):
-        pass
+    def fit_model_with_transition_batch(self, transitions: Transitions):
+        for action_id, action in enumerate(config.ACTIONS):
+            numpy_transitions = transitions.to_numpy_transitions()
+            x_all_t, y_all_t = numpy_transitions.get_features_and_value_estimates(action)
 
-    def __transitions_matrix_for_action(self, transitions, action):
-        filtered_transitions = transitions[action]
-        
+            if x_all_t.size != 0:
+                q_estimations = np.sum(x_all_t * self.weights[action_id], axis=0)
+                residuals = (y_all_t - q_estimations[:, np.newaxis])
+                q_grad = np.sum(x_all_t.transpose() * residuals, axis=1)
 
+                weight_updates = config.LEARNING_RATE / y_all_t.shape[0] * q_grad
+                self.weights[action_id] += weight_updates
 
     def init_if_needed(self, features_x, agent_self):
         if self.weights is None:
             agent_self.logger.info("Model is empty init with random weights.")
-            new_weights = np.random.rand(len(config.ACTIONS), len(features_x))
-            self.weights = new_weights / new_weights.sum(axis=0)  # all weights are 0 < weight < 1
+            # new_weights = np.random.rand(len(config.ACTIONS), len(features_x))
+            # self.weights = new_weights / new_weights.sum(axis=0)  # all weights are 0 < weight < 1
+            self.weights = np.ones((len(config.ACTIONS), len(features_x)))
