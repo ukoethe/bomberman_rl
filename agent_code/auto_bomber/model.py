@@ -27,6 +27,14 @@ class LinearAutoBomberModel:
         choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
         return config.ACTIONS[choice]
 
+    def train_with_batch(self, transitions: dict):
+        pass
+
+    def __transitions_matrix_for_action(self, transitions, action):
+        filtered_transitions = transitions[action]
+        
+
+
     def init_if_needed(self, features_x, agent_self):
         if self.weights is None:
             agent_self.logger.info("Model is empty init with random weights.")
