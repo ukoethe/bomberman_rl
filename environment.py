@@ -44,8 +44,8 @@ class GenericWorld:
     round_id: str
 
     def __init__(self, args: WorldArgs):
-        self.setup_logging()
         self.args = args
+        self.setup_logging()
         if self.args.no_gui:
             self.gui = None
         else:
