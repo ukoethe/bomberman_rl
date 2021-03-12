@@ -62,10 +62,11 @@ def act(self, game_state: dict) -> str:
     if self.train:
         random_prob = self.epsilon 
         if random.random() < random_prob or self.is_init:
+            # Uniformly & randomly picking a action from subset of valid actions.
             self.logger.debug("Choosing action purely at random.")
             execute_action = np.random.choice(valid_actions)
         else:
-            # choose only from q_values which are valid actions:
+            # Choose action with maximum Q-value from subset of valid actions.
             self.logger.debug("Choosing action from highes q_value.")
             q_values = self.model.predict(state_to_features(game_state).reshape(1, -1))[0][mask]
             execute_action = valid_actions[np.argmax(q_values)]
@@ -74,11 +75,12 @@ def act(self, game_state: dict) -> str:
     else:
         random_prob = 0.1
         if random.random() < random_prob:
+            # Uniformly & randomly picking a action from subset of valid actions.
             self.logger.debug("Choosing action purely at random.")
             execute_action = np.random.choice(valid_actions)
             return execute_action
         else:
-            # choose only from q_values which are valid actions: 
+            # Choose action with maximum Q-value from subset of valid actions.
             self.logger.debug("Querying model for action.")
             q_values = self.model.predict(state_to_features(game_state).reshape(1, -1))[0][mask]
             execute_action = valid_actions[np.argmax(q_values)]
