@@ -171,6 +171,7 @@ def get_valid_action(game_state: dict):
              list of VALID_ACTIONS
              uniform random distribution for VALID_ACTIONS
     """
+    aggressive_play = True # Allow agent to drop bombs. 
 
     # Gather information about the game state
     arena = game_state['field']
@@ -181,31 +182,34 @@ def get_valid_action(game_state: dict):
     coins = game_state['coins']
     bomb_map = game_state['explosion_map']
     
-    # check for valid actions
-    directions = [(x, y), (x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
-    valid_tiles, valid_actions = [], []
-    for d in directions:
-        if ((arena[d] == 0) and
-            (game_state['explosion_map'][d] <= 1) and
-            (not d in others) and
-            (not d in bomb_xys)):
-            valid_tiles.append(d)
-    if (x , y - 1) in valid_tiles: valid_actions.append(1) # UP
-    else: valid_actions.append(0)
-    if (x + 1, y) in valid_tiles: valid_actions.append(1) # RIGHT
-    else: valid_actions.append(0)   
-    if (x, y + 1) in valid_tiles: valid_actions.append(1) # DOWN
-    else: valid_actions.append(0)
-    if (x -1 , y ) in valid_tiles: valid_actions.append(1) # LEFT
-    else: valid_actions.append(0)
-    if (x, y) in valid_tiles: valid_actions.append(1) # WAIT
-    else: valid_actions.append(0)
-    if (bombs_left > 0) : valid_actions.append(0)  # BOMB drop bomb alwas impossible
-    else: valid_actions.append(0)
+    # Check for valid actions.
+    #            ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT']
+    directions = [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y), (x, y)]
+    valid_actions = []
+    mask = np.zeros(len(ACTIONS))
+
+    # Movement:
+    for i, d in enumerate(directions):
+        if ((arena[d] == 0)    and # Is a free tile
+            (bomb_map[d] <= 1) and # No ongoing explosion
+            (not d in others)  and # Not occupied by other player
+            (not d in bomb_xys)):  # No bomb placed
+
+            valid_actions.append(ACTIONS[i]) # Append the valid action.
+            mask[i] = 1                      # Binary mask
+            
+    # Bombing:
+    if bombs_left and aggressive_play: 
+        valid_actions.append(ACTIONS[-1])
+        mask[-1] = 1
+
+    # Convert binary mask to boolean mask of the valid moves.
+    mask = (mask == 1)
     
-    #create mask which only allows valid move
-    mask = (np.array(valid_actions)==1)
-    valid_actions = np.array(ACTIONS)[mask]
-    p = np.random.dirichlet(np.ones(len(valid_actions)),size=1)[0] 
+    # Convert list to numpy array (# TODO Is this neccesary?)
+    valid_actions = np.array(valid_actions)
+
+    # Corresponding probabilites from Dirichlet dist.
+    p = np.random.dirichlet(np.ones(len(valid_actions)), size=1)[0] 
     
     return mask, valid_actions, p
