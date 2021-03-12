@@ -22,7 +22,7 @@ RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
 EXPLORATION_MAX = 1
 EXPLORATION_MIN = 0.2
 EXPLORATION_DECAY = 0.9995
-#LEARNING_RATE = 0.01  # test 0.05
+LEARNING_RATE = 0.1  # test 0.5
 GAMMA = 0.90
 
 
@@ -162,18 +162,20 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
         X = []
         targets = []
         for state, action, state_next, reward in batch:
-            q_update = reward
+            q_update = LEARNING_RATE * reward
             if state is not None:
-                if state_next is not None:
-                    if self.is_init:
-                        q_update = reward
-                    else:
-                        maximal_response = np.max(self.model.predict(state_next.reshape(1, -1)))
-                        q_update = (reward + GAMMA * maximal_response)
-
+                
                 if self.is_init: q_values = np.zeros(self.action_size).reshape(1, -1)
 
                 else: q_values = self.model.predict(state.reshape(1, -1))
+                    
+                if state_next is not None:
+                    if self.is_init:
+                        q_update =  LEARNING_RATE * reward
+                    else:
+                        maximal_response = np.max(self.model.predict(state_next.reshape(1, -1))) 
+                        old_value = q_values[0][self.actions.index(action)]
+                        q_update = (1 - LEARNING_RATE) * old_value + LEARNING_RATE * (reward + GAMMA *  maximal_response)          # update rule       
 
                 q_values[0][self.actions.index(action)] = q_update
 
@@ -205,7 +207,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     self.number_game += 1
     self.collected_coins_in_game = 0
     
-    if game%200 == 0:
+    if game%100 == 0:
         
         f = plt.figure(figsize=(10,10))
              

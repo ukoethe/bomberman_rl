@@ -77,7 +77,7 @@ def act(self, game_state: dict) -> str:
     ########### (3) When in Game mode: #############
     else:
         
-        random_prob = 0.81
+        random_prob = 0.1
         if random.random() < random_prob:
             self.logger.debug("Choosing action purely at random.")
             execute_action = np.random.choice(VALIDE_ACTIONS)
