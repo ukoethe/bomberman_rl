@@ -78,7 +78,6 @@ def act(self, game_state: dict) -> str:
             # Uniformly & randomly picking a action from subset of valid actions.
             self.logger.debug("Choosing action purely at random.")
             execute_action = np.random.choice(valid_actions)
-            return execute_action
         else:
             # Choose action with maximum Q-value from subset of valid actions.
             self.logger.debug("Querying model for action.")
