@@ -110,3 +110,7 @@ screenshots/*.mp4
 screenshots/*.webm
 
 replays/
+
+# VS Code
+.pylintrc
+.vscode/
