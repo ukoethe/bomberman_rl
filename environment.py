@@ -18,7 +18,7 @@ from fallbacks import pygame
 from items import Coin, Explosion, Bomb
 
 WorldArgs = namedtuple("WorldArgs",
-                       ["no_gui", "fps", "turn_based", "update_interval", "save_replay", "replay", "make_video", "continue_without_training"])
+                       ["no_gui", "fps", "turn_based", "update_interval", "save_replay", "replay", "make_video", "continue_without_training", "log_dir"])
 
 
 class Trophy:
@@ -60,7 +60,7 @@ class GenericWorld:
     def setup_logging(self):
         self.logger = logging.getLogger('BombeRLeWorld')
         self.logger.setLevel(s.LOG_GAME)
-        handler = logging.FileHandler('logs/game.log', mode="w")
+        handler = logging.FileHandler(f'{self.args.log_dir}/game.log', mode="w")
         handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s [%(name)s] %(levelname)s: %(message)s')
         handler.setFormatter(formatter)

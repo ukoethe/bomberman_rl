@@ -1,3 +1,4 @@
+import os
 import sys
 import threading
 from argparse import ArgumentParser
@@ -57,6 +58,7 @@ def main(argv = None):
                          help="Wait for key press until next movement")
         sub.add_argument("--update-interval", type=float, default=0.1,
                          help="How often agents take steps (ignored without GUI)")
+        sub.add_argument("--log_dir", type=str, default=os.path.dirname(__file__) + "/logs")
 
         # Video?
         sub.add_argument("--make-video", default=False, action="store_true",
