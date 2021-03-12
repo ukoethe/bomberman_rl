@@ -471,7 +471,8 @@ class BombeRLeWorld(GenericWorld):
         # Save course of the game for future replay
         if self.args.save_replay:
             self.replay['n_steps'] = self.step
-            with open(f'replays/{self.round_id}.pt', 'wb') as f:
+            name = f'replays/{self.round_id}.pt' if self.args.save_replay is True else self.args.save_replay
+            with open(name, 'wb') as f:
                 pickle.dump(self.replay, f)
 
         # Mark round as ended

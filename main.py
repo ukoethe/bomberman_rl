@@ -26,7 +26,7 @@ def game_logic(world: GenericWorld, user_inputs, args):
             world.do_step(user_inputs.pop(0) if len(user_inputs) else 'WAIT')
 
 
-def main(args):
+def main(argv = None):
     parser = ArgumentParser()
 
     subparsers = parser.add_subparsers(dest='command_name', required=True)
@@ -43,6 +43,7 @@ def main(args):
 
     play_parser.add_argument("--n-rounds", type=int, default=10, help="How many rounds to play")
     play_parser.add_argument("--save-replay", default=False, action="store_true", help="Store the game as .pt for a replay")
+    parser.add_argument('--save-replay', const=True, default=False, action='store', nargs='?', help='Store the game as .pt for a replay')
     play_parser.add_argument("--no-gui", default=False, action="store_true", help="Deactivate the user interface and play as fast as possible.")
 
     # Replay arguments
@@ -61,7 +62,7 @@ def main(args):
         sub.add_argument("--make-video", default=False, action="store_true",
                          help="Make a video from the game")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.command_name == "replay":
         args.no_gui = False
         args.n_rounds = 1
@@ -156,4 +157,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    main()
