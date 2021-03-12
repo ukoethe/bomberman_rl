@@ -444,7 +444,7 @@ class BombeRLeWorld(GenericWorld):
                     action = "WAIT"
                     a.available_think_time = s.TIMEOUT - (think_time - a.available_think_time)
                 else:
-                    self.logger.warning(f'Agent <{a.name}> stayed within acceptable think time.')
+                    self.logger.info(f'Agent <{a.name}> stayed within acceptable think time.')
                     a.available_think_time = s.TIMEOUT
             else:
                 self.logger.info(f'Skipping agent <{a.name}> because of last slow think time.')
