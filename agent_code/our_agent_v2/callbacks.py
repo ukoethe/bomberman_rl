@@ -55,7 +55,7 @@ def act(self, game_state: dict) -> str:
     """
     
     ########### (1) only allow valid actions: #############
-    mask, VALIDE_ACTIONS, p =  get_valide_action(game_state)
+    mask, valid_actions, p =  get_valide_action(game_state)
     
     ########### (2) When in Training mode: #############
     # todo Exploration vs exploitation: take a decaying exploration rate
@@ -63,33 +63,27 @@ def act(self, game_state: dict) -> str:
         random_prob = self.epsilon 
         if random.random() < random_prob or self.is_init:
             self.logger.debug("Choosing action purely at random.")
-            execute_action = np.random.choice(VALIDE_ACTIONS)
-            #print(VALIDE_ACTIONS, execute_action , p)
-            return execute_action
+            execute_action = np.random.choice(valid_actions)
         else:
+            # choose only from q_values which are valid actions:
             self.logger.debug("Choosing action from highes q_value.")
-            
-            # choose only from q_values which are valid actions: 
             q_values = self.model.predict(state_to_features(game_state).reshape(1, -1))[0][mask]
-            execute_action = VALIDE_ACTIONS[np.argmax(q_values)]
-            return execute_action
+            execute_action = valid_actions[np.argmax(q_values)]
 
     ########### (3) When in Game mode: #############
     else:
-        
         random_prob = 0.1
         if random.random() < random_prob:
             self.logger.debug("Choosing action purely at random.")
-            execute_action = np.random.choice(VALIDE_ACTIONS)
-            #print(VALIDE_ACTIONS, execute_action , p)
+            execute_action = np.random.choice(valid_actions)
             return execute_action
-        
-        # choose only from q_values which are valid actions: 
-        q_values = self.model.predict(state_to_features(game_state).reshape(1, -1))[0][mask]
-        #print(q_values, state_to_features(game_state))
-        execute_action = VALIDE_ACTIONS[np.argmax(q_values)]
-        self.logger.debug("Querying model for action.")
-        return execute_action
+        else:
+            # choose only from q_values which are valid actions: 
+            self.logger.debug("Querying model for action.")
+            q_values = self.model.predict(state_to_features(game_state).reshape(1, -1))[0][mask]
+            execute_action = valid_actions[np.argmax(q_values)]
+    
+    return execute_action
 
 
 def state_to_features(game_state: dict) -> np.array:
