@@ -55,7 +55,7 @@ def act(self, game_state: dict) -> str:
     """
     
     ########### (1) only allow valid actions: #############
-    mask, valid_actions, p =  get_valide_action(game_state)
+    mask, valid_actions, p =  get_valid_action(game_state)
     
     ########### (2) When in Training mode: #############
     # todo Exploration vs exploitation: take a decaying exploration rate
@@ -146,15 +146,15 @@ def state_to_features(game_state: dict) -> np.array:
     # is between two invalide field vertical (do L and R, not U and D)
     # somewhere else (not L and R, not U and D)
     # will increase number of states with a factor 3
-    mask, VALIDE_ACTIONS, p =  get_valide_action(game_state)
+    mask, valid_actions, p =  get_valid_action(game_state)
     
     relative_position_vertical = 0
     relative_position_horizintal = 0
     
-    if 'RIGHT' not in VALIDE_ACTIONS and 'LEFT' not in VALIDE_ACTIONS:
+    if 'RIGHT' not in valid_actions and 'LEFT' not in valid_actions:
         relative_position_horizintal = 1  # between_invalide_horizintal
     
-    if 'UP' not in VALIDE_ACTIONS and 'DOWN' not in VALIDE_ACTIONS:
+    if 'UP' not in valid_actions and 'DOWN' not in valid_actions:
         relative_position_vertical = 1  # between_invalide_vertical
     
     features = np.array([h , v , relative_position_horizintal , relative_position_vertical])
@@ -162,13 +162,13 @@ def state_to_features(game_state: dict) -> np.array:
     return features.reshape(-1)
 
 
-def get_valide_action(game_state: dict):
+def get_valid_action(game_state: dict):
     """
     Given the gamestate, check which actions are valide.
 
     :param game_state:  A dictionary describing the current game board.
-    :return: mask which ACTIONS executable
-             list of VALIDE_ACTIONS
+    :return: mask which ACTIONS are executable
+             list of VALID_ACTIONS
              uniform random distribution for VALID_ACTIONS
     """
 
@@ -205,7 +205,7 @@ def get_valide_action(game_state: dict):
     
     #create mask which only allows valid move
     mask = (np.array(valid_actions)==1)
-    VALIDE_ACTIONS = np.array(ACTIONS)[mask]
-    p = np.random.dirichlet(np.ones(len(VALIDE_ACTIONS)),size=1)[0] 
+    valid_actions = np.array(ACTIONS)[mask]
+    p = np.random.dirichlet(np.ones(len(valid_actions)),size=1)[0] 
     
-    return mask, VALIDE_ACTIONS, p
+    return mask, valid_actions, p
