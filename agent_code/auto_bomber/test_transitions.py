@@ -2,8 +2,8 @@ from unittest import TestCase
 
 import numpy as np
 
-from agent_code.auto_bomber.transitions import Transitions
 import agent_code.auto_bomber.auto_bomber_config as config
+from agent_code.auto_bomber.transitions import Transitions
 
 ARR_SIZE = 10
 
@@ -39,7 +39,8 @@ class TestTransitions(TestCase):
         self.assertEqual((4, 10), x_0_all.shape)
         self.assertEqual((4,), y_0_all.shape)
 
-        exp_x_0 = np.array([np.zeros((ARR_SIZE,)), np.full((ARR_SIZE,), 2), np.full((ARR_SIZE,), 4), np.full((ARR_SIZE,), 6)])
+        exp_x_0 = np.array(
+            [np.zeros((ARR_SIZE,)), np.full((ARR_SIZE,), 2), np.full((ARR_SIZE,), 4), np.full((ARR_SIZE,), 6)])
         np.testing.assert_array_equal(x_0_all, exp_x_0)
         exp_y_0 = np.array([70, 200, 480, 640])
         np.testing.assert_array_equal(y_0_all, exp_y_0)
@@ -62,9 +63,3 @@ class TestTransitions(TestCase):
         x_0_all, y_0_all = numpy_trans.get_features_and_value_estimates(config.ACTIONS[0])
         self.assertEqual((1, 10), x_0_all.shape)
         self.assertEqual((1,), y_0_all.shape)
-
-
-
-
-
-

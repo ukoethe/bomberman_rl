@@ -25,7 +25,8 @@ class TestLinearAutoBomberModel(TestCase):
         # get rid of randomness for testing here
         np.random.seed(0)
 
-        read_array = pickle.dumps(np.array([[1, 1, 1], [1, 1, 0], [1, 0, 1], [1, 0, 0], [0, 1, 1], [0, 1, 0]], dtype=np.float32))
+        read_array = pickle.dumps(
+            np.array([[1, 1, 1], [1, 1, 0], [1, 0, 1], [1, 0, 0], [0, 1, 1], [0, 1, 0]], dtype=np.float32))
         open_mock = mock_open(read_data=read_array)
         with patch('builtins.open', open_mock):
             feature_array = np.array([3, 2, 1], dtype=np.float32)
@@ -33,7 +34,6 @@ class TestLinearAutoBomberModel(TestCase):
             action = elem.select_best_action({}, None)
 
             self.assertEqual("UP", action)
-
 
     @patch.object(os.path, attribute="isfile")
     def test_fit_model(self, mock_path):
@@ -50,15 +50,8 @@ class TestLinearAutoBomberModel(TestCase):
             model.fit_model_with_transition_batch(transitions)
 
             np.testing.assert_array_equal(model.weights[0, :], np.array([1.25, 1.5, 2]))
-            np.testing.assert_array_equal(model.weights[1, :], np.ones(3,))
-            np.testing.assert_array_equal(model.weights[2, :], np.ones(3,))
-            np.testing.assert_array_equal(model.weights[3, :], np.ones(3,))
-            np.testing.assert_array_equal(model.weights[4, :], np.ones(3,))
-            np.testing.assert_array_equal(model.weights[5, :], np.ones(3,))
-
-
-
-
-
-
-
+            np.testing.assert_array_equal(model.weights[1, :], np.ones(3, ))
+            np.testing.assert_array_equal(model.weights[2, :], np.ones(3, ))
+            np.testing.assert_array_equal(model.weights[3, :], np.ones(3, ))
+            np.testing.assert_array_equal(model.weights[4, :], np.ones(3, ))
+            np.testing.assert_array_equal(model.weights[5, :], np.ones(3, ))
