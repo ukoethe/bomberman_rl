@@ -1,6 +1,8 @@
-import os
 import pickle
+from pathlib import Path
+
 import numpy as np
+
 import agent_code.auto_bomber.auto_bomber_config as config
 from agent_code.auto_bomber.transitions import Transitions
 
@@ -10,12 +12,14 @@ class LinearAutoBomberModel:
         self.weights = None
         self.feature_extractor = feature_extractor
 
-        if os.path.isfile(config.MODEL_PATH):
-            with open(config.MODEL_PATH, "rb") as file:
+        path = Path(config.MODEL_PATH)
+        if path.is_file():
+            with path.open(mode="rb") as file:
                 self.weights = pickle.load(file)
 
     def store(self):
-        with open(config.MODEL_PATH, "wb") as file:
+        path = Path(config.MODEL_PATH)
+        with path.open(mode="wb") as file:
             pickle.dump(self.weights, file)
 
     def select_best_action(self, game_state: dict, agent_self):
