@@ -18,7 +18,7 @@ from fallbacks import pygame
 from items import Coin, Explosion, Bomb
 
 WorldArgs = namedtuple("WorldArgs",
-                       ["no_gui", "fps", "turn_based", "update_interval", "save_replay", "replay", "make_video", "continue_without_training"])
+                       ["no_gui", "fps", "turn_based", "update_interval", "save_replay", "replay", "make_video", "continue_without_training", "log_dir"])
 
 
 class Trophy:
@@ -44,8 +44,8 @@ class GenericWorld:
     round_id: str
 
     def __init__(self, args: WorldArgs):
-        self.setup_logging()
         self.args = args
+        self.setup_logging()
         if self.args.no_gui:
             self.gui = None
         else:
@@ -60,7 +60,7 @@ class GenericWorld:
     def setup_logging(self):
         self.logger = logging.getLogger('BombeRLeWorld')
         self.logger.setLevel(s.LOG_GAME)
-        handler = logging.FileHandler('logs/game.log', mode="w")
+        handler = logging.FileHandler(f'{self.args.log_dir}/game.log', mode="w")
         handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s [%(name)s] %(levelname)s: %(message)s')
         handler.setFormatter(formatter)
@@ -444,7 +444,7 @@ class BombeRLeWorld(GenericWorld):
                     action = "WAIT"
                     a.available_think_time = s.TIMEOUT - (think_time - a.available_think_time)
                 else:
-                    self.logger.warning(f'Agent <{a.name}> stayed within acceptable think time.')
+                    self.logger.info(f'Agent <{a.name}> stayed within acceptable think time.')
                     a.available_think_time = s.TIMEOUT
             else:
                 self.logger.info(f'Skipping agent <{a.name}> because of last slow think time.')
@@ -471,7 +471,8 @@ class BombeRLeWorld(GenericWorld):
         # Save course of the game for future replay
         if self.args.save_replay:
             self.replay['n_steps'] = self.step
-            with open(f'replays/{self.round_id}.pt', 'wb') as f:
+            name = f'replays/{self.round_id}.pt' if self.args.save_replay is True else self.args.save_replay
+            with open(name, 'wb') as f:
                 pickle.dump(self.replay, f)
 
         # Mark round as ended
