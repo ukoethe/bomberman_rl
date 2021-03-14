@@ -70,6 +70,14 @@ def setup(self):
     self.coordinate_history = deque([], 20)
     # While this timer is positive, agent will not hunt/attack opponents
     self.ignore_others_timer = 0
+    self.current_round = 0
+
+
+def reset_self(self):
+    self.bomb_history = deque([], 5)
+    self.coordinate_history = deque([], 20)
+    # While this timer is positive, agent will not hunt/attack opponents
+    self.ignore_others_timer = 0
 
 
 def act(self, game_state):
@@ -81,7 +89,10 @@ def act(self, game_state):
     what it contains.
     """
     self.logger.info('Picking action according to rule set')
-
+    # Check if we are in a different round
+    if game_state["round"] != self.current_round:
+        reset_self(self)
+        self.current_round = game_state["round"]
     # Gather information about the game state
     arena = game_state['field']
     _, score, bombs_left, (x, y) = game_state['self']

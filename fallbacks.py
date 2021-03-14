@@ -8,6 +8,9 @@ class QuietFallback:
     def __call__(self, *args, **kwargs):
         return self
 
+    def __iter__(self):
+        return iter([])
+
 
 try:
     with contextlib.redirect_stdout(None):
