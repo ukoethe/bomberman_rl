@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 import settings as s
 import events as e
-from .callbacks import state_to_features, fname, FILENAME
+from .callbacks import transform, fname, FILENAME, DR_BATCH_SIZE
 
 # Transition tuple. (s, a, r, s')
 Transition = namedtuple('Transition',
@@ -26,8 +26,6 @@ TRAIN_FREQ              = 10   # Train model every ... game.
 # Dimensionality reduction from learning experience.
 IMPROVE_DR = True # Perform repeated feature reduction. 
 DR_FREQ    = 1000 # Play ... games between each feature reduction.
-
-DR_BATCH_SIZE = 1000
 DR_HISTORY_SIZE = 10 * DR_BATCH_SIZE
 
 # Epsilon-Greedy:
@@ -71,6 +69,7 @@ def setup_training(self):
     self.transitions        = deque(maxlen=TRANSITION_HISTORY_SIZE) # long term memory of complete step
     self.coordinate_history = deque([], 10)                         # short term memory of agent position
     
+    # TODO: Storage of states for feature extration function learning.
     self.state_history = deque(maxlen=DR_HISTORY_SIZE)
 
     # Set inital epsilon/tau.
@@ -167,11 +166,11 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     
     ################## (2) Store Transision: #################
     
-    # state_to_features is defined in callbacks.py
-    self.transitions.append(Transition(state_to_features(old_game_state), self_action, state_to_features(new_game_state), reward_from_events(self, events)))
+    self.transitions.append(Transition(transform(self, old_game_state), self_action, transform(self, new_game_state), reward_from_events(self, events)))
     
     if old_game_state:
-        # TODO: Store state into 
+        pass
+        # TODO: Store the game state for feature extration function learning.
 
     ################# (3) For evaluation purposes: #################
     
@@ -196,9 +195,9 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     self.logger.debug(f'Encountered event(s) {", ".join(map(repr, events))} in final step')
     
     # ---------- (1) Store last transition tuple: ----------
-    self.transitions.append(Transition(state_to_features(last_game_state), last_action, None, reward_from_events(self, events)))
+    self.transitions.append(Transition(transform(self, last_game_state), last_action, None, reward_from_events(self, events)))
 
-    # TODO: Store last game state
+    # TODO: Store last game state for feature extration function learning.
 
     # ---------- (2) Decrease the exploration rate: ----------
     if self.act_strategy == 'eps-greedy':    
@@ -219,7 +218,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
             # Current state cannot be the state before game start.
             if state is not None:
                 # Q-values for the current state.
-                if self.is_fitted:
+                if self.model_is_fitted:
                     # Q-value function estimate.
                     q_values = self.model.predict(state)                    
                 else:
@@ -227,7 +226,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
                     q_values = np.zeros(self.action_size).reshape(1, -1)
 
                 # Q-value update for the given state and action.
-                if self.is_fitted and state_next is not None:
+                if self.model_is_fitted and state_next is not None:
                     # Non-terminal next state and pre-existing model.
                     maximal_response = np.max(self.model.predict(state_next))
                     q_update =  (reward + GAMMA *  maximal_response)
@@ -244,19 +243,33 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
         
         # Regression fit.
         self.model.fit(X, targets) #self.model.partial_fit(X, targets)
-        self.is_fitted = True
+        self.model_is_fitted = True
 
         # Store the learned model:
         with open(fname, "wb") as file:
             pickle.dump(self.model, file)
 
-    # ---------- (5) Dimensionality reduction: ----------
+    # ---------- (5) Improve dimensionality reduction: ----------
+    # Learn a new (hopefully improved) model for dimensionality reduction.
+    if self.game_nr % DR_FREQ == 0 and not self.dr_override:
+        
+        # Batch learning on the collected samples (Bootstrapping?)
+        
+        # for ... in ...
+        #       get random minibatch
+        #       partial_fit()
+        
+        # Save new model for dimension reduction.
 
+        # Since the feature extraction function has now changed, we need to 
+        # start the learning process over from scratch.
 
-    if self.game_nr % DR_FREQ == 0:
+        # Discard the old model for the Q-value function.
 
-        self.state_to_features = 
-   
+        self.model_is_fitted     = False
+        self.transform_is_fitted = True
+
+        #inkpca.partial_fit()
 
 
 

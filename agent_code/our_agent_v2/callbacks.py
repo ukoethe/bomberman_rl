@@ -11,13 +11,14 @@ from sklearn.decomposition import IncrementalPCA
 
 import settings as s
 import events as e
-from .callbacks import DR_BATCH_SIZE
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
 # ---------------- Parameters ----------------
 FILENAME = "SGD_agent_v1"         # Filename of for model output (excl. extension).
 ACT_STRATEGY = 'softmax'          # Options: 'softmax', 'eps-greedy'
+
+DR_BATCH_SIZE = 1000
 # --------------------------------------------
 
 fname = f"{FILENAME}.pt" # Adding the file extension.
@@ -43,23 +44,37 @@ def setup(self):
     # Assign decision strategy.
     self.act_strategy = ACT_STRATEGY
 
-    # Set up Incremental PCA for feature reduction.
+    # TODO: Load in old DR model.
+    # Incremental PCA for dimensionality reduction of game state.
     n_comp = 100
-    self.transformer = IncrementalPCA(n_components=n_comp, batch_size=DR_BATCH_SIZE) 
+    self.inkpca = IncrementalPCA(n_components=n_comp, batch_size=DR_BATCH_SIZE) 
+    self.dr_override = True  # if True: Use only manual feature extraction.
+    self.tx_is_fitted = False   # TODO: REDO THIS, ONLY TEMPORARY
 
     # Setting up the model.
     if os.path.isfile(fname):
         self.logger.info("Loading model from saved state.")
         with open(fname, "rb") as file:
-            self.model = pickle.load(file)
-        self.is_fitted = True
+            self.model, self.tx = pickle.load(file)
+        self.model_is_fitted = True
+        if self.tx is not None: 
+            self.tx_is_fitted = True
+        else: 
+            self.tx_is_fitted = False
+
     elif self.train:
         self.logger.info("Setting up model from scratch.")
         self.model = MultiOutputRegressor(SGDRegressor(alpha=0.0001, warm_start=True))
-        self.is_fitted = False
+        self.model_is_fitted = False
+        
+        # TODO: Need additional if statement here?
+        if not self.dr_override:
+            self.tx = IncrementalPCA(n_components=n_comp, batch_size=DR_BATCH_SIZE) 
+        else: 
+            self.tx = None
+        self.tx_is_fitted = False 
     else:
         raise ValueError(f"Could not locate saved model {fname}")
-
 
 def act(self, game_state: dict) -> str:
     """
@@ -70,23 +85,22 @@ def act(self, game_state: dict) -> str:
     :param game_state: The dictionary that describes everything on the board.
     :return: The action to take as a string.
     """
-    
     # --------- (1) Only allow valid actions: -----------------
     mask, valid_actions =  get_valid_action(game_state)
     
     # --------- (2a) Softmax decision strategy: ---------------
     if self.act_strategy == 'softmax':
-        # Softmax temperature. During training, we anneal the temperature. In 
+        # Softmax temperature. During training, we anneal the temperature. In
         # game mode, we use a predefined (optimal) temperature. Limiting cases:
         # tau -> 0 : a = argmax Q(s,a) | tau -> +inf : uniform prob dist P(a).
         if self.train:
             tau = self.tau
         else:
             tau = 0.1 # TODO: Hyper-parameter which needs optimization.
-        if self.is_fitted:
+        if self.model_is_fitted:
             self.logger.debug("Choosing action from softmax distribution.")
             # Q-values for the current state.
-            q_values = self.model.predict(state_to_features(game_state))[0][mask]
+            q_values = self.model.predict(transform(self, game_state))[0][mask]
             # Normalization for numerical stability.
             qtau = q_values/tau - np.max(q_values/tau)
             # Probabilities from Softmax function.
@@ -103,41 +117,47 @@ def act(self, game_state: dict) -> str:
         if self.train:
             random_prob = self.epsilon
         else:
-            random_prob = 0.1 # TODO: Hyper-parameter which needs optimization.
-        if random.random() < random_prob or not self.is_fitted:
+            random_prob = 0.1 # TODO: Hyper-parameter which needs optimization.    
+        if random.random() < random_prob or not self.model_is_fitted:
             self.logger.debug("Choosing action uniformly at random.")
             execute_action = np.random.choice(valid_actions)
         else:
             self.logger.debug("Choosing action with highest q_value.")
-            q_values = self.model.predict(state_to_features(game_state))[0][mask]
+            q_values = self.model.predict(transform(self, game_state))[0][mask]
             execute_action = valid_actions[np.argmax(q_values)]
         return execute_action
     else:
         raise ValueError(f"Unknown act_strategy {self.act_strategy}")
 
-
-def state_to_vect():
-    return vect
-
-
-def state_to_features(game_state: dict) -> np.array:
+def transform(self, game_state: dict) -> np.array:
     """
-    *This is not a required function, but an idea to structure your code.*
-
-    Converts the game state to the input of your model, i.e.
-    a feature vector.
-
-    You can find out about the state of the game environment via game_state,
-    which is a dictionary. Consult 'get_state_for_agent' in environment.py to see
-    what it contains.
-
-    :param game_state:  A dictionary describing the current game board.
-    :return: np.array
+    Feature extraction from the game state dictionary. Wrapper that toggles
+    between automatic and manual feature extraction.
     """
     # This is the dict before the game begins and after it ends
     if game_state is None:
         return None
-    
+    if self.tx_is_fitted and not self.dr_override:
+        # Automatic dimensionality reduction.
+        return self.tx.transform(state_to_vect(game_state))
+    else:
+        # Hand crafted feature extraction function.
+        return state_to_features(game_state)
+
+def state_to_vect(game_state: dict) -> np.array:
+    """
+    Converts the game state dictionary to a feature vector. Used
+    as pre-proccessing before an automatic feature extraction method.
+    """
+    return np.array([]).reshape(1, -1) 
+
+def state_to_features(game_state: dict) -> np.array:
+    """
+    Converts the game state dictionary to a feature vector.
+
+    :param game_state:  A dictionary describing the current game board.
+    :return: np.array
+    """    
     # Gather information about the game state
     arena = game_state['field']
     _, score, bombs_left, (x, y) = game_state['self']
@@ -179,17 +199,14 @@ def state_to_features(game_state: dict) -> np.array:
     # will increase number of states with a factor 3
     mask, valid_actions =  get_valid_action(game_state)
     
-    relative_position_vertical = 0
+    relative_position_vertical   = 0
     relative_position_horizontal = 0
-    
+
     if 'RIGHT' not in valid_actions and 'LEFT' not in valid_actions:
         relative_position_horizontal = 1
-    
     if 'UP' not in valid_actions and 'DOWN' not in valid_actions:
         relative_position_vertical = 1
-    
     features = np.array([h , v , relative_position_horizontal , relative_position_vertical])
-
     return features.reshape(1, -1)
 
 
@@ -201,7 +218,7 @@ def get_valid_action(game_state: dict):
     :return: mask which ACTIONS are executable
              list of VALID_ACTIONS
     """
-    aggressive_play = True # Allow agent to drop bombs. 
+    aggressive_play = True # Allow agent to drop bombs.
 
     # Gather information about the game state
     arena = game_state['field']
