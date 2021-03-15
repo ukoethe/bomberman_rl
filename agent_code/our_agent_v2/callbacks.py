@@ -38,7 +38,7 @@ def setup(self):
     self.action_size = len(ACTIONS)
     self.actions = ACTIONS
 
-    # Assign decision strategy for choices of action.
+    # Assign decision strategy.
     self.act_strategy = ACT_STRATEGY
 
     # Set up Kernel PCA for feature reduction.
@@ -50,11 +50,11 @@ def setup(self):
         self.logger.info("Loading model from saved state.")
         with open(fname, "rb") as file:
             self.model = pickle.load(file)
-        self.is_initialized = True
+        self.is_fitted = True
     elif self.train:
         self.logger.info("Setting up model from scratch.")
         self.model = MultiOutputRegressor(SGDRegressor(alpha=0.0001, warm_start=True))
-        self.is_initialized = False
+        self.is_fitted = False
     else:
         raise ValueError(f"Could not locate saved model {fname}")
 
@@ -81,8 +81,7 @@ def act(self, game_state: dict) -> str:
             tau = self.tau
         else:
             tau = 0.1 # TODO: Hyper-parameter which needs optimization.
-
-        if self.is_initialized:
+        if self.is_fitted:
             self.logger.debug("Choosing action from softmax distribution.")
             # Q-values for the current state.
             q_values = self.model.predict(state_to_features(game_state))[0][mask]
@@ -94,27 +93,23 @@ def act(self, game_state: dict) -> str:
             # Uniformly random action when Q not yet initialized.
             self.logger.debug("Choosing action uniformly at random.")
             p = np.ones(len(valid_actions))/len(valid_actions)
-
+        # Pick choice from valid actions with the given probabilities.
         return np.random.choice(valid_actions, p=p)
 
     # --------- (2b) Epsilon-Greedy decision strategy: --------
     elif self.act_strategy == 'eps-greedy':
-
         if self.train:
             random_prob = self.epsilon
         else:
             random_prob = 0.1 # TODO: Hyper-parameter which needs optimization.
-        
-        if random.random() < random_prob or not self.is_initialized: 
+        if random.random() < random_prob or not self.is_fitted:
             self.logger.debug("Choosing action uniformly at random.")
             execute_action = np.random.choice(valid_actions)
         else:
             self.logger.debug("Choosing action with highest q_value.")
             q_values = self.model.predict(state_to_features(game_state))[0][mask]
             execute_action = valid_actions[np.argmax(q_values)]
-
         return execute_action
-    
     else:
         raise ValueError(f"Unknown act_strategy {self.act_strategy}")
 

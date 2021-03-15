@@ -35,7 +35,7 @@ TAU_DECAY = 0.999
 
 # N-step TD Q-learning:
 GAMMA   = 0.90 # Discount factor.
-N_STEPS = 1    # Number of steps to consider real, observed rewards.
+N_STEPS = 1    # Number of steps to consider real, observed rewards. # TODO: Implement N-step TD Q-learning.
 
 # Auxilary:
 PLOT_FREQ = 100
@@ -198,40 +198,43 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
 
     # ---------- (3) TD Q-learning with batch: ----------
     if len(self.transitions) > BATCH_SIZE and self.game_nr % TRAIN_FREQ == 0:
-
+        # Create a random batch from the transition history.
         batch = random.sample(self.transitions, BATCH_SIZE)
         X, targets = [], []
         for state, action, state_next, reward in batch:
-            
-            q_update = reward
-            
+            # Current state cannot be the state before game start.
             if state is not None:
-                
-                if not self.is_initialized: 
-                    q_values = np.zeros(self.action_size).reshape(1, -1)
+                # Q-values for the current state.
+                if self.is_fitted:
+                    # Q-value function estimate.
+                    q_values = self.model.predict(state)                    
                 else:
-                    q_values = self.model.predict(state)
-                    
-                if state_next is not None:
-                    if not self.is_initialized:
-                        q_update = reward
-                    else:
-                        maximal_response = np.max(self.model.predict(state_next)) 
-                        #old_value = q_values[0][self.actions.index(action)]
-                        q_update =  (reward + GAMMA *  maximal_response)           
+                    # Zero initialization.
+                    q_values = np.zeros(self.action_size).reshape(1, -1)
 
+                # Q-value update for the given state and action.
+                if self.is_fitted and state_next is not None:
+                    # Non-terminal next state and pre-existing model.
+                    maximal_response = np.max(self.model.predict(state_next))
+                    q_update =  (reward + GAMMA *  maximal_response)
+                else:
+                    # Either next state is terminal or a model is not yet fitted.
+                    q_update = reward
+
+                # Assign Q-value update. # TODO: possible to introduce a learning rate.
                 q_values[0][self.actions.index(action)] = q_update
 
+                # Append feature data and targets for the regression.
                 X.append(state[0])
                 targets.append(q_values[0])
+        
+        # Regression fit.
+        self.model.fit(X, targets) #self.model.partial_fit(X, targets)
+        self.is_fitted = True
 
-        #self.model.partial_fit(X, targets)
-        self.model.fit(X, targets)
-        self.is_initialized = True
-
-    # ---------- (4) Store learned model: ----------
-    with open(fname, "wb") as file:
-        pickle.dump(self.model, file)
+        # Store the learned model:
+        with open(fname, "wb") as file:
+            pickle.dump(self.model, file)
    
     # ---------- (5) Performance evaluation: ----------
     # Total score in this game.
