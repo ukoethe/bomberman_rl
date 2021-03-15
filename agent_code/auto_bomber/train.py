@@ -1,5 +1,7 @@
+import numpy as np
 from collections import namedtuple, defaultdict
 from typing import List
+from tensorboardX import SummaryWriter
 
 import events as e
 from agent_code.auto_bomber.callbacks import state_to_features
@@ -18,7 +20,7 @@ def setup_training(self):
     """
     # Example: Setup an array that will note transition tuples
     self.transitions = Transitions(state_to_features)
-
+    self.writer = SummaryWriter()
 
 def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_state: dict, events: List[str]):
     """
@@ -39,10 +41,13 @@ def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_
     :param events: The events that occurred when going from  `old_game_state` to `new_game_state`
     """
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
+    reward = reward_from_events(self, events)
 
     # state_to_features is defined in callbacks.py
-    self.transitions.add_transition(old_game_state, last_action, new_game_state, reward_from_events(self, events))
-
+    self.transitions.add_transition(old_game_state, last_action, new_game_state, reward)
+    if self.action_q_value:
+        loss = (self.action_q_value - reward)**2
+        self.writer.add_scalar('loss', loss, old_game_state['step'])
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
     """
@@ -60,13 +65,21 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     :param events: events occurred before end of round (q: all events or all since last game_events_occurred(..) call?)
     """
     self.logger.debug(f'Encountered event(s) {", ".join(map(repr, events))} in final step')
-    self.transitions.add_transition(last_game_state, last_action, None, reward_from_events(self, events))
+    reward = reward_from_events(self, events)
+    self.transitions.add_transition(last_game_state, last_action, None, reward)
+
+    numpy_transitions = self.transitions.to_numpy_transitions()
+    mean_reward = np.mean(numpy_transitions.rewards)
+    self.writer.add_scalar('rewards', mean_reward, last_game_state['round'])
+
+    if self.action_q_value:
+        loss = (self.action_q_value - reward)**2
+        self.writer.add_scalar('loss', loss, last_game_state['step'])
 
     self.model.fit_model_with_transition_batch(self.transitions)
     self.model.store()
     # clear experience buffer for next round
     self.transitions.clear()
-
 
 def reward_from_events(self, events: List[str]) -> int:
     """

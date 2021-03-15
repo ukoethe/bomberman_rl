@@ -30,7 +30,7 @@ class LinearAutoBomberModel:
         top_3_actions = q_action_values.argsort()[-3:][::-1]
         # lets keep a little bit randomness here
         choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
-        return config.ACTIONS[choice]
+        return config.ACTIONS[choice], top_3_actions[0] if choice == 0 else None
 
     def fit_model_with_transition_batch(self, transitions: Transitions):
         for action_id, action in enumerate(config.ACTIONS):

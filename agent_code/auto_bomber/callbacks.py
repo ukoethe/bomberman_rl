@@ -36,10 +36,12 @@ def act(self, game_state: dict) -> str:
     if self.train and random.random() < config.EPSILON:
         self.logger.debug("Choosing action purely at random.")
         # 80%: walk in any direction. 10% wait. 10% bomb.
+        self.action_q_value = None
         return np.random.choice(config.ACTIONS, p=[.2, .2, .2, .2, .1, .1])
     else:
         self.logger.debug("Querying model for action.")
-        return self.model.select_best_action(game_state, self)
+        best_action, self.action_q_value = self.model.select_best_action(game_state, self)
+        return best_action
 
 
 def state_to_features(game_state: dict) -> np.array:
