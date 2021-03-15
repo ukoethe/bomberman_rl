@@ -20,6 +20,7 @@ def setup_training(self):
     # Example: Setup an array that will note transition tuples
     self.transitions = Transitions(state_to_features)
 
+
 def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_state: dict, events: List[str]):
     """
     Called once per step to allow intermediate rewards based on game events.
@@ -43,6 +44,7 @@ def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_
     # state_to_features is defined in callbacks.py
     self.transitions.add_transition(old_game_state, last_action, new_game_state, reward_from_events(self, events))
 
+
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
     """
     Called at the end of each game or when the agent died to hand out final rewards.
@@ -65,6 +67,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     self.model.store()
     # clear experience buffer for next round
     self.transitions.clear()
+
 
 def reward_from_events(self, events: List[str]) -> int:
     """
