@@ -2,6 +2,7 @@ import pickle
 from pathlib import Path
 
 import numpy as np
+from tensorboardX import SummaryWriter
 
 import agent_code.auto_bomber.auto_bomber_config as config
 from agent_code.auto_bomber.transitions import Transitions
@@ -11,6 +12,7 @@ class LinearAutoBomberModel:
     def __init__(self, feature_extractor):
         self.weights = None
         self.feature_extractor = feature_extractor
+        self.writer = SummaryWriter()
 
         path = Path(config.MODEL_PATH)
         if path.is_file():
@@ -30,7 +32,7 @@ class LinearAutoBomberModel:
         top_3_actions = q_action_values.argsort()[-3:][::-1]
         # lets keep a little bit randomness here
         choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
-        return config.ACTIONS[choice], top_3_actions[0] if choice == 0 else None
+        return config.ACTIONS[choice]
 
     def fit_model_with_transition_batch(self, transitions: Transitions, round: int):
         loss = []
