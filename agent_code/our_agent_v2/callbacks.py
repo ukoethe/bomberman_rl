@@ -7,9 +7,11 @@ import numpy as np
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.linear_model import SGDRegressor
 from sklearn.decomposition import KernelPCA
+from sklearn.decomposition import IncrementalPCA
 
 import settings as s
 import events as e
+from .callbacks import DR_BATCH_SIZE
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
@@ -41,9 +43,9 @@ def setup(self):
     # Assign decision strategy.
     self.act_strategy = ACT_STRATEGY
 
-    # Set up Kernel PCA for feature reduction.
-    n_comp = 50
-    self.kpca = KernelPCA(n_components=n_comp, n_jobs=-1) 
+    # Set up Incremental PCA for feature reduction.
+    n_comp = 100
+    self.transformer = IncrementalPCA(n_components=n_comp, batch_size=DR_BATCH_SIZE) 
 
     # Setting up the model.
     if os.path.isfile(fname):
@@ -112,6 +114,10 @@ def act(self, game_state: dict) -> str:
         return execute_action
     else:
         raise ValueError(f"Unknown act_strategy {self.act_strategy}")
+
+
+def state_to_vect():
+    return vect
 
 
 def state_to_features(game_state: dict) -> np.array:

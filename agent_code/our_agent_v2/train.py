@@ -23,6 +23,13 @@ TRANSITION_HISTORY_SIZE = 5000 # Keep only ... last transitions
 BATCH_SIZE              = 3000 # Size of batch in TD-learning.
 TRAIN_FREQ              = 10   # Train model every ... game.
 
+# Dimensionality reduction from learning experience.
+IMPROVE_DR = True # Perform repeated feature reduction. 
+DR_FREQ    = 1000 # Play ... games between each feature reduction.
+
+DR_BATCH_SIZE = 1000
+DR_HISTORY_SIZE = 10 * DR_BATCH_SIZE
+
 # Epsilon-Greedy:
 EXPLORATION_INIT  = 1
 EXPLORATION_MIN   = 0.2
@@ -64,6 +71,8 @@ def setup_training(self):
     self.transitions        = deque(maxlen=TRANSITION_HISTORY_SIZE) # long term memory of complete step
     self.coordinate_history = deque([], 10)                         # short term memory of agent position
     
+    self.state_history = deque(maxlen=DR_HISTORY_SIZE)
+
     # Set inital epsilon/tau.
     if self.act_strategy == 'eps-greedy':
         self.epsilon = EXPLORATION_INIT
@@ -161,6 +170,9 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     # state_to_features is defined in callbacks.py
     self.transitions.append(Transition(state_to_features(old_game_state), self_action, state_to_features(new_game_state), reward_from_events(self, events)))
     
+    if old_game_state:
+        # TODO: Store state into 
+
     ################# (3) For evaluation purposes: #################
     
     if 'COIN_COLLECTED' in events:
@@ -185,6 +197,8 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     
     # ---------- (1) Store last transition tuple: ----------
     self.transitions.append(Transition(state_to_features(last_game_state), last_action, None, reward_from_events(self, events)))
+
+    # TODO: Store last game state
 
     # ---------- (2) Decrease the exploration rate: ----------
     if self.act_strategy == 'eps-greedy':    
@@ -235,8 +249,18 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
         # Store the learned model:
         with open(fname, "wb") as file:
             pickle.dump(self.model, file)
+
+    # ---------- (5) Dimensionality reduction: ----------
+
+
+    if self.game_nr % DR_FREQ == 0:
+
+        self.state_to_features = 
    
-    # ---------- (5) Performance evaluation: ----------
+
+
+
+    # ---------- (6) Performance evaluation: ----------
     # Total score in this game.
     score   = np.sum(self.score_in_round)
    
