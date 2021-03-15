@@ -21,6 +21,8 @@ def setup_training(self):
     # Example: Setup an array that will note transition tuples
     self.transitions = Transitions(state_to_features)
     self.writer = SummaryWriter()
+    self.action_q_value = None
+    self.loss = []
 
 def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_state: dict, events: List[str]):
     """
@@ -46,8 +48,7 @@ def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_
     # state_to_features is defined in callbacks.py
     self.transitions.add_transition(old_game_state, last_action, new_game_state, reward)
     if self.action_q_value:
-        loss = (self.action_q_value - reward)**2
-        self.writer.add_scalar('loss', loss, old_game_state['step'])
+        self.loss.append((self.action_q_value - reward)**2)
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
     """
@@ -73,8 +74,10 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     self.writer.add_scalar('rewards', mean_reward, last_game_state['round'])
 
     if self.action_q_value:
-        loss = (self.action_q_value - reward)**2
-        self.writer.add_scalar('loss', loss, last_game_state['step'])
+        self.loss.append((self.action_q_value - reward)**2)
+
+    mean_loss = np.mean(self.loss)
+    self.writer.add_scalar('loss', mean_loss, last_game_state['round'])
 
     self.model.fit_model_with_transition_batch(self.transitions)
     self.model.store()

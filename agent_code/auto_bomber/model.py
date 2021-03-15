@@ -32,18 +32,26 @@ class LinearAutoBomberModel:
         choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
         return config.ACTIONS[choice], top_3_actions[0] if choice == 0 else None
 
-    def fit_model_with_transition_batch(self, transitions: Transitions):
+    def fit_model_with_transition_batch(self, transitions: Transitions, round: int):
+        loss = []
+        numpy_transitions = transitions.to_numpy_transitions()
         for action_id, action in enumerate(config.ACTIONS):
-            numpy_transitions = transitions.to_numpy_transitions()
             x_all_t, y_all_t = numpy_transitions.get_features_and_value_estimates(action)
 
             if x_all_t.size != 0:
                 q_estimations = np.sum(x_all_t * self.weights[action_id], axis=0)
                 residuals = (y_all_t - q_estimations[:, np.newaxis])
+                mean_residuals = np.mean(residuals)
+                loss.append(mean_residuals)
                 q_grad = np.sum(x_all_t.transpose() * residuals, axis=1)
 
                 weight_updates = config.LEARNING_RATE / y_all_t.shape[0] * q_grad
                 self.weights[action_id] += weight_updates
+
+        loss = np.mean(loss)
+        self.writer.add_scalar('loss', loss, round)
+        mean_reward = np.mean(numpy_transitions.rewards)
+        self.writer.add_scalar('rewards', mean_reward, round)
 
     def init_if_needed(self, features_x, agent_self):
         if self.weights is None:
