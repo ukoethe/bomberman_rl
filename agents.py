@@ -140,9 +140,12 @@ class Agent:
         self.backend.send_event("act", game_state)
 
     def wait_for_act(self):
-        action, think_time = self.backend.get_with_time("act")
-        self.last_action = action
-        return action, think_time
+        try:
+            action, think_time = self.backend.get_with_time("act")
+            self.last_action = action
+            return action, think_time
+        except BaseException:
+            return 'WAIT', float("inf")
 
     def round_ended(self):
         self.backend.send_event("end_of_round", self.last_game_state, self.last_action, self.events)
@@ -214,7 +217,7 @@ class AgentRunner:
             self.wlogger.debug(f"Got result from callback#{event_name} in {duration:.3f}s.")
 
             self.result_queue.put((event_name, duration, event_result))
-        except Exception as e:
+        except BaseException as e:
             self.wlogger.error(f"An exception occurred while calling {event_name}: {e}")
             self.result_queue.put((event_name, 0, e))
 
@@ -245,7 +248,7 @@ class AgentBackend:
             event_name, compute_time, result = self.result_queue.get(block, timeout)
             if event_name != expect_name:
                 raise ValueError(f"Logic error: Expected result from event {expect_name}, but found {event_name}")
-            if isinstance(result, Exception):
+            if isinstance(result, BaseException):
                 raise result
             return result, compute_time
         except queue.Empty:
