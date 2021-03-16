@@ -50,8 +50,8 @@ class LinearAutoBomberModel:
                 weight_updates = config.LEARNING_RATE / y_all_t.shape[0] * q_grad
                 self.weights[action_id] += weight_updates
 
-        loss = np.mean(loss)
-        self.writer.add_scalar('loss', loss, round)
+        mean_loss = np.mean(loss)
+        self.writer.add_scalar('loss', mean_loss, round)
         mean_reward = np.mean(numpy_transitions.rewards)
         self.writer.add_scalar('rewards', mean_reward, round)
 
