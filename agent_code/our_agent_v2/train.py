@@ -1,39 +1,61 @@
+import os
 import pickle
 import random
 from collections import namedtuple, deque
 from typing import List
 
 import numpy as np
+import matplotlib
+matplotlib.use("Agg") # Non-GUI backend, needed for plotting in non-main thread.
 import matplotlib.pyplot as plt
 
 import settings as s
 import events as e
-from .callbacks import state_to_features
+from .callbacks import transform, fname, FILENAME, DR_BATCH_SIZE
 
-# This is only an example!
+# Transition tuple. (s, a, r, s')
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
+# ------------------------ HYPER-PARAMETERS -----------------------------------
+# General hyper-parameters:
+TRANSITION_HISTORY_SIZE = 5000 # Keep only ... last transitions
+BATCH_SIZE              = 3000 # Size of batch in TD-learning.
+TRAIN_FREQ              = 10   # Train model every ... game.
 
-# Hyper parameters -- DO modify
-TRANSITION_HISTORY_SIZE = 5000  # keep only ... last transitions
-BATCH_SIZE = 3000
-RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
-EXPLORATION_MAX = 1
-EXPLORATION_MIN = 0.2
+# Dimensionality reduction from learning experience.
+IMPROVE_DR = True # Perform repeated feature reduction. 
+DR_FREQ    = 1000 # Play ... games between each feature reduction.
+DR_HISTORY_SIZE = 10 * DR_BATCH_SIZE
+
+# Epsilon-Greedy:
+EXPLORATION_INIT  = 1
+EXPLORATION_MIN   = 0.2
 EXPLORATION_DECAY = 0.9995
-LEARNING_RATE = 0.1  # test 0.5
-GAMMA = 0.90
 
+# Softmax:
+TAU_INIT  = 10
+TAU_MIN   = 0
+TAU_DECAY = 0.999
 
-# Events
+# N-step TD Q-learning:
+GAMMA   = 0.90 # Discount factor.
+N_STEPS = 1    # Number of steps to consider real, observed rewards. # TODO: Implement N-step TD Q-learning.
+
+# Auxilary:
+PLOT_FREQ = 100
+# -----------------------------------------------------------------------------
+
+# File name for storage of historical record.
+FNAME_DATA = f"{FILENAME}_data.pt"
+
+# Custom events:
 SURVIVED_STEP = "SURVIVED_STEP"
 DIED_DIRECT_NEXT_TO_BOMB = "DIED_DIRECT_NEXT_TO_BOMB"
 ALREADY_KNOW_FIELD = "ALREADY_KNOW_FIELD"
 CLOSER_TO_COIN = "CLOSER_TO_COIN"
 AWAY_FROM_COIN = "AWAY_FROM_COIN"
 BACK_AND_FORTH = "BACK_AND_FORTH"
-
 
 def setup_training(self):
     """
@@ -43,23 +65,41 @@ def setup_training(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
-    # Example: Setup an array that will note transition tuples
-    # (s, a, r, s')
-    self.transitions = deque(maxlen=TRANSITION_HISTORY_SIZE) # long term memory of complete step
-    self.coordinate_history = deque([], 10)  # short term memory of agent position
-    self.epsilon = EXPLORATION_MAX
-    self.is_init = True
+    # Ques to store the transition tuples and coordinate history of agent.
+    self.transitions        = deque(maxlen=TRANSITION_HISTORY_SIZE) # long term memory of complete step
+    self.coordinate_history = deque([], 10)                         # short term memory of agent position
     
-    # For Training evaluation purposes:
-    self.score_in_round = 0
-    self.number_game = 0
-    self.collected_coins_in_game  = 0
-    
-    self.scores = []
-    self.games = []
-    self.exploration_rate = []
-    self.collected_coins = []
+    # TODO: Storage of states for feature extration function learning.
+    self.state_history = deque(maxlen=DR_HISTORY_SIZE)
 
+    # Set inital epsilon/tau.
+    if self.act_strategy == 'eps-greedy':
+        self.epsilon = EXPLORATION_INIT
+    elif self.act_strategy == 'softmax':
+        self.tau = TAU_INIT
+    else:
+        raise ValueError(f"Unknown act_strategy {self.act_strategy}")
+
+    # For evaluation of the training progress:
+    # Check if historic data file exists, load it in or start from scratch.
+    if os.path.isfile(FNAME_DATA):
+        # Load historical training data.
+        with open(FNAME_DATA, "rb") as file:
+            self.historic_data = pickle.load(file)
+        self.game_nr = max(self.historic_data['games']) + 1
+    else:    
+        # Start a new historic record.
+        self.historic_data = {
+            'score' : [],       # subplot 1
+            'coins' : [],       # subplot 2
+            'exploration' : [], # subplot 3
+            'games' : []        # subplot 1,2,3 x-axis
+        }
+        self.game_nr = 0
+
+    # Initialization
+    self.score_in_round  = 0
+    self.collected_coins = 0
 
 def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
     """
@@ -99,10 +139,11 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
         if new_game_state:
             closest_coin_info_new = closets_coin_distance(new_game_state)
 
-            if (closest_coin_info_old - closest_coin_info_new) < 0:
-                events.append(CLOSER_TO_COIN)
-            else:
-                events.append(AWAY_FROM_COIN)
+            if closest_coin_info_new is not None:
+                if (closest_coin_info_old - closest_coin_info_new) < 0:
+                    events.append(CLOSER_TO_COIN)
+                else:
+                    events.append(AWAY_FROM_COIN)
 
         if 'GOT_KILLED' in events:
             # closer to bomb gives higher penalty:
@@ -121,17 +162,21 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
 
     # reward for surviving:          
     if not 'GOT_KILLED' in events:
-        events.append(SURVIVED_STEP)
-        
-    if 'COIN_COLLECTED' in events:
-        self.collected_coins_in_game += 1
+        events.append(SURVIVED_STEP)         
     
     ################## (2) Store Transision: #################
     
-    # state_to_features is defined in callbacks.py
-    self.transitions.append(Transition(state_to_features(old_game_state), self_action, state_to_features(new_game_state), reward_from_events(self, events)))
+    self.transitions.append(Transition(transform(self, old_game_state), self_action, transform(self, new_game_state), reward_from_events(self, events)))
     
+    if old_game_state:
+        pass
+        # TODO: Store the game state for feature extration function learning.
+
     ################# (3) For evaluation purposes: #################
+    
+    if 'COIN_COLLECTED' in events:
+        self.collected_coins += 1
+
     self.score_in_round += reward_from_events(self, events)
 
 
@@ -148,91 +193,144 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     :param self: The same object that is passed to all of your callbacks.
     """
     self.logger.debug(f'Encountered event(s) {", ".join(map(repr, events))} in final step')
-    self.transitions.append(Transition(state_to_features(last_game_state), last_action, None, reward_from_events(self, events)))
-
-    ################# (1) Decrease the exploration rate: #################
-    if self.epsilon > EXPLORATION_MIN:
-        self.epsilon *= EXPLORATION_DECAY
-        
-    ################## (2) Do q-learning with batch: #################
     
-    if len(self.transitions) > BATCH_SIZE: 
-        #print('start training')
+    # ---------- (1) Store last transition tuple: ----------
+    self.transitions.append(Transition(transform(self, last_game_state), last_action, None, reward_from_events(self, events)))
+
+    # TODO: Store last game state for feature extration function learning.
+
+    # ---------- (2) Decrease the exploration rate: ----------
+    if self.act_strategy == 'eps-greedy':    
+        if self.epsilon > EXPLORATION_MIN:
+            self.epsilon *= EXPLORATION_DECAY
+    elif self.act_strategy == 'softmax':
+        if self.tau > TAU_MIN:
+            self.tau *= TAU_DECAY
+    else:
+        raise ValueError(f"Unknown act_strategy {self.act_strategy}")
+
+    # ---------- (3) TD Q-learning with batch: ----------
+    if len(self.transitions) > BATCH_SIZE and self.game_nr % TRAIN_FREQ == 0:
+        # Create a random batch from the transition history.
         batch = random.sample(self.transitions, BATCH_SIZE)
-        X = []
-        targets = []
+        X, targets = [], []
         for state, action, state_next, reward in batch:
-            q_update = LEARNING_RATE * reward
+            # Current state cannot be the state before game start.
             if state is not None:
-                
-                if self.is_init: q_values = np.zeros(self.action_size).reshape(1, -1)
+                # Q-values for the current state.
+                if self.model_is_fitted:
+                    # Q-value function estimate.
+                    q_values = self.model.predict(state)                    
+                else:
+                    # Zero initialization.
+                    q_values = np.zeros(self.action_size).reshape(1, -1)
 
-                else: q_values = self.model.predict(state.reshape(1, -1))
-                    
-                if state_next is not None:
-                    if self.is_init:
-                        q_update =  LEARNING_RATE * reward
-                    else:
-                        maximal_response = np.max(self.model.predict(state_next.reshape(1, -1))) 
-                        old_value = q_values[0][self.actions.index(action)]
-                        q_update = (1 - LEARNING_RATE) * old_value + LEARNING_RATE * (reward + GAMMA *  maximal_response)          # update rule       
+                # Q-value update for the given state and action.
+                if self.model_is_fitted and state_next is not None:
+                    # Non-terminal next state and pre-existing model.
+                    maximal_response = np.max(self.model.predict(state_next))
+                    q_update =  (reward + GAMMA *  maximal_response)
+                else:
+                    # Either next state is terminal or a model is not yet fitted.
+                    q_update = reward
 
+                # Assign Q-value update. # TODO: possible to introduce a learning rate.
                 q_values[0][self.actions.index(action)] = q_update
 
-                X.append(state)
+                # Append feature data and targets for the regression.
+                X.append(state[0])
                 targets.append(q_values[0])
-
-        self.model.partial_fit(X, targets)
-        self.is_init = False
-
-    ################# (3) Store learned model: #################
-
-    with open("my-q-learning_Mulit_SGD_agentv12.pt", "wb") as file:
-        pickle.dump(self.model, file)
-    
-    ################# (4) For evaluation purposes: #################
-    score = np.sum(self.score_in_round)
-    game = self.number_game
-    
-    self.scores.append(score)
-    self.games.append(game)
-    self.exploration_rate.append(self.epsilon)
-    self.collected_coins.append(self.collected_coins_in_game)
-    
-    if game%100 == 0:
-        print("game number:", game, "  score:", score, "  memory length:",
-                 len(self.transitions), "  epsilon:", self.epsilon)
-    
-    self.score_in_round = 0
-    self.number_game += 1
-    self.collected_coins_in_game = 0
-    
-    if game%100 == 0:
         
-        f = plt.figure(figsize=(10,10))
-             
-        ax1 = plt.subplot(311)
-        ax1.title.set_text('Total Score')
-        plt.plot(self.games, self.scores)
-        plt.ylabel("total score")
-        plt.setp(ax1.get_xticklabels(), visible=False)
+        # Regression fit.
+        self.model.fit(X, targets) #self.model.partial_fit(X, targets)
+        self.model_is_fitted = True
 
-        # share x only
-        ax2 = plt.subplot(312, sharex=ax1)
-        ax2.title.set_text('Number of collected Coins')
-        plt.plot(self.games, self.collected_coins)
-        plt.ylabel("Number Coins")
-        # make these tick labels invisible
-        plt.setp(ax2.get_xticklabels(), visible=False)
+        # Store the learned model:
+        with open(fname, "wb") as file:
+            pickle.dump(self.model, file)
+
+    # ---------- (5) Improve dimensionality reduction: ----------
+    # Learn a new (hopefully improved) model for dimensionality reduction.
+    if self.game_nr % DR_FREQ == 0 and not self.dr_override:
         
-        ax3 = plt.subplot(313, sharex=ax1)
-        ax3.title.set_text('Exploration rate $\epsilon$')
-        plt.ylabel('Exploration rate $\epsilon$')
-        plt.xlabel("game")
-        plt.plot(self.games, self.exploration_rate)
-        plt.savefig('TrainingEvaluation_Mulit_SGD_agentv12.png') 
+        # Batch learning on the collected samples (Bootstrapping?)
         
+        # for ... in ...
+        #       get random minibatch
+        #       partial_fit()
+        
+        # Save new model for dimension reduction.
+
+        # Since the feature extraction function has now changed, we need to 
+        # start the learning process over from scratch.
+
+        # Discard the old model for the Q-value function.
+
+        self.model_is_fitted = False
+        self.tx_is_fitted = True
+
+        #inkpca.partial_fit()
+
+
+
+    # ---------- (6) Performance evaluation: ----------
+    # Total score in this game.
+    score   = np.sum(self.score_in_round)
+   
+    # Append results to each specific list.
+    self.historic_data['score'].append(score)
+    self.historic_data['coins'].append(self.collected_coins)
+    self.historic_data['games'].append(self.game_nr)   
+    if self.act_strategy == 'eps-greedy':
+        self.historic_data['exploration'].append(self.epsilon)
+    elif self.act_strategy == 'softmax':
+        self.historic_data['exploration'].append(self.tau)
+
+    # Store the historic record.
+    with open(FNAME_DATA, "wb") as file:
+        pickle.dump(self.historic_data, file)
     
+    # Reset game score, coins collected and one up the game count.
+    self.score_in_round  = 0
+    self.collected_coins = 0
+    self.game_nr += 1
+    
+    # Plot training progress every n:th game.
+    if self.game_nr % PLOT_FREQ == 0:
+
+        # Incorporate the full training history.
+        games_list = self.historic_data['games']
+        score_list = self.historic_data['score']
+        coins_list = self.historic_data['coins']
+        explr_list = self.historic_data['exploration']
+
+        # Plotting
+        fig, ax = plt.subplots(3, sharex=True)
+
+        # Total score per game.
+        ax[0].plot(games_list, score_list)
+        ax[0].set_title('Total score per game')
+        ax[0].set_ylabel('Score')
+
+        # Collected coins per game.
+        ax[1].plot(games_list, coins_list)
+        ax[1].set_title('Collected coins per game')
+        ax[1].set_ylabel('Coins')
+
+        # Exploration rate (epsilon/tau) per game.
+        ax[2].plot(games_list, explr_list)
+        if self.act_strategy == 'eps-greedy':        
+            ax[2].set_title('$\epsilon$-greedy: Exploration rate $\epsilon$')
+            ax[2].set_ylabel('$\epsilon$')
+        elif self.act_strategy == 'softmax':
+            ax[2].set_title('Softmax: Exploration rate $\\tau$')
+            ax[2].set_ylabel('$\\tau$')
+        ax[2].set_xlabel('Game #')
+
+        # Export the figure.
+        fig.tight_layout()
+        plt.savefig(f'TrainEval_{FILENAME}.pdf') 
+       
 
 def reward_from_events(self, events: List[str]) -> int:
     """
@@ -297,6 +395,10 @@ def closets_coin_distance(game_state: dict) -> int:
         total_step_distance = abs(coin[0]-x) + abs(coin[1]-y)
         coin_dis = (total_step_distance)
         coins_dis.append(coin_dis)
-    closest_coin_dis = sorted(coins_dis)[0]
-    
-    return closest_coin_dis 
+    if coins:
+        closest_coin_dis = sorted(coins_dis)[0]
+        return closest_coin_dis
+    else:
+        return None
+
+     

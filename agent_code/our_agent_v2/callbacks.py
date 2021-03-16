@@ -1,18 +1,27 @@
 import os
 import pickle
 import random
+from operator import itemgetter
 
 import numpy as np
-
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.linear_model import SGDRegressor
+from sklearn.decomposition import KernelPCA
+from sklearn.decomposition import IncrementalPCA
 
 import settings as s
 import events as e
-from operator import itemgetter
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
+# ---------------- Parameters ----------------
+FILENAME = "SGD_agent_v1"         # Filename of for model output (excl. extension).
+ACT_STRATEGY = 'softmax'          # Options: 'softmax', 'eps-greedy'
+
+DR_BATCH_SIZE = 1000
+# --------------------------------------------
+
+fname = f"{FILENAME}.pt" # Adding the file extension.
 
 def setup(self):
     """
@@ -28,21 +37,46 @@ def setup(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
+    # Save constants.
     self.action_size = len(ACTIONS)
-    self.actions = ACTIONS 
-        
-    if self.train:
-        self.logger.info("Setting up model from scratch.")
-        #self.q_table = np.zeros((3*4*((s.COLS-2)*(s.ROWS-2)), self.action_size))   #initi a q_table which has as many states as possible distances to coin possible
-        #self.q_table = np.load("my-q-table_increase_featurespace-alpha=0.01.npy")
-        self.model = MultiOutputRegressor(SGDRegressor(alpha=0.0001))
-        
-    else:
-        self.logger.info("Loading model from saved state.")
-        #self.q_table = np.load("my-q-table_agentv12_1coin.npy")
-        with open("my-q-learning_Mulit_SGD_agentv12.pt", "rb") as file:
-            self.model = pickle.load(file)
+    self.actions = ACTIONS
 
+    # Assign decision strategy.
+    self.act_strategy = ACT_STRATEGY
+
+    # TODO: Load in old DR model.
+    # Incremental PCA for dimensionality reduction of game state.
+    n_comp = 100
+    self.inkpca = IncrementalPCA(n_components=n_comp, batch_size=DR_BATCH_SIZE) 
+    self.dr_override = True  # if True: Use only manual feature extraction.
+    self.tx_is_fitted = False   # TODO: REDO THIS, ONLY TEMPORARY
+
+    # Setting up the model.
+    if os.path.isfile(fname):
+        self.logger.info("Loading model from saved state.")
+        with open(fname, "rb") as file:
+            self.model = pickle.load(file)
+        self.model_is_fitted = True
+        """
+        if self.tx is not None: 
+            self.tx_is_fitted = True
+        else: 
+            self.tx_is_fitted = False
+        """
+    elif self.train:
+        self.logger.info("Setting up model from scratch.")
+        self.model = MultiOutputRegressor(SGDRegressor(alpha=0.0001, warm_start=True))
+        self.model_is_fitted = False
+        """
+        # TODO: Need additional if statement here?
+        if not self.dr_override:
+            self.tx = IncrementalPCA(n_components=n_comp, batch_size=DR_BATCH_SIZE) 
+        else: 
+            self.tx = None
+        self.tx_is_fitted = False 
+        """
+    else:
+        raise ValueError(f"Could not locate saved model {fname}")
 
 def act(self, game_state: dict) -> str:
     """
@@ -53,63 +87,79 @@ def act(self, game_state: dict) -> str:
     :param game_state: The dictionary that describes everything on the board.
     :return: The action to take as a string.
     """
+    # --------- (1) Only allow valid actions: -----------------
+    mask, valid_actions =  get_valid_action(game_state)
     
-    ########### (1) only allow valid actions: #############
-    mask, valid_actions, p =  get_valid_action(game_state)
-    
-    ########### (2) When in Training mode: #############
-    # todo Exploration vs exploitation: take a decaying exploration rate
-    if self.train:
-        random_prob = self.epsilon 
-        if random.random() < random_prob or self.is_init:
-            # Uniformly & randomly picking a action from subset of valid actions.
-            self.logger.debug("Choosing action purely at random.")
+    # --------- (2a) Softmax decision strategy: ---------------
+    if self.act_strategy == 'softmax':
+        # Softmax temperature. During training, we anneal the temperature. In
+        # game mode, we use a predefined (optimal) temperature. Limiting cases:
+        # tau -> 0 : a = argmax Q(s,a) | tau -> +inf : uniform prob dist P(a).
+        if self.train:
+            tau = self.tau
+        else:
+            tau = 0.1 # TODO: Hyper-parameter which needs optimization.
+        if self.model_is_fitted:
+            self.logger.debug("Choosing action from softmax distribution.")
+            # Q-values for the current state.
+            q_values = self.model.predict(transform(self, game_state))[0][mask]
+            # Normalization for numerical stability.
+            qtau = q_values/tau - np.max(q_values/tau)
+            # Probabilities from Softmax function.
+            p = np.exp(qtau) / np.sum(np.exp(qtau))        
+        else:
+            # Uniformly random action when Q not yet initialized.
+            self.logger.debug("Choosing action uniformly at random.")
+            p = np.ones(len(valid_actions))/len(valid_actions)
+        # Pick choice from valid actions with the given probabilities.
+        return np.random.choice(valid_actions, p=p)
+
+    # --------- (2b) Epsilon-Greedy decision strategy: --------
+    elif self.act_strategy == 'eps-greedy':
+        if self.train:
+            random_prob = self.epsilon
+        else:
+            random_prob = 0.1 # TODO: Hyper-parameter which needs optimization.    
+        if random.random() < random_prob or not self.model_is_fitted:
+            self.logger.debug("Choosing action uniformly at random.")
             execute_action = np.random.choice(valid_actions)
         else:
-            # Choose action with maximum Q-value from subset of valid actions.
-            self.logger.debug("Choosing action from highes q_value.")
-            q_values = self.model.predict(state_to_features(game_state).reshape(1, -1))[0][mask]
+            self.logger.debug("Choosing action with highest q_value.")
+            q_values = self.model.predict(transform(self, game_state))[0][mask]
             execute_action = valid_actions[np.argmax(q_values)]
-
-    ########### (3) When in Game mode: #############
+        return execute_action
     else:
-        random_prob = 0.1
-        if random.random() < random_prob:
-            # Uniformly & randomly picking a action from subset of valid actions.
-            self.logger.debug("Choosing action purely at random.")
-            execute_action = np.random.choice(valid_actions)
-        else:
-            # Choose action with maximum Q-value from subset of valid actions.
-            self.logger.debug("Querying model for action.")
-            q_values = self.model.predict(state_to_features(game_state).reshape(1, -1))[0][mask]
-            execute_action = valid_actions[np.argmax(q_values)]
-    
-    return execute_action
+        raise ValueError(f"Unknown act_strategy {self.act_strategy}")
 
-
-def state_to_features(game_state: dict) -> np.array:
+def transform(self, game_state: dict) -> np.array:
     """
-    *This is not a required function, but an idea to structure your code.*
-
-    Converts the game state to the input of your model, i.e.
-    a feature vector.
-
-    You can find out about the state of the game environment via game_state,
-    which is a dictionary. Consult 'get_state_for_agent' in environment.py to see
-    what it contains.
-
-    :param game_state:  A dictionary describing the current game board.
-    :return: np.array
+    Feature extraction from the game state dictionary. Wrapper that toggles
+    between automatic and manual feature extraction.
     """
     # This is the dict before the game begins and after it ends
     if game_state is None:
         return None
-    
-    # Make a simple encoder to give every distance to closest coin a own state number :
-    # e.g agent position (x,y) = (1,1) and closest coin position (1,5) -> distance (0 , 4) state number 4  
-    # e.g agent position (x,y) = (15,15) and closest coin position (1,1) -> distance (-14 , -14) state number 4 = 23 
-    # e.g agent position (x,y) = (1,1) and closest coin position (15,15) -> distance (14 , 14) state number 4 = 23 
-    
+    if self.tx_is_fitted and not self.dr_override:
+        # Automatic dimensionality reduction.
+        return self.tx.transform(state_to_vect(game_state))
+    else:
+        # Hand crafted feature extraction function.
+        return state_to_features(game_state)
+
+def state_to_vect(game_state: dict) -> np.array:
+    """
+    Converts the game state dictionary to a feature vector. Used
+    as pre-proccessing before an automatic feature extraction method.
+    """
+    return np.array([]).reshape(1, -1) 
+
+def state_to_features(game_state: dict) -> np.array:
+    """
+    Converts the game state dictionary to a feature vector.
+
+    :param game_state:  A dictionary describing the current game board.
+    :return: np.array
+    """    
     # Gather information about the game state
     arena = game_state['field']
     _, score, bombs_left, (x, y) = game_state['self']
@@ -131,34 +181,35 @@ def state_to_features(game_state: dict) -> np.array:
         coin_info = (x_coin_dis , y_coin_dis , total_step_distance)
         coins_info.append(coin_info)
 
-    closest_coin_info = sorted(coins_info, key=itemgetter(2))[0]
-    #print(closest_coin_info)
-    if closest_coin_info[2] == 0:
-        h = 0
-        v = 0
-    else:
-        h = closest_coin_info[0]/closest_coin_info[2]  #normalize with total difference to coin   
-        v = closest_coin_info[1]/closest_coin_info[2]  
+    # #TODO:FIX THIS
+    h = 0
+    v = 0
+    if coins_info:
+        closest_coin_info = sorted(coins_info, key=itemgetter(2))[0]  # TODO: This breaks with no coins.
+        #print(closest_coin_info)
+        if closest_coin_info[2] == 0:
+            h = 0
+            v = 0
+        else:
+            h = closest_coin_info[0]/closest_coin_info[2]  #normalize with total difference to coin   
+            v = closest_coin_info[1]/closest_coin_info[2]  
 
     # (2) encounter for relative postion of agent in arena: 
     # is between two invalide field horizontal (not L and R, do U and D)
     # is between two invalide field vertical (do L and R, not U and D)
     # somewhere else (not L and R, not U and D)
     # will increase number of states with a factor 3
-    mask, valid_actions, p =  get_valid_action(game_state)
+    mask, valid_actions =  get_valid_action(game_state)
     
-    relative_position_vertical = 0
-    relative_position_horizintal = 0
-    
+    relative_position_vertical   = 0
+    relative_position_horizontal = 0
+
     if 'RIGHT' not in valid_actions and 'LEFT' not in valid_actions:
-        relative_position_horizintal = 1  # between_invalide_horizintal
-    
+        relative_position_horizontal = 1
     if 'UP' not in valid_actions and 'DOWN' not in valid_actions:
-        relative_position_vertical = 1  # between_invalide_vertical
-    
-    features = np.array([h , v , relative_position_horizintal , relative_position_vertical])
-    # print(features.reshape(-1))
-    return features.reshape(-1)
+        relative_position_vertical = 1
+    features = np.array([h , v , relative_position_horizontal , relative_position_vertical])
+    return features.reshape(1, -1)
 
 
 def get_valid_action(game_state: dict):
@@ -168,9 +219,8 @@ def get_valid_action(game_state: dict):
     :param game_state:  A dictionary describing the current game board.
     :return: mask which ACTIONS are executable
              list of VALID_ACTIONS
-             uniform random distribution for VALID_ACTIONS
     """
-    aggressive_play = True # Allow agent to drop bombs. 
+    aggressive_play = True # Allow agent to drop bombs.
 
     # Gather information about the game state
     arena = game_state['field']
@@ -208,7 +258,4 @@ def get_valid_action(game_state: dict):
     # Convert list to numpy array (# TODO Is this neccesary?)
     valid_actions = np.array(valid_actions)
 
-    # Corresponding probabilites from Dirichlet dist.
-    p = np.random.dirichlet(np.ones(len(valid_actions)), size=1)[0] 
-    
-    return mask, valid_actions, p
+    return mask, valid_actions
