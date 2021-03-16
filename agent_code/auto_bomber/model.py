@@ -5,7 +5,7 @@ import numpy as np
 
 import agent_code.auto_bomber.auto_bomber_config as config
 from agent_code.auto_bomber.transitions import Transitions
-
+from math import exp
 
 class LinearAutoBomberModel:
     def __init__(self, feature_extractor):
@@ -29,7 +29,10 @@ class LinearAutoBomberModel:
 
         top_3_actions = q_action_values.argsort()[-3:][::-1]
         # lets keep a little bit randomness here
-        choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
+        p1 = exp(top_3_actions[0]) / (exp(top_3_actions[0]) + exp(top_3_actions[1]) + exp(top_3_actions[2]))
+        p2 = exp(top_3_actions[1]) / (exp(top_3_actions[0]) + exp(top_3_actions[1]) + exp(top_3_actions[2]))
+        p3 = exp(top_3_actions[2]) / (exp(top_3_actions[0]) + exp(top_3_actions[1]) + exp(top_3_actions[2]))
+        choice = np.random.choice(top_3_actions, p=[p1, p2, p3])
         return config.ACTIONS[choice]
 
     def fit_model_with_transition_batch(self, transitions: Transitions):

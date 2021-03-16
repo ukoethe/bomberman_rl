@@ -3,6 +3,7 @@ import agent_code.auto_bomber.auto_bomber_config as config
 
 import numpy as np
 from agent_code.auto_bomber.model import LinearAutoBomberModel
+# from scipy.special import softmax
 
 
 def setup(self):
