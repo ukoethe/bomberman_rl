@@ -55,24 +55,26 @@ def setup(self):
     if os.path.isfile(fname):
         self.logger.info("Loading model from saved state.")
         with open(fname, "rb") as file:
-            self.model, self.tx = pickle.load(file)
+            self.model = pickle.load(file)
         self.model_is_fitted = True
+        """
         if self.tx is not None: 
             self.tx_is_fitted = True
         else: 
             self.tx_is_fitted = False
-
+        """
     elif self.train:
         self.logger.info("Setting up model from scratch.")
         self.model = MultiOutputRegressor(SGDRegressor(alpha=0.0001, warm_start=True))
         self.model_is_fitted = False
-        
+        """
         # TODO: Need additional if statement here?
         if not self.dr_override:
             self.tx = IncrementalPCA(n_components=n_comp, batch_size=DR_BATCH_SIZE) 
         else: 
             self.tx = None
         self.tx_is_fitted = False 
+        """
     else:
         raise ValueError(f"Could not locate saved model {fname}")
 

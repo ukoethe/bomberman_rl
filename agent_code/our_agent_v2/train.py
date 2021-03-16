@@ -266,8 +266,8 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
 
         # Discard the old model for the Q-value function.
 
-        self.model_is_fitted     = False
-        self.transform_is_fitted = True
+        self.model_is_fitted = False
+        self.tx_is_fitted = True
 
         #inkpca.partial_fit()
 
