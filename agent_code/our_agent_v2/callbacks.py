@@ -15,8 +15,8 @@ import events as e
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
 # ---------------- Parameters ----------------
-FILENAME = "SGD_agent_v1"         # Filename of for model output (excl. extension).
-ACT_STRATEGY = 'softmax'          # Options: 'softmax', 'eps-greedy'
+FILENAME = "SGD_agent_v12-n=2_step"         # Filename of for model output (excl. extension).
+ACT_STRATEGY = 'eps-greedy'          # Options: 'softmax', 'eps-greedy'
 
 DR_BATCH_SIZE = 1000
 # --------------------------------------------
@@ -119,7 +119,7 @@ def act(self, game_state: dict) -> str:
         if self.train:
             random_prob = self.epsilon
         else:
-            random_prob = 0.1 # TODO: Hyper-parameter which needs optimization.    
+            random_prob = 0.01 # TODO: Hyper-parameter which needs optimization.    
         if random.random() < random_prob or not self.model_is_fitted:
             self.logger.debug("Choosing action uniformly at random.")
             execute_action = np.random.choice(valid_actions)

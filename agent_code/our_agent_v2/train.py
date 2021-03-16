@@ -9,13 +9,18 @@ import matplotlib
 matplotlib.use("Agg") # Non-GUI backend, needed for plotting in non-main thread.
 import matplotlib.pyplot as plt
 
+import warnings
+
+
 import settings as s
 import events as e
 from .callbacks import transform, fname, FILENAME, DR_BATCH_SIZE
 
 # Transition tuple. (s, a, r, s')
 Transition = namedtuple('Transition',
-                        ('state', 'action', 'next_state', 'reward'))
+                        ('state', 'action', 'next_state', 'reward', 'n_step_next_state'))
+
+warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
 
 # ------------------------ HYPER-PARAMETERS -----------------------------------
 # General hyper-parameters:
@@ -31,7 +36,7 @@ DR_HISTORY_SIZE = 10 * DR_BATCH_SIZE
 # Epsilon-Greedy:
 EXPLORATION_INIT  = 1
 EXPLORATION_MIN   = 0.2
-EXPLORATION_DECAY = 0.9995
+EXPLORATION_DECAY = 0.9999
 
 # Softmax:
 TAU_INIT  = 10
@@ -39,8 +44,8 @@ TAU_MIN   = 0
 TAU_DECAY = 0.999
 
 # N-step TD Q-learning:
-GAMMA   = 0.90 # Discount factor.
-N_STEPS = 1    # Number of steps to consider real, observed rewards. # TODO: Implement N-step TD Q-learning.
+GAMMA   = 0.99 # Discount factor.
+N_STEPS = 2    # Number of steps to consider real, observed rewards. # TODO: Implement N-step TD Q-learning.
 
 # Auxilary:
 PLOT_FREQ = 100
@@ -68,6 +73,8 @@ def setup_training(self):
     # Ques to store the transition tuples and coordinate history of agent.
     self.transitions        = deque(maxlen=TRANSITION_HISTORY_SIZE) # long term memory of complete step
     self.coordinate_history = deque([], 10)                         # short term memory of agent position
+    self.n_step_rewards = deque([], N_STEPS)
+    self.n_step_transitions = deque([], N_STEPS)
     
     # TODO: Storage of states for feature extration function learning.
     self.state_history = deque(maxlen=DR_HISTORY_SIZE)
@@ -164,15 +171,31 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     if not 'GOT_KILLED' in events:
         events.append(SURVIVED_STEP)         
     
-    ################## (2) Store Transision: #################
+    ################## (2) Compute n-step reward and store tuble in Transitions: #################
+
+    self.n_step_transitions.append((transform(self, old_game_state), self_action, transform(self, new_game_state), reward_from_events(self, events)))
     
-    self.transitions.append(Transition(transform(self, old_game_state), self_action, transform(self, new_game_state), reward_from_events(self, events)))
+    if len(self.n_step_transitions) == N_STEPS:
+        
+        n_step_reward = np.sum((GAMMA)**np.arange(N_STEPS).dot(np.array(self.n_step_transitions)[:,3]))
+        
+        n_step_old_feature_state = self.n_step_transitions[0][0]
+        n_step_new_feature_state = self.n_step_transitions[0][2]
+        n_step_action = self.n_step_transitions[0][1]
+        
+        after_n_step_new_feature_state = self.n_step_transitions[-1][2]
+        
+        self.transitions.append(Transition(n_step_old_feature_state, n_step_action, n_step_new_feature_state, n_step_reward, after_n_step_new_feature_state))
+        
+        #print((n_step_old_feature_state, n_step_action, n_step_new_feature_state, n_step_reward, after_n_step_new_feature_state))
+
+    ################## (3) TODO: Store the game state for feature extration function learning: #################
     
     if old_game_state:
         pass
         # TODO: Store the game state for feature extration function learning.
 
-    ################# (3) For evaluation purposes: #################
+    ################# (4) For evaluation purposes: #################
     
     if 'COIN_COLLECTED' in events:
         self.collected_coins += 1
@@ -194,8 +217,20 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     """
     self.logger.debug(f'Encountered event(s) {", ".join(map(repr, events))} in final step')
     
-    # ---------- (1) Store last transition tuple: ----------
-    self.transitions.append(Transition(transform(self, last_game_state), last_action, None, reward_from_events(self, events)))
+    # ---------- (1) Compute last n-step reward and store tuble in Transitions ----------
+    
+    self.n_step_transitions.append((transform(self, last_game_state), last_action, None, reward_from_events(self, events)))
+    
+    if len(self.n_step_transitions) == N_STEPS:
+        
+        n_step_reward = np.sum((GAMMA)**np.arange(N_STEPS).dot(np.array(self.n_step_transitions)[:,3]))
+        
+        n_step_old_feature_state = self.n_step_transitions[0][0]
+        n_step_new_feature_state = self.n_step_transitions[0][2]
+        n_step_action = self.n_step_transitions[0][1]
+
+        self.transitions.append(Transition(n_step_old_feature_state, n_step_action, n_step_new_feature_state, n_step_reward, None))
+    
 
     # TODO: Store last game state for feature extration function learning.
 
@@ -210,11 +245,12 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
         raise ValueError(f"Unknown act_strategy {self.act_strategy}")
 
     # ---------- (3) TD Q-learning with batch: ----------
+    
     if len(self.transitions) > BATCH_SIZE and self.game_nr % TRAIN_FREQ == 0:
         # Create a random batch from the transition history.
         batch = random.sample(self.transitions, BATCH_SIZE)
         X, targets = [], []
-        for state, action, state_next, reward in batch:
+        for state, action, state_next, n_step_reward, n_step_next_state in batch:
             # Current state cannot be the state before game start.
             if state is not None:
                 # Q-values for the current state.
@@ -226,13 +262,13 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
                     q_values = np.zeros(self.action_size).reshape(1, -1)
 
                 # Q-value update for the given state and action.
-                if self.model_is_fitted and state_next is not None:
+                if self.model_is_fitted and n_step_next_state is not None:
                     # Non-terminal next state and pre-existing model.
-                    maximal_response = np.max(self.model.predict(state_next))
-                    q_update =  (reward + GAMMA *  maximal_response)
+                    maximal_response = np.max(self.model.predict(n_step_next_state))
+                    q_update =  (n_step_reward + GAMMA**N_STEPS *  maximal_response)
                 else:
                     # Either next state is terminal or a model is not yet fitted.
-                    q_update = reward
+                    q_update = n_step_reward
 
                 # Assign Q-value update. # TODO: possible to introduce a learning rate.
                 q_values[0][self.actions.index(action)] = q_update
@@ -249,7 +285,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
         with open(fname, "wb") as file:
             pickle.dump(self.model, file)
 
-    # ---------- (5) Improve dimensionality reduction: ----------
+    # ---------- (4) Improve dimensionality reduction: ----------
     # Learn a new (hopefully improved) model for dimensionality reduction.
     if self.game_nr % DR_FREQ == 0 and not self.dr_override:
         
@@ -271,7 +307,9 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
 
         #inkpca.partial_fit()
 
-
+    # ---------- (5) Clean n step transition history: don't compute aggregated reward beyond one game ----------
+    
+    self.n_step_transitions = deque([], N_STEPS) 
 
     # ---------- (6) Performance evaluation: ----------
     # Total score in this game.
@@ -329,8 +367,8 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
 
         # Export the figure.
         fig.tight_layout()
-        plt.savefig(f'TrainEval_{FILENAME}.pdf') 
-       
+        plt.savefig(f'TrainEval_{FILENAME}.pdf')
+
 
 def reward_from_events(self, events: List[str]) -> int:
     """
