@@ -36,7 +36,7 @@ DR_HISTORY_SIZE = 10 * DR_BATCH_SIZE
 # Epsilon-Greedy:
 EXPLORATION_INIT  = 1
 EXPLORATION_MIN   = 0.2
-EXPLORATION_DECAY = 0.9999
+EXPLORATION_DECAY = 0.9995
 
 # Softmax:
 TAU_INIT  = 10
@@ -45,7 +45,7 @@ TAU_DECAY = 0.999
 
 # N-step TD Q-learning:
 GAMMA   = 0.99 # Discount factor.
-N_STEPS = 2    # Number of steps to consider real, observed rewards. # TODO: Implement N-step TD Q-learning.
+N_STEPS = 1    # Number of steps to consider real, observed rewards. # TODO: Implement N-step TD Q-learning.
 
 # Auxilary:
 PLOT_FREQ = 100
@@ -177,7 +177,7 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     
     if len(self.n_step_transitions) == N_STEPS:
         
-        n_step_reward = np.sum((GAMMA)**np.arange(N_STEPS).dot(np.array(self.n_step_transitions)[:,3]))
+        n_step_reward = np.sum(((GAMMA)**np.arange(N_STEPS)).dot(np.array(self.n_step_transitions)[:,3]))
         
         n_step_old_feature_state = self.n_step_transitions[0][0]
         n_step_new_feature_state = self.n_step_transitions[0][2]
@@ -186,8 +186,6 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
         after_n_step_new_feature_state = self.n_step_transitions[-1][2]
         
         self.transitions.append(Transition(n_step_old_feature_state, n_step_action, n_step_new_feature_state, n_step_reward, after_n_step_new_feature_state))
-        
-        #print((n_step_old_feature_state, n_step_action, n_step_new_feature_state, n_step_reward, after_n_step_new_feature_state))
 
     ################## (3) TODO: Store the game state for feature extration function learning: #################
     
@@ -397,7 +395,7 @@ def reward_from_events(self, events: List[str]) -> int:
         e.WAITED: 0,  # could punish for waiting
         e.INVALID_ACTION: -survive_step,
         
-        e.BOMB_DROPPED: -0.1,
+        e.BOMB_DROPPED: -0.2,
         e.BOMB_EXPLODED: 0,
 
         e.CRATE_DESTROYED: 1,

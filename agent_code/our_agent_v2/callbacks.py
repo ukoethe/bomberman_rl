@@ -15,7 +15,7 @@ import events as e
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
 # ---------------- Parameters ----------------
-FILENAME = "SGD_agent_v12-n=2_step"         # Filename of for model output (excl. extension).
+FILENAME = "SGD_agent_v12-n=1_step"         # Filename of for model output (excl. extension).
 ACT_STRATEGY = 'eps-greedy'          # Options: 'softmax', 'eps-greedy'
 
 DR_BATCH_SIZE = 1000
