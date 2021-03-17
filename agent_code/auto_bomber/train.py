@@ -78,13 +78,25 @@ def reward_from_events(self, events: List[str]) -> int:
     # todo reward definition (right now only first sketch):
     # q: how to determine the winner?
     game_rewards = {
-        e.COIN_COLLECTED: 50,
-        e.KILLED_OPPONENT: 75,
-        e.INVALID_ACTION: -1,
-        e.KILLED_SELF: -100,
-        e.GOT_KILLED: -75,
-        e.SURVIVED_ROUND: 1000
+        e.COIN_COLLECTED: 100,
+        e.KILLED_OPPONENT: 50,
+        e.INVALID_ACTION: -100,
+        e.KILLED_SELF: -300,
+        e.GOT_KILLED: -50,
+        e.WAITED: -10,
+        e.SURVIVED_ROUND: -1
     }
+
+    # game_rewards = {
+    #     e.COIN_COLLECTED: 20,
+    #     e.KILLED_OPPONENT: 40,
+    #     e.INVALID_ACTION: -10,
+    #     e.KILLED_SELF: -50,
+    #     e.GOT_KILLED: -30,
+    #     e.WAITED: -5,
+    #     e.SURVIVED_ROUND: -1
+    # }
+
     reward_sum = 0
     for event in events:
         if event in game_rewards:

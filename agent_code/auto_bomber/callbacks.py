@@ -3,6 +3,7 @@ import agent_code.auto_bomber.auto_bomber_config as config
 
 import numpy as np
 
+from agent_code.auto_bomber.utils import softmax
 from agent_code.auto_bomber.model import LinearAutoBomberModel
 
 
@@ -60,8 +61,7 @@ def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.arra
     # This is the dict before the game begins and after it ends
     if game_state is None:
         # todo we need another representation for final state here!
-        return np.random.rand(27)
-
+        return np.random.rand(4)
 
     field_width, field_height = game_state['field'].shape
     assert field_width == field_height, "Field is not rectangular, some assumptions do not hold. Abort!"
@@ -75,30 +75,58 @@ def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.arra
     opponents_position = np.asarray([list(player[3]) for player in game_state['others']], dtype='int')
     opponents_bomb_action = np.asarray([player[2] for player in game_state['others']])
     opponents_bomb_action = np.where(opponents_bomb_action, 1.0, weight_opponents_no_bomb)
+    walls_position = np.argwhere(game_state['field'] == -1)
 
     # TODO Evaluate normalization/scaling
-    bomb_danger_zones = _compute_zones_heatmap(agent_position, bombs_position, lambda v, w: v ** (1 / w),
-                                               bombs_countdown, lambda v: v / np.max(v))
-    coins_zones = _compute_zones_heatmap(agent_position, coins_position, normalization_func=lambda v: v / np.max(v))
-    crates_zones = _compute_zones_heatmap(agent_position, crates_position, normalization_func=lambda v: v / np.max(v))
-    opponents_zones = _compute_zones_heatmap(agent_position, opponents_position, lambda v, w: v * w,
-                                             opponents_bomb_action, lambda v: v / np.max(v))
+    bomb_danger_zones = _compute_zones_heatmap(agent_position, bombs_position, 1.0,
+                                               # lambda v, w: np.divide(1, v * w, out=np.ones_like(v), where=(v*w) != 0),
+                                               lambda v, w: v * w,
+                                               bombs_countdown,
+                                               # lambda v: v / np.max(v)
+                                               lambda v: np.sum(v),
+                                               lambda v: np.divide(v, np.max(v), out=np.zeros_like(v), where=v != 0))
+    # TODO Coins zones signal very weak! -> Used softmax, which keeps 0.0 by using -np.inf
+    # TODO Does not account for how many coins there are in the zone
+    coins_zones = _compute_zones_heatmap(agent_position, coins_position, 0.0,
+                                         aggregation_func=lambda v: np.mean(v) if v.size != 0 else 0.0,
+                                         normalization_func=lambda v: softmax(np.divide(1, v, out=np.full_like(v, -np.inf), where=v != 0)))  # v / np.max(v))
+    crates_zones = _compute_zones_heatmap(agent_position, crates_position, 0.0, aggregation_func=lambda v: np.mean(v),
+                                          normalization_func=lambda v: np.divide(1, v, out=np.zeros_like(v), where=v != 0))  # v / np.max(v))
+    opponents_zones = _compute_zones_heatmap(agent_position, opponents_position, 0.0, lambda v, w: v * w,
+                                             opponents_bomb_action,
+                                             lambda v: np.sum(v),
+                                             lambda v: np.divide(v, np.max(v), out=np.zeros_like(v), where=v != 0))
 
-    explosion_field_of_view = _object_in_field_of_view(agent_position, explosions_position, lambda v, w: v / w,
+    explosion_field_of_view = _object_in_field_of_view(agent_position, explosions_position, -1., lambda v, w: v / w,
                                                        field_width)
-    coins_field_of_view = _object_in_field_of_view(agent_position, coins_position, lambda v, w: v / w, field_width)
-    crates_field_of_view = _object_in_field_of_view(agent_position, crates_position, lambda v, w: v / w, field_width)
+    coins_field_of_view = _object_in_field_of_view(agent_position, coins_position, 0.0,
+                                                   lambda v, w: np.divide(1, v, out=np.zeros_like(v), where=v != 0),
+                                                   None)
+    crates_field_of_view = _object_in_field_of_view(agent_position, crates_position, -1., lambda v, w: v / w, field_width)
+    # walls_field_of_view = _object_in_field_of_view(agent_position, walls_position, lambda v, w: v / w, field_width)
+    walls_field_of_view = _object_in_field_of_view(agent_position, walls_position, 0.0,
+                                                   lambda v, w: np.where(v == 1.0, 0.0, 1.0), None)
 
     # TODO Set auxiliary reward for moving away from a danger zone
+    # TODO Negative reward for staying multiple steps in same position
+    # TODO Negative reward repetition of moves
 
-    features = np.concatenate((bomb_danger_zones, coins_zones, crates_zones, opponents_zones,
-                               explosion_field_of_view, coins_field_of_view, crates_field_of_view), axis=None)
+    # return np.concatenate((bomb_danger_zones, coins_zones, crates_zones, opponents_zones,
+    #                        explosion_field_of_view, coins_field_of_view, crates_field_of_view,
+    #                        walls_field_of_view), axis=None)
+    features = softmax(np.sum(np.concatenate((coins_zones, coins_field_of_view), axis=None).reshape(2, 4), axis=0))
+    # return np.concatenate((coins_zones, coins_field_of_view, walls_field_of_view), axis=None)
+    # return np.concatenate((coins_zones, coins_field_of_view), axis=None)
+    # return np.concatenate((bomb_danger_zones, coins_zones, crates_zones, opponents_zones), axis=None)
+    # return np.concatenate((coins_field_of_view, walls_field_of_view), axis=None)
+
+    features[walls_field_of_view == 0.] = -1.0
 
     return features
 
 
-def _compute_zones_heatmap(agent_position, objects_position, weighting_func=None, weights=None,
-                           normalization_func=None):
+def _compute_zones_heatmap(agent_position, objects_position, initial, weighting_func=None, weights=None,
+                           aggregation_func=None, normalization_func=None):
     """
     Computes the distance of given objects from the agent and determines their position relative to the agent.
 
@@ -123,27 +151,31 @@ def _compute_zones_heatmap(agent_position, objects_position, weighting_func=None
     Returns
     -------
     list
-        A list with 4 values (down, left, up, right) representing the (weighted) density
+        A list with 4 values (right, down, left, up) representing the (weighted) density
         of the specified objects in the quadrants around the agent
     """
-    zones = np.zeros(shape=(4,))
+    zones = np.full(shape=(4,), fill_value=initial)
+
+    if objects_position.size == 0:
+        return zones
 
     distances = np.linalg.norm(agent_position - objects_position, axis=1)
     if weighting_func:
         distances = weighting_func(distances, weights)
     angles = np.degrees(
         np.arctan2(objects_position[:, 1] - agent_position[1], objects_position[:, 0] - agent_position[0]))
+    angles = (angles + 360) % 360
 
     # TODO Evaluate if: map object to two zones if it is in-between
-    # Computed: RIGHT; Actual: DOWN
-    zones[0] = np.sum(
-        distances[np.where(((angles >= 0) & (angles < 45)) | ((angles >= 315) | (angles <= 360)))])
-    # Computed DOWN: Actual: LEFT
-    zones[1] = np.sum(distances[np.where((angles >= 45) & (angles < 135))])
-    # Computed LEFT: Actual: UP
-    zones[2] = np.sum(distances[np.where((angles >= 135) & (angles < 225))])
-    # Computed UP: Actual: RIGHT
-    zones[3] = np.sum(distances[np.where((angles >= 225) & (angles < 315))])
+    # Computed: RIGHT; Actual: RIGHT
+    zones[0] = aggregation_func(
+        distances[np.where(((angles >= 0) & (angles < 45)) | ((angles >= 315) & (angles <= 360)))])
+    # Computed: UP; Actual: DOWN
+    zones[1] = aggregation_func(distances[np.where((angles >= 45) & (angles < 135))])
+    # Computed: LEFT; Actual: LEFT
+    zones[2] = aggregation_func(distances[np.where((angles >= 135) & (angles < 225))])
+    # Computed: DOWN; Actual: UP
+    zones[3] = aggregation_func(distances[np.where((angles >= 225) & (angles < 315))])
 
     if normalization_func:
         zones = normalization_func(zones)
@@ -151,7 +183,7 @@ def _compute_zones_heatmap(agent_position, objects_position, weighting_func=None
     return zones
 
 
-def _object_in_field_of_view(agent_position, objects_position, normalization_func=None, norm_constant=None):
+def _object_in_field_of_view(agent_position, objects_position, initial, normalization_func=None, norm_constant=None):
     """
     Specifies the field of view w.r.t the given objects.
 
@@ -172,31 +204,37 @@ def _object_in_field_of_view(agent_position, objects_position, normalization_fun
     Returns
     -------
     list
-        A list with 4 values (down, left, up, right) representing the distance
+        A list with 4 values (right, down, left, up) representing the distance
         of the agent to the nearest object (if any) below, left, above, right of it.
 
     """
     # TODO Maybe scale values: small distance -> high value, high distance -> small value
-    field_of_view = np.full(shape=(4,), fill_value=-1.)
+    field_of_view = np.full(shape=(4,), fill_value=initial)
+
+    if objects_position.size == 0:
+        return field_of_view
 
     # Coordinate x is as of the framework field
-    objects_on_x = np.where(objects_position[:, 0] == agent_position[0])
+    objects_on_x = objects_position[np.where(objects_position[:, 0] == agent_position[0])]
     # Directions are actual directions, i.e. after translation of framework fields
-    objects_down = np.where(objects_position[objects_on_x, 1] >= agent_position[1])
-    field_of_view[0] = np.linalg.norm(agent_position - objects_position[objects_down], axis=1).min()
-    objects_up = np.where(objects_position[objects_on_x, 1] <= agent_position[1])
-    field_of_view[2] = np.linalg.norm(agent_position - objects_position[objects_up], axis=1).min()
+    objects_down = objects_on_x[np.where(objects_on_x[:, 1] >= agent_position[1])]
+    if not objects_down.size == 0:
+        field_of_view[1] = np.linalg.norm(agent_position - objects_down, axis=1).min()
+    objects_up = objects_on_x[np.where(objects_on_x[:, 1] <= agent_position[1])]
+    if not objects_up.size == 0:
+        field_of_view[3] = np.linalg.norm(agent_position - objects_up, axis=1).min()
 
     # Coordinate y is as of the framework field
-    objects_on_y = np.where(objects_position[:, 1] == agent_position[1])
+    objects_on_y = objects_position[np.where(objects_position[:, 1] == agent_position[1])]
     # Directions are actual directions, i.e. after translation of framework fields
-    objects_left = np.where(objects_position[objects_on_y, 0] >= agent_position[0])
-    field_of_view[1] = np.linalg.norm(agent_position - objects_position[objects_left], axis=1).min()
-    objects_right = np.where(objects_position[objects_on_y, 0] <= agent_position[0])
-    field_of_view[3] = np.linalg.norm(agent_position - objects_position[objects_right], axis=1).min()
+    objects_right = objects_on_y[np.where(objects_on_y[:, 0] >= agent_position[0])]
+    if not objects_right.size == 0:
+        field_of_view[0] = np.linalg.norm(agent_position - objects_right, axis=1).min()
+    objects_left = objects_on_y[np.where(objects_on_y[:, 0] <= agent_position[0])]
+    if not objects_left.size == 0:
+        field_of_view[2] = np.linalg.norm(agent_position - objects_left, axis=1).min()
 
     if normalization_func:
         field_of_view = normalization_func(field_of_view, norm_constant)
 
     return field_of_view
-
