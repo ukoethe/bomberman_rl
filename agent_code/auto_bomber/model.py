@@ -25,7 +25,8 @@ class LinearAutoBomberModel:
     def select_best_action(self, game_state: dict, agent_self):
         features_x = self.feature_extractor(game_state)
         self.init_if_needed(features_x, agent_self)
-        # TODO Why this formula?
+
+        # TODO: Check and remove old formula
         # q_action_values = np.sum(self.weights.transpose() * features_x[:, np.newaxis], axis=0)
         q_action_values = np.dot(self.weights, features_x)
 
@@ -40,6 +41,7 @@ class LinearAutoBomberModel:
             x_all_t, y_all_t = numpy_transitions.get_features_and_value_estimates(action)
 
             if x_all_t.size != 0:
+                # TODO: Check and remove old formula
                 # q_estimations = np.sum(x_all_t * self.weights[action_id], axis=0)
                 # residuals = (y_all_t - q_estimations[:, np.newaxis])
                 # q_grad = np.sum(x_all_t.transpose() * residuals, axis=1)
