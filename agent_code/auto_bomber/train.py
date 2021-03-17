@@ -1,3 +1,4 @@
+import numpy as np
 from collections import namedtuple, defaultdict
 from typing import List
 
@@ -62,7 +63,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     self.logger.debug(f'Encountered event(s) {", ".join(map(repr, events))} in final step')
     self.transitions.add_transition(last_game_state, last_action, None, reward_from_events(self, events))
 
-    self.model.fit_model_with_transition_batch(self.transitions)
+    self.model.fit_model_with_transition_batch(self.transitions, last_game_state['round'])
     self.model.store()
     # clear experience buffer for next round
     self.transitions.clear()
