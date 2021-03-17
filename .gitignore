@@ -110,3 +110,5 @@ screenshots/*.mp4
 screenshots/*.webm
 
 replays/
+
+agent_code/auto_bomber/models
