@@ -111,4 +111,6 @@ screenshots/*.webm
 
 replays/
 
-agent_code/auto_bomber/models/
+agent_code/auto_bomber/models
+agent_code/auto_bomber/*.pt
+agent_code/auto_bomber/runs
