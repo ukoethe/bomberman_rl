@@ -25,7 +25,9 @@ class LinearAutoBomberModel:
     def select_best_action(self, game_state: dict, agent_self):
         features_x = self.feature_extractor(game_state)
         self.init_if_needed(features_x, agent_self)
-        q_action_values = np.sum(self.weights.transpose() * features_x[:, np.newaxis], axis=0)
+        # TODO Why this formula?
+        # q_action_values = np.sum(self.weights.transpose() * features_x[:, np.newaxis], axis=0)
+        q_action_values = np.dot(self.weights, features_x)
 
         top_3_actions = q_action_values.argsort()[-3:][::-1]
         # lets keep a little bit randomness here
@@ -38,9 +40,13 @@ class LinearAutoBomberModel:
             x_all_t, y_all_t = numpy_transitions.get_features_and_value_estimates(action)
 
             if x_all_t.size != 0:
-                q_estimations = np.sum(x_all_t * self.weights[action_id], axis=0)
-                residuals = (y_all_t - q_estimations[:, np.newaxis])
-                q_grad = np.sum(x_all_t.transpose() * residuals, axis=1)
+                # q_estimations = np.sum(x_all_t * self.weights[action_id], axis=0)
+                # residuals = (y_all_t - q_estimations[:, np.newaxis])
+                # q_grad = np.sum(x_all_t.transpose() * residuals, axis=1)
+
+                q_estimations = np.dot(x_all_t, self.weights[action_id])
+                residuals = (y_all_t - q_estimations)
+                q_grad = np.dot(x_all_t.T, residuals)
 
                 weight_updates = config.LEARNING_RATE / y_all_t.shape[0] * q_grad
                 self.weights[action_id] += weight_updates
@@ -50,4 +56,6 @@ class LinearAutoBomberModel:
             agent_self.logger.info("Model is empty init with random weights.")
             # new_weights = np.random.rand(len(config.ACTIONS), len(features_x))
             # self.weights = new_weights / new_weights.sum(axis=0)  # all weights are 0 < weight < 1
-            self.weights = np.ones((len(config.ACTIONS), len(features_x)))
+            # self.weights = np.ones((len(config.ACTIONS), len(features_x)))
+            # Xavier weights initialization
+            self.weights = np.random.rand(len(config.ACTIONS), len(features_x)) * np.sqrt(1 / len(features_x))
