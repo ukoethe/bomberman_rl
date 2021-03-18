@@ -3,7 +3,7 @@ from collections import namedtuple, defaultdict
 from typing import List
 
 import events as e
-from agent_code.auto_bomber.callbacks import state_to_features
+from agent_code.auto_bomber.feature_engineering import state_to_features
 
 # This is only an example!
 from agent_code.auto_bomber.transitions import Transitions
@@ -85,7 +85,7 @@ def reward_from_events(self, events: List[str]) -> int:
         e.KILLED_SELF: -300,
         e.GOT_KILLED: -50,
         e.WAITED: -10,
-        e.SURVIVED_ROUND: -1
+        e.SURVIVED_ROUND: 5
     }
 
     # game_rewards = {
