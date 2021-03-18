@@ -6,6 +6,8 @@ from agent_code.auto_bomber.callbacks import state_to_features
 import custom_events as ce
 # This is only an example!
 from agent_code.auto_bomber.transitions import Transitions
+import agent_code.auto_bomber.auto_bomber_config as config
+from queue import Queue
 
 
 def setup_training(self):
@@ -18,6 +20,7 @@ def setup_training(self):
     """
     # Example: Setup an array that will note transition tuples
     self.transitions = Transitions(state_to_features)
+    self.q = Queue(maxsize=config.REGION_TOLERANCE)
 
 def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_state: dict, events: List[str]):
     """
@@ -40,18 +43,24 @@ def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
 
     # TODO: Punishment for up&down and left&right, remove WAIT
-    if last_action == 'MOVED_DOWN':
-        if 'MOVED_UP' in self.transitions.actions[-3:]:
-            events.append(ce.UP_AND_DOWN)
-    if last_action == 'MOVED_UP':
-        if 'MOVED_DOWN' in self.transitions.actions[-3:]:
-            events.append(ce.UP_AND_DOWN)
+  #  if last_action == 'MOVED_DOWN':
+  #      if 'MOVED_UP' in self.transitions.actions[-3:]:
+  #          events.append(ce.UP_AND_DOWN)
+  #  if last_action == 'MOVED_UP':
+  #      if 'MOVED_DOWN' in self.transitions.actions[-3:]:
+  #          events.append(ce.UP_AND_DOWN)
 
     # state_to_features is defined in callbacks.py
     self.transitions.add_transition(old_game_state, last_action, new_game_state, reward_from_events(self, events))
-
-
     # TODO: Punishment, if agent is still in the same radius after certain time steps
+    new_position = new_game_state["self"][3]
+    if self.q.full():
+        old_position = self.q.get()
+        if (old_position[0] - config.REGION_SIZE <= new_position[0] <= old_position[0] + config.REGION_SIZE) \
+                or (old_position[1] - config.REGION_SIZE <= new_position[1] <= old_position[1] + config.REGION_SIZE):
+            events.append(ce.SAME_REGION)
+    self.q.put(new_position)
+
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
     """
@@ -93,7 +102,8 @@ def reward_from_events(self, events: List[str]) -> int:
         e.GOT_KILLED: -75,
         e.SURVIVED_ROUND: 1000,
         ce.UP_AND_DOWN: -50,
-        ce.LEFT_AND_RIGHT: -50
+        ce.LEFT_AND_RIGHT: -50,
+        ce.SAME_REGION: -20
     }
     reward_sum = 0
     for event in events:
