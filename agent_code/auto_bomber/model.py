@@ -6,6 +6,7 @@ import numpy as np
 import agent_code.auto_bomber.auto_bomber_config as config
 from agent_code.auto_bomber.transitions import Transitions
 from math import exp
+import agent_code.auto_bomber.auto_bomber_config as config
 
 class LinearAutoBomberModel:
     def __init__(self, feature_extractor):
@@ -27,12 +28,18 @@ class LinearAutoBomberModel:
         self.init_if_needed(features_x, agent_self)
         q_action_values = np.sum(self.weights.transpose() * features_x[:, np.newaxis], axis=0)
 
-        top_3_actions = q_action_values.argsort()[-3:][::-1]
-        # lets keep a little bit randomness here
-        p1 = exp(top_3_actions[0]) / (exp(top_3_actions[0]) + exp(top_3_actions[1]) + exp(top_3_actions[2]))
-        p2 = exp(top_3_actions[1]) / (exp(top_3_actions[0]) + exp(top_3_actions[1]) + exp(top_3_actions[2]))
-        p3 = exp(top_3_actions[2]) / (exp(top_3_actions[0]) + exp(top_3_actions[1]) + exp(top_3_actions[2]))
-        choice = np.random.choice(top_3_actions, p=[p1, p2, p3])
+        if config.POLICY == "SOFTMAX":
+            sort_actions = q_action_values.argsort()
+            p = np.empty(sort_actions)
+            for i in sort_actions:
+                p[i] = exp(sort_actions[0] / config.TEMP) / np.sum(exp(sort_actions / config.TEMP))
+            choice = np.random.choice(sort_actions, p)
+        else:
+            top_3_actions = q_action_values.argsort()[-3:][::-1]
+            p = np.empty(top_3_actions)
+            for i in top_3_actions:
+                p[i] = exp(top_3_actions[0] / config.TEMP) / np.sum(exp(top_3_actions / config.TEMP))
+            choice = np.random.choice(top_3_actions, p)
         return config.ACTIONS[choice]
 
     def fit_model_with_transition_batch(self, transitions: Transitions):
