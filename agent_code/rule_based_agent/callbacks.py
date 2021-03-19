@@ -97,11 +97,11 @@ def act(self, game_state):
     arena = game_state['field']
     _, score, bombs_left, (x, y) = game_state['self']
     bombs = game_state['bombs']
-    bomb_xys = [xy for (xy, t) in bombs]
+    bomb_xys = [xy for (xy, t, _) in bombs]
     others = [xy for (n, s, b, xy) in game_state['others']]
     coins = game_state['coins']
     bomb_map = np.ones(arena.shape) * 5
-    for (xb, yb), t in bombs:
+    for (xb, yb), t, _ in bombs:
         for (i, j) in [(xb + h, yb) for h in range(-3, 4)] + [(xb, yb + h) for h in range(-3, 4)]:
             if (0 < i < bomb_map.shape[0]) and (0 < j < bomb_map.shape[1]):
                 bomb_map[i, j] = min(bomb_map[i, j], t)
@@ -175,7 +175,7 @@ def act(self, game_state):
         action_ideas.append('BOMB')
 
     # Add proposal to run away from any nearby bomb about to blow
-    for (xb, yb), t in bombs:
+    for (xb, yb), t, _ in bombs:
         if (xb == x) and (abs(yb - y) < 4):
             # Run away
             if (yb > y): action_ideas.append('UP')
@@ -191,7 +191,7 @@ def act(self, game_state):
             action_ideas.append('UP')
             action_ideas.append('DOWN')
     # Try random direction if directly on top of a bomb
-    for (xb, yb), t in bombs:
+    for (xb, yb), t, _ in bombs:
         if xb == x and yb == y:
             action_ideas.extend(action_ideas[:4])
 
