@@ -1,5 +1,5 @@
-import shutil
 import pickle
+import shutil
 from pathlib import Path
 
 import numpy as np
@@ -47,10 +47,13 @@ class LinearAutoBomberModel:
 
         q_action_values = np.dot(self.weights, features_x)
 
-        top_3_actions = q_action_values.argsort()[-3:][::-1]
-        # lets keep a little bit randomness here
-        choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
-        return config.ACTIONS[choice]
+        if config.TOP_3_RAND:
+            top_3_actions = q_action_values.argsort()[-3:][::-1]
+            # lets keep a little bit randomness here
+            choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
+            return config.ACTIONS[choice]
+        else:
+            return np.argmax(q_action_values)
 
     def fit_model_with_transition_batch(self, transitions: Transitions, round: int):
         loss = []
