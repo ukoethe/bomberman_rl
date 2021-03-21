@@ -5,7 +5,8 @@ from fallbacks import pygame
 # Game properties
 COLS = 17
 ROWS = 17
-CRATE_DENSITY = 0.75
+# CRATE_DENSITY = 0.75
+CRATE_DENSITY = 0
 MAX_AGENTS = 4
 
 # Round properties

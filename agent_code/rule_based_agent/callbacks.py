@@ -1,7 +1,12 @@
 from collections import deque
 from random import shuffle
+import random
 
 import numpy as np
+
+from agent_code.my_agent_rule.callbacks import setup as my_agent_rule_setup
+
+ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT']#, 'WAIT', 'BOMB']
 
 
 def look_for_targets(free_space, start, targets, logger=None):
@@ -72,6 +77,10 @@ def setup(self):
     self.ignore_others_timer = 0
     self.current_round = 0
 
+    # ---------------------------------------------
+    # FOR TRAINING ONLY
+    my_agent_rule_setup(self)  # setup model
+
 
 def reset_self(self):
     self.bomb_history = deque([], 5)
@@ -88,6 +97,15 @@ def act(self, game_state):
     which is a dictionary. Consult 'get_state_for_agent' in environment.py to see
     what it contains.
     """
+    # FOR GENERATING TRAINING DATA ONLY
+    # Exploration
+    random_prob = .7
+    if self.train and random.random() < random_prob:
+        self.logger.debug("Choosing action purely at random.")
+        return np.random.choice(ACTIONS)
+
+    # ---------------------------------------
+
     self.logger.info('Picking action according to rule set')
     # Check if we are in a different round
     if game_state["round"] != self.current_round:
@@ -204,3 +222,52 @@ def act(self, game_state):
                 self.bomb_history.append((x, y))
 
             return a
+
+
+def state_to_features(game_state: dict) -> np.array:
+    """
+    *This is not a required function, but an idea to structure your code.*
+
+    Converts the game state to the input of your model, i.e.
+    a feature vector.
+
+    You can find out about the state of the game environment via game_state,
+    which is a dictionary. Consult 'get_state_for_agent' in environment.py to see
+    what it contains.
+
+    :param game_state:  A dictionary describing the current game board.
+    :return: np.array
+    """
+    # This is the dict before the game begins and after it ends
+    if game_state is None:
+        return None
+
+    field = game_state['field']
+    coins = game_state['coins']
+    position_x, position_y = game_state['self'][3]
+    distance = np.zeros((len(coins), 2))
+    i = 0
+    for (x, y) in coins:
+        dist_x = position_x - x
+        dist_y = position_y - y
+        distance[i, 0] = dist_x
+        distance[i, 1] = dist_y
+        i += 1
+    assert len(np.sum(distance, axis=1)) == len(coins)
+    features = distance[np.argmin(np.sum(distance**2, axis=1))]  # distance in x and y direction to closest coin
+    # distance can be negative
+    assert len(features) == 2
+
+    environment = np.zeros(4)  # the surrounding 4 fields (up, down, left, right)
+    if field[position_x - 1, position_y] == 0:
+        environment[0] = 1  # free space = 1
+    if field[position_x + 1, position_y] == 0:
+        environment[1] = 1
+    if field[position_x, position_y - 1] == 0:
+        environment[2] = 1
+    if field[position_x, position_y + 1] == 0:
+        environment[3] = 1
+
+    features = np.append(features, environment)
+
+    return features

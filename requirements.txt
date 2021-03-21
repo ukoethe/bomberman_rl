@@ -1,0 +1,5 @@
+numpy
+pygame
+scipy
+sklearn
+tqdm
