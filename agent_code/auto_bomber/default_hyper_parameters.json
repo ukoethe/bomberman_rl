@@ -1,0 +1,14 @@
+{
+  "actions": [
+    "UP",
+    "RIGHT",
+    "DOWN",
+    "LEFT",
+    "WAIT",
+    "BOMB"
+  ],
+  "epsilon": 0.25,
+  "discount": 0.6,
+  "learning_rate": 0.00009,
+  "top_3_rand": true
+}

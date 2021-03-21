@@ -1,8 +1,0 @@
-MODELS_ROOT = "./models"
-MODEL_DIR = "./models/5"
-# MODEL_DIR = None
-ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
-EPSILON = 0.25
-DISCOUNT = 0.6
-LEARNING_RATE = 0.00009
-TOP_3_RAND = True
