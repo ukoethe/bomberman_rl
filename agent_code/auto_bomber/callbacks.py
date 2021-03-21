@@ -31,16 +31,15 @@ def act(self, game_state: dict) -> str:
     :return: The action to take as a string.
     """
 
-    # todo right now epsilon-greedy - change to softmax to avoid local maxima
     if self.train and config.POLICY == 'SOFTMAX':
-        pass
+        self.model.select_best_action(game_state, self, softmax=True)
     elif self.train and random.random() < config.EPSILON:
         if config.POLICY == 'GREEDY':
             self.logger.debug("Choosing action purely at random.")
             # 80%: walk in any direction. 10% wait. 10% bomb.
             return np.random.choice(config.ACTIONS, p=[.2, .2, .2, .2, .1, .1])
         elif config.POLICY == 'IANN':
-            pass
+            self.model.select_best_action(game_state, self, softmax=True)
     else:
         self.logger.debug("Querying model for action.")
         return self.model.select_best_action(game_state, self)
