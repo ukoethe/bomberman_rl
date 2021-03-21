@@ -80,23 +80,15 @@ def reward_from_events(self, events: List[str]) -> int:
     # q: how to determine the winner?
     game_rewards = {
         e.COIN_COLLECTED: 100,
-        e.KILLED_OPPONENT: 50,
         e.INVALID_ACTION: -100,
         e.KILLED_SELF: -300,
-        e.GOT_KILLED: -50,
         e.WAITED: -10,
-        e.SURVIVED_ROUND: 5
+        e.SURVIVED_ROUND: 100,
+        # e.BOMB_DROPPED: 1,
+        e.CRATE_DESTROYED: 50,
+        e.COIN_FOUND: 50,
+        e.GOT_KILLED: -200
     }
-
-    # game_rewards = {
-    #     e.COIN_COLLECTED: 20,
-    #     e.KILLED_OPPONENT: 40,
-    #     e.INVALID_ACTION: -10,
-    #     e.KILLED_SELF: -50,
-    #     e.GOT_KILLED: -30,
-    #     e.WAITED: -5,
-    #     e.SURVIVED_ROUND: -1
-    # }
 
     reward_sum = 0
     for event in events:

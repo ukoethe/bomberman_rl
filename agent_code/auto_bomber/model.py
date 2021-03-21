@@ -20,6 +20,8 @@ class LinearAutoBomberModel:
         elif config.MODEL_DIR and not Path(config.MODEL_DIR).is_dir():
             raise FileNotFoundError("The specified model directory does not exist!\nIf you wish to train a NEW model"
                                     "set parameter to None, otherwise specify a valid model directory.")
+        elif not self.train and not config.MODEL_DIR:
+            raise ValueError("No model directory has been specified.\n A model directory is required for inference.")
         else:
             model_index = sorted([int(x.stem) for x in Path(config.MODELS_ROOT).iterdir() if x.is_dir()])[-1]
             model_index += 1
@@ -31,10 +33,10 @@ class LinearAutoBomberModel:
             with self.weights_path.open(mode="rb") as file:
                 self.weights = pickle.load(file)
 
-        # Copy configuration file for logging purposes
-        shutil.copy(Path("./auto_bomber_config.py"), self.model_dir / "config.py")
-
         if self.train:
+            # Copy configuration file for logging purposes
+            shutil.copy(Path("./auto_bomber_config.py"), self.model_dir / "config.py")
+
             self.writer = SummaryWriter(logdir=f"./runs/exp{self.model_dir.stem}")
 
     def store(self):

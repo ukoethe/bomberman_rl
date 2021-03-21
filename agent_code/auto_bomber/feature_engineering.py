@@ -1,6 +1,6 @@
 import numpy as np
 
-from agent_code.auto_bomber.utils import softmax
+from scipy.special import softmax
 
 
 def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.array:
@@ -17,15 +17,22 @@ def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.arra
                                     without BOMB action available
     :return: np.array
     """
+    #############
+    #   NOTES   #
+    #############
+    # Coins zones signal very weak! -> Used softmax, which keeps 0.0 by using -np.inf
+    # Add coins to crates --> not good, need to know where crates are, are distinct from coins as need to be exploded
+
     # This is the dict before the game begins and after it ends
     if game_state is None:
         # todo we need another representation for final state here!
-        return np.random.rand(4)
+        return np.random.rand(13)
 
     field_width, field_height = game_state['field'].shape
     assert field_width == field_height, "Field is not rectangular, some assumptions do not hold. Abort!"
 
     agent_position = np.asarray(game_state['self'][3], dtype='int')
+    agent_bomb_action = np.asarray(game_state['self'][2], dtype='int')
     bombs_position = np.asarray([list(bomb[0]) for bomb in game_state['bombs']], dtype='int')
     bombs_countdown = np.asarray([bomb[1] for bomb in game_state['bombs']])
     explosions_position = np.argwhere(game_state['explosion_map'] > 0)
@@ -36,50 +43,68 @@ def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.arra
     opponents_bomb_action = np.where(opponents_bomb_action, 1.0, weight_opponents_no_bomb)
     walls_position = np.argwhere(game_state['field'] == -1)
 
-    # TODO Evaluate normalization/scaling
-    bomb_danger_zones = _compute_zones_heatmap(agent_position, bombs_position, 1.0,
-                                               # lambda v, w: np.divide(1, v * w, out=np.ones_like(v), where=(v*w) != 0),
-                                               lambda v, w: v * w,
-                                               bombs_countdown,
-                                               # lambda v: v / np.max(v)
-                                               lambda v: np.sum(v),
-                                               lambda v: np.divide(v, np.max(v), out=np.zeros_like(v), where=v != 0))
-    # TODO Coins zones signal very weak! -> Used softmax, which keeps 0.0 by using -np.inf
+    # TODO HUUUUUUUUUGE!!!!!!! --> Switch distances from euclidean to a path finding algorithm
+    # https://pypi.org/project/pathfinding/
+
+    # TODO Make BOMB_POWER dynamic from settings.py
+    bombs_zones = _compute_zones_heatmap(agent_position, bombs_position, 0.0,
+                                         lambda v, w: np.where(v > 0., v[(3 + w) - v >= 0] ** w[(3 + w) - v >= 0], 0.0),
+                                         bombs_countdown,
+                                         lambda v: np.mean(v) if v.size != 0 else 0.0,
+                                         lambda v: -1 * np.divide(1, v, out=np.zeros_like(v), where=v != 0))
+
     # TODO Does not account for how many coins there are in the zone
     coins_zones = _compute_zones_heatmap(agent_position, coins_position, 0.0,
                                          aggregation_func=lambda v: np.mean(v) if v.size != 0 else 0.0,
-                                         normalization_func=lambda v: softmax(np.divide(1, v, out=np.full_like(v, -np.inf), where=v != 0)))  # v / np.max(v))
-    crates_zones = _compute_zones_heatmap(agent_position, crates_position, 0.0, aggregation_func=lambda v: np.mean(v),
-                                          normalization_func=lambda v: np.divide(1, v, out=np.zeros_like(v), where=v != 0))  # v / np.max(v))
+                                         normalization_func=lambda v: softmax(
+                                             np.divide(1, v, out=np.full_like(v, -np.inf), where=v != 0)) if np.all(
+                                             v != 0.0) else v)
+    crates_zones = _compute_zones_heatmap(agent_position, crates_position, 0.0,
+                                          aggregation_func=lambda v: np.mean(v) if v.size != 0 else 0.0,
+                                          normalization_func=lambda v: softmax(
+                                              np.divide(1, v, out=np.full_like(v, -np.inf), where=v != 0)))
     opponents_zones = _compute_zones_heatmap(agent_position, opponents_position, 0.0, lambda v, w: v * w,
                                              opponents_bomb_action,
                                              lambda v: np.sum(v),
                                              lambda v: np.divide(v, np.max(v), out=np.zeros_like(v), where=v != 0))
 
-    explosion_field_of_view = _object_in_field_of_view(agent_position, explosions_position, -1., lambda v, w: v / w,
-                                                       field_width)
+    # TODO Evaluate if weighting bombs also here by their countdown
+    # TODO Exclude bombs which are not relevant (!!!!)
+    bombs_field_of_view = _object_in_field_of_view(agent_position, explosions_position, 0.0,
+                                                   lambda v, w: -1 * np.divide(1, v, out=np.zeros_like(v),
+                                                                               where=v != 0),
+                                                   None)
+    explosion_field_of_view = _object_in_field_of_view(agent_position, explosions_position, 1.0,
+                                                       lambda v, w: np.where(v == 1.0, 0.0, 1.0), None)
     coins_field_of_view = _object_in_field_of_view(agent_position, coins_position, 0.0,
                                                    lambda v, w: np.divide(1, v, out=np.zeros_like(v), where=v != 0),
                                                    None)
-    crates_field_of_view = _object_in_field_of_view(agent_position, crates_position, -1., lambda v, w: v / w, field_width)
-    # walls_field_of_view = _object_in_field_of_view(agent_position, walls_position, lambda v, w: v / w, field_width)
-    walls_field_of_view = _object_in_field_of_view(agent_position, walls_position, 0.0,
+    crates_field_of_view = _object_in_field_of_view(agent_position, crates_position, 0.0,
+                                                    lambda v, w: np.divide(1, v, out=np.zeros_like(v), where=v != 0),
+                                                    None)
+    walls_field_of_view = _object_in_field_of_view(agent_position, walls_position, 1.0,
                                                    lambda v, w: np.where(v == 1.0, 0.0, 1.0), None)
 
-    # TODO Set auxiliary reward for moving away from a danger zone
-    # TODO Negative reward for staying multiple steps in same position
-    # TODO Negative reward repetition of moves
+    f_bombs = np.sum(np.vstack((bombs_zones, bombs_field_of_view)), axis=0)
+    if not np.all((f_bombs == 0.0)):
+        f_bombs = np.where(f_bombs == 0.0, np.inf, f_bombs)
+        f_bombs = -1 * softmax(-1 * f_bombs)
 
-    # return np.concatenate((bomb_danger_zones, coins_zones, crates_zones, opponents_zones,
-    #                        explosion_field_of_view, coins_field_of_view, crates_field_of_view,
-    #                        walls_field_of_view), axis=None)
-    features = softmax(np.sum(np.concatenate((coins_zones, coins_field_of_view), axis=None).reshape(2, 4), axis=0))
-    # return np.concatenate((coins_zones, coins_field_of_view, walls_field_of_view), axis=None)
-    # return np.concatenate((coins_zones, coins_field_of_view), axis=None)
-    # return np.concatenate((bomb_danger_zones, coins_zones, crates_zones, opponents_zones), axis=None)
-    # return np.concatenate((coins_field_of_view, walls_field_of_view), axis=None)
+    f_coins = np.sum(np.vstack((coins_zones, coins_field_of_view)), axis=0)
+    if not np.all((f_coins == 0.0)):
+        f_coins = np.where(f_coins == 0.0, -np.inf, f_coins)
+        f_coins = softmax(f_coins)
+    f_coins[walls_field_of_view == 0.] = -1.0
+    f_coins[explosion_field_of_view == 0.] = -1.0
 
-    features[walls_field_of_view == 0.] = -1.0
+    f_crates = np.sum(np.vstack((crates_zones, crates_field_of_view)), axis=0)
+    if not np.all((f_crates == 0.0)):
+        f_crates = np.where(f_crates == 0.0, -np.inf, f_crates)
+        f_crates = softmax(f_crates)
+    f_crates[walls_field_of_view == 0.] = -1.0
+    f_crates[explosion_field_of_view == 0.] = -1.0
+
+    features = np.concatenate((f_coins, f_crates, f_bombs, agent_bomb_action), axis=None)
 
     return features
 
