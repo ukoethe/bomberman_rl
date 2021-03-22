@@ -1,10 +1,7 @@
-import numpy as np
-from collections import namedtuple, defaultdict
 from typing import List
 
 import events as e
 from agent_code.auto_bomber.feature_engineering import state_to_features
-
 # This is only an example!
 from agent_code.auto_bomber.transitions import Transitions
 
@@ -42,7 +39,8 @@ def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
 
     # state_to_features is defined in callbacks.py
-    self.transitions.add_transition(old_game_state, last_action, new_game_state, reward_from_events(self, events))
+    self.transitions.add_transition(old_game_state, last_action, new_game_state,
+                                    reward_from_events(self, events, old_game_state))
 
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
@@ -61,7 +59,8 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     :param events: events occurred before end of round (q: all events or all since last game_events_occurred(..) call?)
     """
     self.logger.debug(f'Encountered event(s) {", ".join(map(repr, events))} in final step')
-    self.transitions.add_transition(last_game_state, last_action, None, reward_from_events(self, events))
+    self.transitions.add_transition(last_game_state, last_action, None,
+                                    reward_from_events(self, events, last_game_state))
 
     self.model.fit_model_with_transition_batch(self.transitions, last_game_state['round'])
     self.model.store()
@@ -69,7 +68,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     self.transitions.clear()
 
 
-def reward_from_events(self, events: List[str]) -> int:
+def reward_from_events(self, events: List[str], game_state: dict) -> int:
     """
     *This is not a required function, but an idea to structure your code.*
 
@@ -102,5 +101,11 @@ def reward_from_events(self, events: List[str]) -> int:
     for event in events:
         if event in game_rewards:
             reward_sum += game_rewards[event]
+        if event == e.SURVIVED_ROUND:
+            reward_sum += reward_for_fast_rounds(game_state)
     self.logger.info(f"Awarded {reward_sum} for events {', '.join(events)}")
     return reward_sum
+
+
+def reward_for_fast_rounds(game_state: dict) -> int:
+    return - game_state["round"] / 4 + 100
