@@ -1,2 +1,2 @@
 MODELS_ROOT = "./models"
-MODEL_DIR = "./models/1"
+MODEL_DIR = "./models/0"
