@@ -1,7 +1,10 @@
 import events as e
 from agent_code.auto_bomber import custom_events as ce
 
-MODEL_PATH = "./auto_bomber_weights.pt"
+
+MODELS_ROOT = "./models"
+# MODEL_DIR = "./models/41"
+MODEL_DIR = None
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 EPSILON = 0.25
 DISCOUNT = 0.5
