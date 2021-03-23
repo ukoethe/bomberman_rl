@@ -1,9 +1,10 @@
+import numpy as np
 from collections import namedtuple, defaultdict
 from typing import List
 
-# import events as e
-from agent_code.auto_bomber.callbacks import state_to_features
+from agent_code.auto_bomber.feature_engineering import state_to_features
 from agent_code.auto_bomber import custom_events as ce
+
 # This is only an example!
 from agent_code.auto_bomber.transitions import Transitions
 import agent_code.auto_bomber.auto_bomber_config as config
@@ -72,7 +73,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     self.logger.debug(f'Encountered event(s) {", ".join(map(repr, events))} in final step')
     self.transitions.add_transition(last_game_state, last_action, None, reward_from_events(self, events))
 
-    self.model.fit_model_with_transition_batch(self.transitions)
+    self.model.fit_model_with_transition_batch(self.transitions, last_game_state['round'])
     self.model.store()
     # clear experience buffer for next round
     self.transitions.clear()

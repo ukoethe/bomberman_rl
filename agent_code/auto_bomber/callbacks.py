@@ -2,7 +2,9 @@ import random
 import agent_code.auto_bomber.auto_bomber_config as config
 
 import numpy as np
+
 from agent_code.auto_bomber.model import LinearAutoBomberModel
+from agent_code.auto_bomber.feature_engineering import state_to_features
 
 
 def setup(self):
@@ -19,7 +21,7 @@ def setup(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
-    self.model = LinearAutoBomberModel(feature_extractor=lambda x: state_to_features(x))
+    self.model = LinearAutoBomberModel(self.train, feature_extractor=lambda x: state_to_features(x))
 
 
 def act(self, game_state: dict) -> str:
@@ -40,32 +42,3 @@ def act(self, game_state: dict) -> str:
     else:
         self.logger.debug("Querying model for action.")
         return self.model.select_best_action(game_state, self)
-
-
-def state_to_features(game_state: dict) -> np.array:
-    """
-    *This is not a required function, but an idea to structure your code.*
-
-    Converts the game state to the input of your model, i.e.
-    a feature vector.
-
-    You can find out about the state of the game environment via game_state,
-    which is a dictionary. Consult 'get_state_for_agent' in environment.py to see
-    what it contains.
-
-    :param game_state:  A dictionary describing the current game board.
-    :return: np.array
-    """
-    # This is the dict before the game begins and after it ends
-    if game_state is None:
-        # todo we need another representation for final state here!
-        return np.random.rand(27)
-
-    # For example, you could construct several channels of equal shape, ...
-    channels = []
-    channels.append(...)
-    # concatenate them as a feature tensor (they must have the same shape), ...
-    stacked_channels = np.stack(channels)
-    # and return them as a vector
-    return np.random.rand(27)
-    # return stacked_channels.reshape(-1)
