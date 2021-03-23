@@ -1,8 +1,9 @@
+import numpy as np
 from collections import namedtuple, defaultdict
 from typing import List
 
 import events as e
-from agent_code.auto_bomber.callbacks import state_to_features
+from agent_code.auto_bomber.feature_engineering import state_to_features
 
 # This is only an example!
 from agent_code.auto_bomber.transitions import Transitions
@@ -62,7 +63,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     self.logger.debug(f'Encountered event(s) {", ".join(map(repr, events))} in final step')
     self.transitions.add_transition(last_game_state, last_action, None, reward_from_events(self, events))
 
-    self.model.fit_model_with_transition_batch(self.transitions)
+    self.model.fit_model_with_transition_batch(self.transitions, last_game_state['round'])
     self.model.store()
     # clear experience buffer for next round
     self.transitions.clear()
@@ -78,13 +79,17 @@ def reward_from_events(self, events: List[str]) -> int:
     # todo reward definition (right now only first sketch):
     # q: how to determine the winner?
     game_rewards = {
-        e.COIN_COLLECTED: 50,
-        e.KILLED_OPPONENT: 75,
-        e.INVALID_ACTION: -1,
-        e.KILLED_SELF: -100,
-        e.GOT_KILLED: -75,
-        e.SURVIVED_ROUND: 1000
+        e.COIN_COLLECTED: 100,
+        e.INVALID_ACTION: -100,
+        e.KILLED_SELF: -300,
+        e.WAITED: -10,
+        e.SURVIVED_ROUND: 100,
+        # e.BOMB_DROPPED: 1,
+        e.CRATE_DESTROYED: 50,
+        e.COIN_FOUND: 50,
+        e.GOT_KILLED: -200
     }
+
     reward_sum = 0
     for event in events:
         if event in game_rewards:
