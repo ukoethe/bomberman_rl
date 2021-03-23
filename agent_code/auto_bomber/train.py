@@ -2,11 +2,13 @@ import numpy as np
 from collections import namedtuple, defaultdict
 from typing import List
 
-import events as e
 from agent_code.auto_bomber.feature_engineering import state_to_features
+from agent_code.auto_bomber import custom_events as ce
 
 # This is only an example!
 from agent_code.auto_bomber.transitions import Transitions
+import agent_code.auto_bomber.auto_bomber_config as config
+from queue import Queue
 
 
 def setup_training(self):
@@ -19,7 +21,7 @@ def setup_training(self):
     """
     # Example: Setup an array that will note transition tuples
     self.transitions = Transitions(state_to_features)
-
+    self.q = Queue(maxsize=config.REGION_TIME_TOLERANCE)
 
 def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_state: dict, events: List[str]):
     """
@@ -43,6 +45,14 @@ def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_
 
     # state_to_features is defined in callbacks.py
     self.transitions.add_transition(old_game_state, last_action, new_game_state, reward_from_events(self, events))
+    # Punishment, if agent is still in the same radius after certain time steps
+    new_position = new_game_state["self"][3]
+    if self.q.full():
+        old_position = self.q.get()
+        if (old_position[0] - config.REGION_SIZE <= new_position[0] <= old_position[0] + config.REGION_SIZE) \
+                or (old_position[1] - config.REGION_SIZE <= new_position[1] <= old_position[1] + config.REGION_SIZE):
+            events.append(ce.SAME_REGION)
+    self.q.put(new_position)
 
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
@@ -76,23 +86,11 @@ def reward_from_events(self, events: List[str]) -> int:
     Here you can modify the rewards your agent get so as to en/discourage
     certain behavior.
     """
-    # todo reward definition (right now only first sketch):
     # q: how to determine the winner?
-    game_rewards = {
-        e.COIN_COLLECTED: 100,
-        e.INVALID_ACTION: -100,
-        e.KILLED_SELF: -300,
-        e.WAITED: -10,
-        e.SURVIVED_ROUND: 100,
-        # e.BOMB_DROPPED: 1,
-        e.CRATE_DESTROYED: 50,
-        e.COIN_FOUND: 50,
-        e.GOT_KILLED: -200
-    }
 
     reward_sum = 0
     for event in events:
-        if event in game_rewards:
-            reward_sum += game_rewards[event]
+        if event in config.game_rewards:
+            reward_sum += config.game_rewards[event]
     self.logger.info(f"Awarded {reward_sum} for events {', '.join(events)}")
     return reward_sum
