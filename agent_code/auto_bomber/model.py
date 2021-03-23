@@ -3,10 +3,9 @@ from pathlib import Path
 
 import numpy as np
 
-import agent_code.auto_bomber.auto_bomber_config as config
 from agent_code.auto_bomber.transitions import Transitions
-from math import exp
 import agent_code.auto_bomber.auto_bomber_config as config
+
 
 class LinearAutoBomberModel:
     def __init__(self, feature_extractor):
