@@ -5,8 +5,8 @@ from pathlib import Path
 import numpy as np
 from tensorboardX import SummaryWriter
 
-import agent_code.auto_bomber.auto_bomber_config as config
 from agent_code.auto_bomber.transitions import Transitions
+import agent_code.auto_bomber.auto_bomber_config as config
 
 
 class LinearAutoBomberModel:
@@ -43,15 +43,19 @@ class LinearAutoBomberModel:
         with self.weights_path.open(mode="wb") as file:
             pickle.dump(self.weights, file)
 
-    def select_best_action(self, game_state: dict, agent_self):
+    def select_best_action(self, game_state: dict, agent_self, softmax=False):
         features_x = self.feature_extractor(game_state)
         self.init_if_needed(features_x, agent_self)
 
         q_action_values = np.dot(self.weights, features_x)
 
-        top_3_actions = q_action_values.argsort()[-3:][::-1]
-        # lets keep a little bit randomness here
-        choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
+        if softmax:
+            sort_actions = q_action_values.argsort()
+            p = np.exp(sort_actions / config.TEMP) / np.sum(np.exp(sort_actions / config.TEMP))
+            choice = np.random.choice(sort_actions, p=p)
+        else:
+            top_3_actions = q_action_values.argsort()[-3:][::-1]
+            choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
         return config.ACTIONS[choice]
 
     def fit_model_with_transition_batch(self, transitions: Transitions, round: int):

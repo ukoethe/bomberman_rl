@@ -6,7 +6,6 @@ import numpy as np
 from agent_code.auto_bomber.model import LinearAutoBomberModel
 from agent_code.auto_bomber.feature_engineering import state_to_features
 
-
 def setup(self):
     """
     Setup your code. This is called once when loading each agent.
@@ -34,11 +33,15 @@ def act(self, game_state: dict) -> str:
     :return: The action to take as a string.
     """
 
-    # todo right now epsilon-greedy - change to softmax to avoid local maxima
-    if self.train and random.random() < config.EPSILON:
-        self.logger.debug("Choosing action purely at random.")
-        # 80%: walk in any direction. 10% wait. 10% bomb.
-        return np.random.choice(config.ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+    if self.train and config.POLICY == 'SOFTMAX':
+        self.model.select_best_action(game_state, self, softmax=True)
+    elif self.train and random.random() < config.EPSILON:
+        if config.POLICY == 'GREEDY':
+            self.logger.debug("Choosing action purely at random.")
+            # 80%: walk in any direction. 10% wait. 10% bomb.
+            return np.random.choice(config.ACTIONS, p=[.2, .2, .2, .2, .1, .1])
+        elif config.POLICY == 'IANN':
+            self.model.select_best_action(game_state, self, softmax=True)
     else:
         self.logger.debug("Querying model for action.")
         return self.model.select_best_action(game_state, self)
