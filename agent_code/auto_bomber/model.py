@@ -1,3 +1,4 @@
+import shutil
 import pickle
 from pathlib import Path
 
@@ -9,25 +10,44 @@ from agent_code.auto_bomber.transitions import Transitions
 
 
 class LinearAutoBomberModel:
-    def __init__(self, feature_extractor):
+    def __init__(self, train, feature_extractor):
+        self.train = train
         self.weights = None
         self.feature_extractor = feature_extractor
-        self.writer = SummaryWriter()
 
-        path = Path(config.MODEL_PATH)
-        if path.is_file():
-            with path.open(mode="rb") as file:
+        if config.MODEL_DIR and Path(config.MODEL_DIR).is_dir():
+            self.model_dir = Path(config.MODEL_DIR)
+        elif config.MODEL_DIR and not Path(config.MODEL_DIR).is_dir():
+            raise FileNotFoundError("The specified model directory does not exist!\nIf you wish to train a NEW model"
+                                    "set parameter to None, otherwise specify a valid model directory.")
+        elif not self.train and not config.MODEL_DIR:
+            raise ValueError("No model directory has been specified.\n A model directory is required for inference.")
+        else:
+            model_index = sorted([int(x.stem) for x in Path(config.MODELS_ROOT).iterdir() if x.is_dir()])[-1]
+            model_index += 1
+            self.model_dir = Path(config.MODELS_ROOT) / str(model_index)
+            self.model_dir.mkdir()
+
+        self.weights_path = self.model_dir / "weights.pt"
+        if self.weights_path.is_file():
+            with self.weights_path.open(mode="rb") as file:
                 self.weights = pickle.load(file)
 
+        if self.train:
+            # Copy configuration file for logging purposes
+            shutil.copy(Path("./auto_bomber_config.py"), self.model_dir / "config.py")
+
+            self.writer = SummaryWriter(logdir=f"./runs/exp{self.model_dir.stem}")
+
     def store(self):
-        path = Path(config.MODEL_PATH)
-        with path.open(mode="wb") as file:
+        with self.weights_path.open(mode="wb") as file:
             pickle.dump(self.weights, file)
 
     def select_best_action(self, game_state: dict, agent_self):
         features_x = self.feature_extractor(game_state)
         self.init_if_needed(features_x, agent_self)
-        q_action_values = np.sum(self.weights.transpose() * features_x[:, np.newaxis], axis=0)
+
+        q_action_values = np.dot(self.weights, features_x)
 
         top_3_actions = q_action_values.argsort()[-3:][::-1]
         # lets keep a little bit randomness here
@@ -41,11 +61,10 @@ class LinearAutoBomberModel:
             x_all_t, y_all_t = numpy_transitions.get_features_and_value_estimates(action)
 
             if x_all_t.size != 0:
-                q_estimations = np.sum(x_all_t * self.weights[action_id], axis=0)
-                residuals = (y_all_t - q_estimations[:, np.newaxis])
-                mean_residuals = np.mean(residuals)
-                loss.append(mean_residuals)
-                q_grad = np.sum(x_all_t.transpose() * residuals, axis=1)
+                q_estimations = np.dot(x_all_t, self.weights[action_id])
+                residuals = (y_all_t - q_estimations)
+                loss.append(np.mean(residuals ** 2))
+                q_grad = np.dot(x_all_t.T, residuals)
 
                 weight_updates = config.LEARNING_RATE / y_all_t.shape[0] * q_grad
                 self.weights[action_id] += weight_updates
@@ -58,6 +77,6 @@ class LinearAutoBomberModel:
     def init_if_needed(self, features_x, agent_self):
         if self.weights is None:
             agent_self.logger.info("Model is empty init with random weights.")
-            # new_weights = np.random.rand(len(config.ACTIONS), len(features_x))
-            # self.weights = new_weights / new_weights.sum(axis=0)  # all weights are 0 < weight < 1
-            self.weights = np.ones((len(config.ACTIONS), len(features_x)))
+
+            # Xavier weights initialization
+            self.weights = np.random.rand(len(config.ACTIONS), len(features_x)) * np.sqrt(1 / len(features_x))
