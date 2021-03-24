@@ -1,14 +1,10 @@
-import numpy as np
-from collections import namedtuple, defaultdict
+from queue import Queue
 from typing import List
 
-from agent_code.auto_bomber.feature_engineering import state_to_features
 from agent_code.auto_bomber import custom_events as ce
-
+from agent_code.auto_bomber.feature_engineering import state_to_features
 # This is only an example!
 from agent_code.auto_bomber.transitions import Transitions
-import agent_code.auto_bomber.auto_bomber_config as config
-from queue import Queue
 
 
 def setup_training(self):
@@ -21,7 +17,9 @@ def setup_training(self):
     """
     # Example: Setup an array that will note transition tuples
     self.transitions = Transitions(state_to_features)
-    self.q = Queue(maxsize=config.REGION_TIME_TOLERANCE)
+
+    self.q = Queue(maxsize=self.model.hyper_parameters["region_time_tolerance"])
+
 
 def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_state: dict, events: List[str]):
     """
@@ -42,15 +40,15 @@ def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_
     :param events: The events that occurred when going from  `old_game_state` to `new_game_state`
     """
     self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
-
     # state_to_features is defined in callbacks.py
     self.transitions.add_transition(old_game_state, last_action, new_game_state, reward_from_events(self, events))
     # Punishment, if agent is still in the same radius after certain time steps
     new_position = new_game_state["self"][3]
+    region_size = self.model.hyper_parameters["region_size"]
     if self.q.full():
         old_position = self.q.get()
-        if (old_position[0] - config.REGION_SIZE <= new_position[0] <= old_position[0] + config.REGION_SIZE) \
-                or (old_position[1] - config.REGION_SIZE <= new_position[1] <= old_position[1] + config.REGION_SIZE):
+        if (old_position[0] - region_size <= new_position[0] <= old_position[0] + region_size) \
+                or (old_position[1] - region_size <= new_position[1] <= old_position[1] + region_size):
             events.append(ce.SAME_REGION)
     self.q.put(new_position)
 
@@ -87,9 +85,11 @@ def reward_from_events(self, events: List[str]) -> int:
     certain behavior.
     """
     # q: how to determine the winner?
+
+    rewards_dict = self.model.hyper_parameters["game_rewards"]
     reward_sum = 0
     for event in events:
-        if event in config.game_rewards:
-            reward_sum += config.game_rewards[event]
+        if event in rewards_dict:
+            reward_sum += rewards_dict[event]
     self.logger.info(f"Awarded {reward_sum} for events {', '.join(events)}")
     return reward_sum

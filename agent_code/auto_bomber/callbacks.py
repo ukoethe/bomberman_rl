@@ -1,10 +1,10 @@
 import random
-import agent_code.auto_bomber.auto_bomber_config as config
 
 import numpy as np
 
-from agent_code.auto_bomber.model import LinearAutoBomberModel
 from agent_code.auto_bomber.feature_engineering import state_to_features
+from agent_code.auto_bomber.model import LinearAutoBomberModel
+
 
 def setup(self):
     """
@@ -33,14 +33,15 @@ def act(self, game_state: dict) -> str:
     :return: The action to take as a string.
     """
 
-    if self.train and config.POLICY == 'SOFTMAX':
+    hyper_parameters = self.model.hyper_parameters
+    if self.train and hyper_parameters["policy"] == 'SOFTMAX':
         self.model.select_best_action(game_state, self, softmax=True)
-    elif self.train and random.random() < config.EPSILON:
-        if config.POLICY == 'GREEDY':
+    elif self.train and random.random() < hyper_parameters["epsilon"]:
+        if hyper_parameters["policy"] == 'GREEDY':
             self.logger.debug("Choosing action purely at random.")
             # 80%: walk in any direction. 10% wait. 10% bomb.
-            return np.random.choice(config.ACTIONS, p=[.2, .2, .2, .2, .1, .1])
-        elif config.POLICY == 'IANN':
+            return np.random.choice(hyper_parameters["actions"], p=[.2, .2, .2, .2, .1, .1])
+        elif hyper_parameters["policy"] == 'IANN':
             self.model.select_best_action(game_state, self, softmax=True)
     else:
         self.logger.debug("Querying model for action.")

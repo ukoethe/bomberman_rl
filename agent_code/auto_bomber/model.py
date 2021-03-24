@@ -1,12 +1,21 @@
-import shutil
+import json
+import os
 import pickle
+import shutil
 from pathlib import Path
 
 import numpy as np
 from tensorboardX import SummaryWriter
 
+import agent_code.auto_bomber.model_path as model_path
 from agent_code.auto_bomber.transitions import Transitions
-import agent_code.auto_bomber.auto_bomber_config as config
+
+
+def get_model_dir():
+    try:
+        return os.environ["MODEL_DIR"]
+    except KeyError as e:
+        return model_path.MODEL_DIR
 
 
 class LinearAutoBomberModel:
@@ -15,28 +24,37 @@ class LinearAutoBomberModel:
         self.weights = None
         self.feature_extractor = feature_extractor
 
-        if config.MODEL_DIR and Path(config.MODEL_DIR).is_dir():
-            self.model_dir = Path(config.MODEL_DIR)
-        elif config.MODEL_DIR and not Path(config.MODEL_DIR).is_dir():
+        model_dir = get_model_dir()
+        if model_dir and Path(model_dir).is_dir():
+            self.model_dir = Path(model_dir)
+        elif model_dir and not Path(model_dir).is_dir():
             raise FileNotFoundError("The specified model directory does not exist!\nIf you wish to train a NEW model"
                                     "set parameter to None, otherwise specify a valid model directory.")
-        elif not self.train and not config.MODEL_DIR:
+        elif not self.train and not model_dir:
             raise ValueError("No model directory has been specified.\n A model directory is required for inference.")
         else:
-            model_index = sorted([int(x.stem) for x in Path(config.MODELS_ROOT).iterdir() if x.is_dir()])[-1]
+            root_dir = Path(model_path.MODELS_ROOT)
+            root_dir.mkdir(parents=True, exist_ok=True)
+            existing_subdirs = sorted([int(x.stem) for x in root_dir.iterdir() if x.is_dir()])
+
+            model_index = existing_subdirs[-1] if existing_subdirs else -1
             model_index += 1
-            self.model_dir = Path(config.MODELS_ROOT) / str(model_index)
+            self.model_dir = Path(model_path.MODELS_ROOT) / str(model_index)
             self.model_dir.mkdir()
+            # Copy configuration file for logging purposes
+            shutil.copy(Path("default_hyper_parameters.json"), self.model_dir / "hyper_parameters.json")
 
         self.weights_path = self.model_dir / "weights.pt"
         if self.weights_path.is_file():
             with self.weights_path.open(mode="rb") as file:
                 self.weights = pickle.load(file)
 
-        if self.train:
-            # Copy configuration file for logging purposes
-            shutil.copy(Path("./auto_bomber_config.py"), self.model_dir / "config.py")
+        hyper_parameters_path = self.model_dir / "hyper_parameters.json"
+        if hyper_parameters_path.is_file():
+            with hyper_parameters_path.open(mode="rb") as file:
+                self.hyper_parameters = json.load(file)
 
+        if self.train:
             self.writer = SummaryWriter(logdir=f"./runs/exp{self.model_dir.stem}")
 
     def store(self):
@@ -51,17 +69,18 @@ class LinearAutoBomberModel:
 
         if softmax:
             sort_actions = q_action_values.argsort()
-            p = np.exp(sort_actions / config.TEMP) / np.sum(np.exp(sort_actions / config.TEMP))
+            temp = self.hyper_parameters["temperature"]
+            p = np.exp(sort_actions / temp) / np.sum(np.exp(sort_actions / temp))
             choice = np.random.choice(sort_actions, p=p)
         else:
             top_3_actions = q_action_values.argsort()[-3:][::-1]
             choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
-        return config.ACTIONS[choice]
+        return self.hyper_parameters["actions"][choice]
 
     def fit_model_with_transition_batch(self, transitions: Transitions, round: int):
         loss = []
-        numpy_transitions = transitions.to_numpy_transitions()
-        for action_id, action in enumerate(config.ACTIONS):
+        numpy_transitions = transitions.to_numpy_transitions(self.hyper_parameters)
+        for action_id, action in enumerate(self.hyper_parameters["actions"]):
             x_all_t, y_all_t = numpy_transitions.get_features_and_value_estimates(action)
 
             if x_all_t.size != 0:
@@ -70,7 +89,7 @@ class LinearAutoBomberModel:
                 loss.append(np.mean(residuals ** 2))
                 q_grad = np.dot(x_all_t.T, residuals)
 
-                weight_updates = config.LEARNING_RATE / y_all_t.shape[0] * q_grad
+                weight_updates = self.hyper_parameters["learning_rate"] / y_all_t.shape[0] * q_grad
                 self.weights[action_id] += weight_updates
 
         mean_loss = np.mean(loss)
@@ -83,4 +102,5 @@ class LinearAutoBomberModel:
             agent_self.logger.info("Model is empty init with random weights.")
 
             # Xavier weights initialization
-            self.weights = np.random.rand(len(config.ACTIONS), len(features_x)) * np.sqrt(1 / len(features_x))
+            self.weights = np.random.rand(len(self.hyper_parameters["actions"]),
+                                          len(features_x)) * np.sqrt(1 / len(features_x))
