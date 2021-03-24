@@ -21,6 +21,8 @@ class LinearAutoBomberModel:
         elif model_path.MODEL_DIR and not Path(model_path.MODEL_DIR).is_dir():
             raise FileNotFoundError("The specified model directory does not exist!\nIf you wish to train a NEW model"
                                     "set parameter to None, otherwise specify a valid model directory.")
+        elif not self.train and not model_path.MODEL_DIR:
+            raise ValueError("No model directory has been specified.\n A model directory is required for inference.")
         else:
             root_dir = Path(model_path.MODELS_ROOT)
             root_dir.mkdir(parents=True, exist_ok=True)
@@ -50,19 +52,20 @@ class LinearAutoBomberModel:
         with self.weights_path.open(mode="wb") as file:
             pickle.dump(self.weights, file)
 
-    def select_best_action(self, game_state: dict, agent_self):
+    def select_best_action(self, game_state: dict, agent_self, softmax=False):
         features_x = self.feature_extractor(game_state)
         self.init_if_needed(features_x, agent_self)
 
         q_action_values = np.dot(self.weights, features_x)
 
-        if self.hyper_parameters["top_3_rand"]:
-            top_3_actions = q_action_values.argsort()[-3:][::-1]
-            # lets keep a little bit randomness here
-            choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
-            return self.hyper_parameters["actions"][choice]
+        if softmax:
+            sort_actions = q_action_values.argsort()
+            p = np.exp(sort_actions / self.hyper_parameters["temp"]) / np.sum(np.exp(sort_actions / self.hyper_parameters["temp"]))
+            choice = np.random.choice(sort_actions, p=p)
         else:
-            return np.argmax(q_action_values)
+            top_3_actions = q_action_values.argsort()[-3:][::-1]
+            choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
+        return self.hyper_parameters["actions"][choice]
 
     def fit_model_with_transition_batch(self, transitions: Transitions, round: int):
         loss = []
