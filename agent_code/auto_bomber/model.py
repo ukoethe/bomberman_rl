@@ -1,4 +1,5 @@
 import json
+import os
 import pickle
 import shutil
 from pathlib import Path
@@ -10,18 +11,26 @@ import agent_code.auto_bomber.model_path as model_path
 from agent_code.auto_bomber.transitions import Transitions
 
 
+def get_model_dir():
+    try:
+        return os.environ["MODEL_DIR"]
+    except KeyError as e:
+        return model_path.MODEL_DIR
+
+
 class LinearAutoBomberModel:
     def __init__(self, train, feature_extractor):
         self.train = train
         self.weights = None
         self.feature_extractor = feature_extractor
 
-        if model_path.MODEL_DIR and Path(model_path.MODEL_DIR).is_dir():
-            self.model_dir = Path(model_path.MODEL_DIR)
-        elif model_path.MODEL_DIR and not Path(model_path.MODEL_DIR).is_dir():
+        model_dir = get_model_dir()
+        if model_dir and Path(model_dir).is_dir():
+            self.model_dir = Path(model_dir)
+        elif model_dir and not Path(model_dir).is_dir():
             raise FileNotFoundError("The specified model directory does not exist!\nIf you wish to train a NEW model"
                                     "set parameter to None, otherwise specify a valid model directory.")
-        elif not self.train and not model_path.MODEL_DIR:
+        elif not self.train and not model_dir:
             raise ValueError("No model directory has been specified.\n A model directory is required for inference.")
         else:
             root_dir = Path(model_path.MODELS_ROOT)
