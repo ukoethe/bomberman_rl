@@ -145,6 +145,8 @@ class Agent:
             self.last_action = action
             return action, think_time
         except BaseException:
+            if self.train:
+                raise
             return 'WAIT', float("inf")
 
     def round_ended(self):
