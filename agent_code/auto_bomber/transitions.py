@@ -1,5 +1,4 @@
 import numpy as np
-import agent_code.auto_bomber.auto_bomber_config as config
 
 
 class Transitions:
@@ -17,8 +16,8 @@ class Transitions:
         self.next_states.append(self.feature_extractor(new_game_state))
         self.rewards.append(rewards)
 
-    def to_numpy_transitions(self):
-        return NumpyTransitions(self)
+    def to_numpy_transitions(self, hyper_parameters):
+        return NumpyTransitions(self, hyper_parameters)
 
     def clear(self):
         self.states.clear()
@@ -29,11 +28,12 @@ class Transitions:
 
 class NumpyTransitions:
     # todo add hyperparam for batch size to support TD-n-step and monte-carlo
-    def __init__(self, transitions):
+    def __init__(self, transitions, hyper_parameters):
         self.states = np.asarray(transitions.states, dtype=np.float32)
         self.actions = np.asarray(transitions.actions)
         self.next_states = np.asarray(transitions.next_states, dtype=np.float32)
         self.rewards = np.asarray(transitions.rewards, dtype=np.float32)
+        self.hyper_parameters = hyper_parameters
 
     def get_time_steps_for_action(self, action):
         return np.argwhere(self.actions == action)
@@ -47,6 +47,6 @@ class NumpyTransitions:
 
     def monte_carlo_value_estimation(self, time_step_start: int):
         relevant_rewards = self.rewards[time_step_start:]
-        discounts = np.fromfunction(lambda i: config.DISCOUNT ** i, shape=(len(relevant_rewards),), dtype=np.float32)
+        discounts = np.fromfunction(lambda i: self.hyper_parameters["discount"] ** i,
+                                    shape=(len(relevant_rewards),), dtype=np.float32)
         return np.sum(discounts * relevant_rewards)
-
