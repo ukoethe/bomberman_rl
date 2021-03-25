@@ -39,9 +39,6 @@ def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_
     :param new_game_state: The state the agent is in now.
     :param events: The events that occurred when going from  `old_game_state` to `new_game_state`
     """
-    self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
-    # state_to_features is defined in callbacks.py
-    self.transitions.add_transition(old_game_state, last_action, new_game_state, reward_from_events(self, events))
     # Punishment, if agent is still in the same radius after certain time steps
     new_position = new_game_state["self"][3]
     region_size = self.model.hyper_parameters["region_size"]
@@ -51,6 +48,10 @@ def game_events_occurred(self, old_game_state: dict, last_action: str, new_game_
                 or (old_position[1] - region_size <= new_position[1] <= old_position[1] + region_size):
             events.append(ce.SAME_REGION)
     self.q.put(new_position)
+
+    self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
+    # state_to_features is defined in callbacks.py
+    self.transitions.add_transition(old_game_state, last_action, new_game_state, reward_from_events(self, events))
 
 
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
