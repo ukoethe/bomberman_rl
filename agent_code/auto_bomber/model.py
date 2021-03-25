@@ -68,10 +68,9 @@ class LinearAutoBomberModel:
         q_action_values = np.dot(self.weights, features_x)
 
         if softmax:
-            sort_actions = q_action_values.argsort()
             temp = self.hyper_parameters["temperature"]
-            p = np.exp(sort_actions / temp) / np.sum(np.exp(sort_actions / temp))
-            choice = np.random.choice(sort_actions, p=p)
+            p = np.exp(q_action_values / temp) / np.sum(np.exp(q_action_values / temp))
+            choice = np.random.choice(len(q_action_values), p=p)
         else:
             top_3_actions = q_action_values.argsort()[-3:][::-1]
             choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])

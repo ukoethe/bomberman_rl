@@ -7,11 +7,11 @@
     "WAIT",
     "BOMB"
   ],
-  "epsilon": 0.35,
-  "discount": 0.95,
-  "learning_rate": 0.01,
-  "policy": "SOFTMAX",
-  "temperature": 0.5,
+  "epsilon": 0.25,
+  "discount": 0.6,
+  "learning_rate": 0.00009,
+  "policy": "GREEDY",
+  "temperature": 0.7,
   "region_size": 2,
   "region_time_tolerance": 8,
   "game_rewards": {
@@ -20,9 +20,9 @@
     "COIN_COLLECTED": 50,
     "KILLED_OPPONENT": 200,
     "INVALID_ACTION": -5,
-    "KILLED_SELF": -300,
-    "GOT_KILLED": -200,
-    "SURVIVED_ROUND": 300,
-    "SAME_REGION": -20
+    "KILLED_SELF": -150,
+    "GOT_KILLED": -100,
+    "SURVIVED_ROUND": 5,
+    "SAME_REGION": -15
   }
 }
