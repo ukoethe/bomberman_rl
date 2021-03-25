@@ -43,6 +43,7 @@ class LinearAutoBomberModel:
             self.model_dir.mkdir()
             # Copy configuration file for logging purposes
             shutil.copy(Path("default_hyper_parameters.json"), self.model_dir / "hyper_parameters.json")
+            shutil.copy(Path("feature_engineering.py"), self.model_dir / "feature_engineering.py")
 
         self.weights_path = self.model_dir / "weights.pt"
         if self.weights_path.is_file():
@@ -84,7 +85,7 @@ class LinearAutoBomberModel:
 
             if x_all_t.size != 0:
                 q_estimations = np.dot(x_all_t, self.weights[action_id])
-                residuals = (y_all_t - q_estimations)
+                residuals = y_all_t - q_estimations
                 loss.append(np.mean(residuals ** 2))
                 q_grad = np.dot(x_all_t.T, residuals)
 

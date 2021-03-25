@@ -46,7 +46,7 @@ class NumpyTransitions:
         return np.take(self.states, relevant_indices, axis=0).squeeze(axis=1), value_estimations
 
     def monte_carlo_value_estimation(self, time_step_start: int):
-        relevant_rewards = self.rewards[time_step_start+1:]
+        relevant_rewards = self.rewards[time_step_start:]
         discounts = np.fromfunction(lambda i: self.hyper_parameters["discount"] ** i,
                                     shape=(len(relevant_rewards),), dtype=np.float32)
         return np.sum(discounts * relevant_rewards)

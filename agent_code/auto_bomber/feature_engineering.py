@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.special import softmax
+from scipy.spatial.distance import cdist
 
 
 def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.array:
@@ -75,7 +76,6 @@ def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.arra
     # TODO Exclude bombs which are not relevant (!!!!)
 
     # TODO Field of view, not only says unwanted position but also says go towards position
-    # TODO Bomb under my ass!!!!
     bombs_field_of_view = _object_in_field_of_view(agent_position, bombs_position, 0.0,
                                                    lambda v, w: -1 * np.divide(1, v, out=np.zeros_like(v),
                                                                                where=v != 0),
@@ -83,6 +83,10 @@ def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.arra
     explosion_field_of_view = _object_in_field_of_view(agent_position, explosions_position, 0.0)
     coins_field_of_view = _object_in_field_of_view(agent_position, relevant_coins_position, 0.0,
                                                    lambda v, w: np.divide(1, v, out=np.zeros_like(v), where=v != 0),
+                                                   # lambda v, w: softmax(
+                                                   #     np.divide(1, v, out=np.full_like(v, -np.inf),
+                                                   #               where=v != 0)) if np.all(
+                                                   #     v != 0.0) else v,
                                                    None)
     crates_field_of_view = _object_in_field_of_view(agent_position, crates_position, 0.0,
                                                     lambda v, w: np.divide(1, v, out=np.zeros_like(v), where=v != 0),
@@ -113,18 +117,21 @@ def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.arra
     #     f_bombs = -1 * softmax(-1 * f_bombs)
     # f_bombs[new_bombs_field_of_view == -1.0] = -1.0
 
-    f_coins = np.sum(np.vstack((coins_zones, coins_field_of_view)), axis=0)
-    if not np.all((f_coins == 0.0)):
-        f_coins = np.where(f_coins == 0.0, -np.inf, f_coins)
+    f_coins = np.sum(np.vstack((coins_zones, 5 * coins_field_of_view)), axis=0)
+    f_coins[walls_field_of_view == 1.] = 0.
+    if not np.all((f_coins == 0.)):
+        f_coins = np.where(f_coins == 0., -np.inf, f_coins)
         f_coins = softmax(f_coins)
+    # f_coins[walls_field_of_view == 1.] = -1.
 
-    f_crates = np.sum(np.vstack((crates_zones, crates_field_of_view)), axis=0)
+    f_crates = np.sum(np.vstack((crates_zones, 5 * crates_field_of_view)), axis=0)
+    f_crates[walls_field_of_view == 1.] = 0.
     if not np.all((f_crates == 0.)):
         f_crates = np.where(f_crates == 0., -np.inf, f_crates)
         f_crates = softmax(f_crates)
     f_crates[crates_field_of_view == 1.] = -1.
 
-    features = np.concatenate((f_obstacles, f_coins, f_crates, f_bombs, agent_bomb_action), axis=None)
+    features = np.concatenate((f_coins, f_crates, f_bombs, f_obstacles, agent_bomb_action), axis=None)
 
     return features
 
@@ -163,7 +170,10 @@ def _compute_zones_heatmap(agent_position, objects_position, initial, weighting_
     if objects_position.size == 0:
         return zones
 
-    distances = np.linalg.norm(agent_position - objects_position, axis=1)
+    # distances = np.linalg.norm(agent_position - objects_position, axis=1)
+    agent_position = np.atleast_2d(agent_position)
+    distances = cdist(agent_position, objects_position, 'cityblock').squeeze(axis=0)
+    agent_position = agent_position[0]
     if weighting_func:
         distances = weighting_func(distances, weights)
     angles = np.degrees(
@@ -218,25 +228,31 @@ def _object_in_field_of_view(agent_position, objects_position, initial, normaliz
     if objects_position.size == 0:
         return field_of_view
 
+    agent_position = np.atleast_2d(agent_position)
+
     # Coordinate x is as of the framework field
-    objects_on_x = objects_position[np.where(objects_position[:, 0] == agent_position[0])]
+    objects_on_x = objects_position[np.where(objects_position[:, 0] == agent_position[0, 0])]
     # Directions are actual directions, i.e. after translation of framework fields
-    objects_down = objects_on_x[np.where(objects_on_x[:, 1] >= agent_position[1])]
+    objects_down = objects_on_x[np.where(objects_on_x[:, 1] >= agent_position[0, 1])]
     if not objects_down.size == 0:
-        field_of_view[1] = np.linalg.norm(agent_position - objects_down, axis=1).min()
-    objects_up = objects_on_x[np.where(objects_on_x[:, 1] <= agent_position[1])]
+        # field_of_view[1] = np.linalg.norm(agent_position - objects_down, axis=1).min()
+        field_of_view[1] = cdist(agent_position, objects_down, 'cityblock').squeeze(axis=0).min()
+    objects_up = objects_on_x[np.where(objects_on_x[:, 1] <= agent_position[0, 1])]
     if not objects_up.size == 0:
-        field_of_view[3] = np.linalg.norm(agent_position - objects_up, axis=1).min()
+        # field_of_view[3] = np.linalg.norm(agent_position - objects_up, axis=1).min()
+        field_of_view[3] = cdist(agent_position, objects_up, 'cityblock').squeeze(axis=0).min()
 
     # Coordinate y is as of the framework field
-    objects_on_y = objects_position[np.where(objects_position[:, 1] == agent_position[1])]
+    objects_on_y = objects_position[np.where(objects_position[:, 1] == agent_position[0, 1])]
     # Directions are actual directions, i.e. after translation of framework fields
-    objects_right = objects_on_y[np.where(objects_on_y[:, 0] >= agent_position[0])]
+    objects_right = objects_on_y[np.where(objects_on_y[:, 0] >= agent_position[0, 0])]
     if not objects_right.size == 0:
-        field_of_view[0] = np.linalg.norm(agent_position - objects_right, axis=1).min()
-    objects_left = objects_on_y[np.where(objects_on_y[:, 0] <= agent_position[0])]
+        # field_of_view[0] = np.linalg.norm(agent_position - objects_right, axis=1).min()
+        field_of_view[0] = cdist(agent_position, objects_right, 'cityblock').squeeze(axis=0).min()
+    objects_left = objects_on_y[np.where(objects_on_y[:, 0] <= agent_position[0, 0])]
     if not objects_left.size == 0:
-        field_of_view[2] = np.linalg.norm(agent_position - objects_left, axis=1).min()
+        # field_of_view[2] = np.linalg.norm(agent_position - objects_left, axis=1).min()
+        field_of_view[2] = cdist(agent_position, objects_left, 'cityblock').squeeze(axis=0).min()
 
     if normalization_func:
         field_of_view = normalization_func(field_of_view, norm_constant)
