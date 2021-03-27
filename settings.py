@@ -5,7 +5,7 @@ from fallbacks import pygame
 # Game properties
 COLS = 17
 ROWS = 17
-CRATE_DENSITY = 0.15  # 0.25  # 0.75
+CRATE_DENSITY = 0.5  # 0.25  # 0.75
 MAX_AGENTS = 4
 
 # Round properties
@@ -40,7 +40,7 @@ INPUT_MAP = {
 }
 
 # Logging levels
-LOG_GAME = logging.INFO
-LOG_AGENT_WRAPPER = logging.DEBUG
-LOG_AGENT_CODE = logging.DEBUG
+LOG_GAME = logging.WARN
+LOG_AGENT_WRAPPER = logging.WARN
+LOG_AGENT_CODE = logging.WARN
 LOG_MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
