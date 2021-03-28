@@ -18,32 +18,19 @@ def get_model_dir():
         return model_path.MODEL_DIR
 
 
+def get_config_path():
+    try:
+        return os.environ["CONFIG_FILE"]
+    except KeyError as e:
+        return "default_hyper_parameters.json"
+
+
 class LinearAutoBomberModel:
     def __init__(self, train, feature_extractor):
         self.train = train
         self.weights = None
         self.feature_extractor = feature_extractor
-
-        model_dir = get_model_dir()
-        if model_dir and Path(model_dir).is_dir():
-            self.model_dir = Path(model_dir)
-        elif model_dir and not Path(model_dir).is_dir():
-            raise FileNotFoundError("The specified model directory does not exist!\nIf you wish to train a NEW model"
-                                    "set parameter to None, otherwise specify a valid model directory.")
-        elif not self.train and not model_dir:
-            raise ValueError("No model directory has been specified.\n A model directory is required for inference.")
-        else:
-            root_dir = Path(model_path.MODELS_ROOT)
-            root_dir.mkdir(parents=True, exist_ok=True)
-            existing_subdirs = sorted([int(x.stem) for x in root_dir.iterdir() if x.is_dir()])
-
-            model_index = existing_subdirs[-1] if existing_subdirs else -1
-            model_index += 1
-            self.model_dir = Path(model_path.MODELS_ROOT) / str(model_index)
-            self.model_dir.mkdir()
-            # Copy configuration file for logging purposes
-            shutil.copy(Path("default_hyper_parameters.json"), self.model_dir / "hyper_parameters.json")
-            shutil.copy(Path("feature_engineering.py"), self.model_dir / "feature_engineering.py")
+        self.determine_or_create_model_dir()
 
         self.weights_path = self.model_dir / "weights.pt"
         if self.weights_path.is_file():
@@ -56,7 +43,8 @@ class LinearAutoBomberModel:
                 self.hyper_parameters = json.load(file)
 
         if self.train:
-            self.writer = SummaryWriter(logdir=f"./runs/exp{self.model_dir.stem}")
+            current = Path(model_path.MODELS_DEFAULT_ROOT)
+            self.writer = SummaryWriter(logdir=f"{model_path.TF_BOARD_DIR}/{self.model_dir.relative_to(current)}")
 
     def store(self):
         with self.weights_path.open(mode="wb") as file:
@@ -74,8 +62,14 @@ class LinearAutoBomberModel:
             choice = np.random.choice(len(q_action_values), p=p)
         else:
             top_3_actions = q_action_values.argsort()[-3:][::-1]
-            choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
+            choice = self.filter_bomb_if_not_top_action(np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05]),
+                                                        top_3_actions)
         return self.hyper_parameters["actions"][choice]
+
+    def filter_bomb_if_not_top_action(self, choice, top_3_actions):
+        if choice == 5 and choice != top_3_actions[0]:
+            return top_3_actions[0]
+        return choice
 
     def fit_model_with_transition_batch(self, transitions: Transitions, round: int):
         loss = []
@@ -104,3 +98,30 @@ class LinearAutoBomberModel:
             # Xavier weights initialization
             self.weights = np.random.rand(len(self.hyper_parameters["actions"]),
                                           len(features_x)) * np.sqrt(1 / len(features_x))
+
+    def determine_or_create_model_dir(self):
+        configured_model_dir = get_model_dir()
+        if configured_model_dir and Path(configured_model_dir).is_dir():
+            self.model_dir = Path(configured_model_dir)
+        elif self.train:
+            self.create_model_dir(configured_model_dir)
+        else:
+            raise FileNotFoundError("The specified model directory does not exist!\n"
+                                    "Create a new model by training first.")
+
+    def create_model_dir(self, configured_model_dir):
+        if configured_model_dir:
+            self.model_dir = Path(configured_model_dir)
+        else:
+            root_dir = Path(model_path.MODELS_DEFAULT_ROOT)
+            root_dir.mkdir(parents=True, exist_ok=True)
+            existing_subdirs = sorted([int(x.stem) for x in root_dir.iterdir() if x.is_dir()])
+
+            model_index = existing_subdirs[-1] if existing_subdirs else -1
+            model_index += 1
+            self.model_dir = Path(model_path.MODELS_DEFAULT_ROOT) / str(model_index)
+
+        self.model_dir.mkdir(parents=True)
+        # Copy configuration file for logging purposes
+        shutil.copy(Path(get_config_path()), self.model_dir / "hyper_parameters.json")
+        shutil.copy(Path("feature_engineering.py"), self.model_dir / "feature_engineering.py")
