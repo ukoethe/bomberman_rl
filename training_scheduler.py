@@ -61,11 +61,12 @@ class Scheduler:
                 p.wait()
 
 
-scheduler = Scheduler()
-configs_to_process = Path(CONFIGS_DIR).glob("**/*.json")
-for config in configs_to_process:
-    scheduler.wait_for_free()
-    scheduler.execute(config)
-    stdout.flush()
+if __name__ == '__main__':
+    scheduler = Scheduler()
+    configs_to_process = Path(CONFIGS_DIR).glob("**/*.json")
+    for config in configs_to_process:
+        scheduler.wait_for_free()
+        scheduler.execute(config)
+        stdout.flush()
 
-scheduler.wait()
+    scheduler.wait()
