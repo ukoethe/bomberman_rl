@@ -62,8 +62,14 @@ class LinearAutoBomberModel:
             choice = np.random.choice(len(q_action_values), p=p)
         else:
             top_3_actions = q_action_values.argsort()[-3:][::-1]
-            choice = np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05])
+            choice = self.filter_bomb_if_not_top_action(np.random.choice(top_3_actions, p=[0.9, 0.05, 0.05]),
+                                                        top_3_actions)
         return self.hyper_parameters["actions"][choice]
+
+    def filter_bomb_if_not_top_action(self, choice, top_3_actions):
+        if choice == 5 and choice != top_3_actions[0]:
+            return top_3_actions[0]
+        return choice
 
     def fit_model_with_transition_batch(self, transitions: Transitions, round: int):
         loss = []

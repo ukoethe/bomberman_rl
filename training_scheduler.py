@@ -6,8 +6,8 @@ from pathlib import Path
 from sys import stdout
 from time import sleep
 
-ROUNDS = 100000
-MODEL_ROOT_DIR = "./models/hyper_param"
+ROUNDS = 300000
+MODEL_ROOT_DIR = "./production/final"
 CONFIGS_DIR = "./configs"
 MAX_PARALLEL = 30
 
@@ -35,7 +35,8 @@ class Scheduler:
 
         current = Path(".")
         p = subprocess.Popen(
-            [sys.executable, "./main.py", "play", "--agents", "auto_bomber", "--train", "1", "--n-rounds", f"{ROUNDS}",
+            [sys.executable, "./main.py", "play", "--my-agent", "auto_bomber", "--train", "1", "--n-rounds",
+             f"{ROUNDS}",
              "--no-gui"],
             env=dict(os.environ, MODEL_DIR=MODEL_ROOT_DIR + path.relative_to(current).__str__(),
                      CONFIG_FILE=path.absolute()),
