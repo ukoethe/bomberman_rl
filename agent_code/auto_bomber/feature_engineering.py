@@ -3,7 +3,7 @@ from scipy.special import softmax
 from scipy.spatial.distance import cdist
 
 
-def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.array:
+def state_to_features(game_state: dict) -> np.array:
     """
     Converts the game state to the input of your model, i.e.
     a feature vector.
@@ -13,8 +13,6 @@ def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.arra
     what it contains.
 
     :param game_state:  A dictionary describing the current game board.
-    :param weight_opponents_no_bomb: Float defining how much danger should be accounted for opponents
-                                    without BOMB action available
     :return: np.array
     """
     #############
@@ -26,7 +24,7 @@ def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.arra
     # This is the dict before the game begins and after it ends
     if game_state is None:
         # todo we need another representation for final state here!
-        return np.random.rand(17)
+        return np.random.rand(21)
 
     field_width, field_height = game_state['field'].shape
     assert field_width == field_height, "Field is not rectangular, some assumptions do not hold. Abort!"
@@ -40,19 +38,20 @@ def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.arra
     relevant_coins_position = coins_position[~np.isin(coins_position, agent_position).all(axis=1)]
     crates_position = np.argwhere(game_state['field'] == 1)
     walls_position = np.argwhere(game_state['field'] == -1)
-    # opponents_position = np.asarray([list(player[3]) for player in game_state['others']], dtype='int')
-    # opponents_bomb_action = np.asarray([player[2] for player in game_state['others']])
-    # opponents_bomb_action = np.where(opponents_bomb_action, 1.0, weight_opponents_no_bomb)
+    weight_opponents_with_bomb = 0.8
+    opponents_position = np.atleast_2d(np.asarray([list(player[3]) for player in game_state['others']], dtype='int'))
+    opponents_bomb_action = np.asarray([player[2] for player in game_state['others']])
+    opponents_bomb_action = np.where(opponents_bomb_action, weight_opponents_with_bomb, 1.0)
 
     # TODO HUUUUUUUUUGE!!!!!!! --> Switch distances from euclidean to a path finding algorithm
     # https://pypi.org/project/pathfinding/
 
     # TODO Make BOMB_POWER dynamic from settings.py
-    bombs_zones = _compute_zones_heatmap(agent_position, bombs_position, 0.0,
-                                         lambda v, w: np.where(v > 0., v[(3 + w) - v >= 0] ** w[(3 + w) - v >= 0], 0.0),
-                                         bombs_countdown,
-                                         lambda v: np.mean(v[v != 0.0]) if v[v != 0.0].size != 0 else 0.0,
-                                         lambda v: -1 * np.divide(1, v, out=np.zeros_like(v), where=v != 0))
+    # bombs_zones = _compute_zones_heatmap(agent_position, bombs_position, 0.0,
+    #                                      lambda v, w: np.where(v > 0., v[(3 + w) - v >= 0] ** w[(3 + w) - v >= 0], 0.0),
+    #                                      bombs_countdown,
+    #                                      lambda v: np.mean(v[v != 0.0]) if v[v != 0.0].size != 0 else 0.0,
+    #                                      lambda v: -1 * np.divide(1, v, out=np.zeros_like(v), where=v != 0))
 
     # TODO Does not account for how many coins there are in the zone
     coins_zones = _compute_zones_heatmap(agent_position, relevant_coins_position, 0.0,
@@ -67,10 +66,12 @@ def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.arra
                                           # normalization_func=lambda v: softmax(
                                           #     np.divide(1, v, out=np.full_like(v, -np.inf), where=v != 0)))
                                           normalization_func=lambda v: np.divide(1, v, out=np.zeros_like(v), where=v != 0))
-    # opponents_zones = _compute_zones_heatmap(agent_position, opponents_position, 0.0, lambda v, w: v * w,
-    #                                          opponents_bomb_action,
-    #                                          lambda v: np.sum(v),
-    #                                          lambda v: np.divide(v, np.max(v), out=np.zeros_like(v), where=v != 0))
+    opponents_zones = _compute_zones_heatmap(agent_position, opponents_position, 0.0,
+                                             weighting_func=lambda v, w: v * w,
+                                             weights=opponents_bomb_action,
+                                             aggregation_func=lambda v: np.mean(v) if v.size != 0 else 0.0,
+                                             # normalization_func=lambda v: np.divide(v, np.max(v), out=np.zeros_like(v), where=v != 0))
+                                             normalization_func=lambda v: np.divide(1, v, out=np.zeros_like(v), where=v != 0))
 
     # TODO Evaluate if weighting bombs also here by their countdown
     # TODO Exclude bombs which are not relevant (!!!!)
@@ -91,6 +92,9 @@ def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.arra
     crates_field_of_view = _object_in_field_of_view(agent_position, crates_position, 0.0,
                                                     lambda v, w: np.divide(1, v, out=np.zeros_like(v), where=v != 0),
                                                     None)
+    opponents_field_of_view = _object_in_field_of_view(agent_position, opponents_position, 0.0,
+                                                        lambda v, w: np.divide(1, v, out=np.zeros_like(v), where=v != 0),
+                                                        None)
     walls_field_of_view = _object_in_field_of_view(agent_position, walls_position, 0.0)
 
     # OPTION: Incorporate obstacles in features (by setting direction of obstacle = -1)
@@ -131,7 +135,14 @@ def state_to_features(game_state: dict, weight_opponents_no_bomb=0.0) -> np.arra
         f_crates = softmax(f_crates)
     f_crates[crates_field_of_view == 1.] = -1.
 
-    features = np.concatenate((f_coins, f_crates, f_bombs, f_obstacles, agent_bomb_action), axis=None)
+    f_opponents = np.sum(np.vstack((opponents_zones, 5 * opponents_field_of_view)), axis=0)
+    f_opponents[walls_field_of_view == 1.] = 0.
+    if not np.all((f_opponents == 0.)):
+        f_opponents = np.where(f_opponents == 0., -np.inf, f_opponents)
+        f_opponents = softmax(f_opponents)
+    f_opponents[opponents_field_of_view == 1.] = -1.
+
+    features = np.concatenate((f_coins, f_crates, f_bombs, f_opponents, f_obstacles, agent_bomb_action), axis=None)
 
     return features
 

@@ -1,0 +1,29 @@
+{
+  "actions": [
+    "UP",
+    "RIGHT",
+    "DOWN",
+    "LEFT",
+    "WAIT",
+    "BOMB"
+  ],
+  "epsilon": 0.25,
+  "discount": 0.85,
+  "learning_rate": 0.00009,
+  "policy": "SOFTMAX",
+  "temperature": 0.7,
+  "region_size": 2,
+  "region_time_tolerance": 6,
+  "game_rewards": {
+    "CRATE_DESTROYED": 80,
+    "COIN_FOUND": 5,
+    "COIN_COLLECTED": 90,
+    "KILLED_OPPONENT": 150,
+    "INVALID_ACTION": -30,
+    "KILLED_SELF": -300,
+    "GOT_KILLED": -200,
+    "SURVIVED_ROUND": 100,
+    "WAITED": -5,
+    "BOMB_DROPPED": 10
+  }
+}
