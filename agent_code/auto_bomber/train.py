@@ -85,8 +85,6 @@ def reward_from_events(self, events: List[str]) -> int:
     Here you can modify the rewards your agent get so as to en/discourage
     certain behavior.
     """
-    # q: how to determine the winner?
-
     rewards_dict = self.model.hyper_parameters["game_rewards"]
     reward_sum = 0
     for event in events:
