@@ -7,7 +7,7 @@ from sys import stdout
 from time import sleep
 
 ROUNDS = 300000
-MODEL_ROOT_DIR = "./production/final"
+MODEL_ROOT_DIR = "./models/opponents"
 CONFIGS_DIR = "./configs"
 MAX_PARALLEL = 30
 
