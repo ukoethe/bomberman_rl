@@ -1,16 +1,10 @@
 import json
 from pathlib import Path
 
-# EPSILONS = [0.15, 0.25, 0.35]
-# DISCOUNTS = [0.35, 0.5, 0.65, 0.85, 0.95]
-# LRS = [0.006, 0.0003, 0.00006, 0.00001, 0.000006]
-# POLICIES = ['SOFTMAX', 'IANN']
-# TEMPERATURES = [0.3, 0.5, 0.7, 0.9]
-
 EPSILONS = [0.25]
-DISCOUNTS = [0.4, 0.7, 0.9]
-LRS = [0.006, 0.0003, 0.00009, 0.00001]
-POLICIES = ['SOFTMAX', 'IANN']
+DISCOUNTS = [0.7, 0.9]
+LRS = [0.0003]
+POLICIES = ['IANN']
 TEMPERATURES = [0.4, 0.7, 0.9]
 
 
@@ -29,7 +23,7 @@ def main():
                         tmp['policy'] = policy
                         tmp['temperature'] = temp
 
-                        with open(Path(f"./stable/stable_{policy}_temp{temp}_disc{discount}_lr{lr}.json"), 'w') as f:
+                        with open(Path(f"./configs/rew5_{policy}_temp{temp}_disc{discount}_lr{lr}.json"), 'w') as f:
                             json.dump(tmp, f)
         elif policy == 'IANN':
             for eps in EPSILONS:
@@ -42,7 +36,7 @@ def main():
                             tmp['policy'] = policy
                             tmp['temperature'] = temp
 
-                            with open(Path(f"./stable/stable_{policy}_eps{eps}_temp{temp}_disc{discount}_lr{lr}.json"), 'w') as f:
+                            with open(Path(f"./configs/rew5_{policy}_eps{eps}_temp{temp}_disc{discount}_lr{lr}.json"), 'w') as f:
                                 json.dump(tmp, f)
 
 

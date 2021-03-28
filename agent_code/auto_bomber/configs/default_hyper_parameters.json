@@ -15,15 +15,15 @@
   "region_size": 2,
   "region_time_tolerance": 6,
   "game_rewards": {
-    "CRATE_DESTROYED": 70,
-    "COIN_FOUND": 30,
-    "COIN_COLLECTED": 70,
+    "CRATE_DESTROYED": 80,
+    "COIN_FOUND": 5,
+    "COIN_COLLECTED": 90,
     "KILLED_OPPONENT": 150,
-    "INVALID_ACTION": -100,
-    "KILLED_SELF": -150,
-    "GOT_KILLED": -50,
-    "SURVIVED_ROUND": 10,
+    "INVALID_ACTION": -30,
+    "KILLED_SELF": -300,
+    "GOT_KILLED": -200,
+    "SURVIVED_ROUND": 100,
     "WAITED": -5,
-    "BOMB_DROPPED": 15
+    "BOMB_DROPPED": 10
   }
 }
