@@ -71,7 +71,7 @@ def state_to_features(game_state: dict) -> np.array:
                                              weights=opponents_bomb_action,
                                              aggregation_func=lambda v: np.mean(v) if v.size != 0 else 0.0,
                                              # normalization_func=lambda v: np.divide(v, np.max(v), out=np.zeros_like(v), where=v != 0))
-                                             normalization_func=lambda v:np.divide(1, v, out=np.zeros_like(v), where=v != 0))
+                                             normalization_func=lambda v: np.divide(1, v, out=np.zeros_like(v), where=v != 0))
 
     # TODO Evaluate if weighting bombs also here by their countdown
     # TODO Exclude bombs which are not relevant (!!!!)
