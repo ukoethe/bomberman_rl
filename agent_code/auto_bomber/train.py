@@ -3,7 +3,6 @@ from typing import List
 
 from agent_code.auto_bomber import custom_events as ce
 from agent_code.auto_bomber.feature_engineering import state_to_features
-# This is only an example!
 from agent_code.auto_bomber.transitions import Transitions
 
 
@@ -15,7 +14,7 @@ def setup_training(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
-    # Example: Setup an array that will note transition tuples
+    # Setup an array that will track transition tuples
     self.transitions = Transitions(state_to_features)
 
     self.q = Queue(maxsize=self.model.hyper_parameters["region_time_tolerance"])
