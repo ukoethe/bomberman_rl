@@ -16,7 +16,6 @@ def state_to_features(game_state: dict) -> np.array:
     :return: np.array
     """
     if game_state is None:
-        # todo we need another representation for final state here!
         return np.random.rand(21)
 
     field_width, field_height = game_state['field'].shape
@@ -159,7 +158,6 @@ def _compute_zones_heatmap(agent_position, objects_position, initial, weighting_
         np.arctan2(objects_position[:, 1] - agent_position[1], objects_position[:, 0] - agent_position[0]))
     angles = (angles + 360) % 360
 
-    # TODO Evaluate if: map object to two zones if it is in-between
     # Computed: RIGHT; Actual: RIGHT
     zones[0] = aggregation_func(
         distances[np.where(((angles >= 0) & (angles < 45)) | ((angles >= 315) & (angles <= 360)))])
@@ -201,7 +199,6 @@ def _object_in_field_of_view(agent_position, objects_position, initial, normaliz
         of the agent to the nearest object (if any) below, left, above, right of it.
 
     """
-    # TODO Maybe scale values: small distance -> high value, high distance -> small value
     field_of_view = np.full(shape=(4,), fill_value=initial)
 
     if objects_position.size == 0:
