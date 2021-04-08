@@ -87,7 +87,7 @@ class GenericWorld:
 
         self.running = True
         if self.args.match_name is not None:
-            match_prefix = f"{self.args.match_name}"
+            match_prefix = f"{self.args.match_name} |"
         else:
             match_prefix = ""
         self.round_id = f'{match_prefix}Round {self.round:02d} ({datetime.now().strftime("%Y-%m-%d %H-%M-%S")})'
