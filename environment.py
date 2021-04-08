@@ -332,7 +332,14 @@ class GenericWorld:
         results['by_round'] = self.round_statistics
 
         if self.args.save_stats is not False:
-            name = Path(f'results/{self.round_id}.json' if self.args.save_stats is True else self.args.save_stats)
+            if self.args.save_stats is True:
+                file_name = self.args.save_stats
+            elif self.args.match_name is not None:
+                file_name = f'results/{self.args.match_name}'
+            else:
+                file_name = f'results/{datetime.now().strftime("%Y-%m-%d %H-%M-%S")}'
+
+            name = Path(file_name)
             if not name.parent.exists():
                 name.parent.mkdir(parents=True)
             with open(name, "w") as file:
