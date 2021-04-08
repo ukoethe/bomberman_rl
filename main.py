@@ -1,5 +1,4 @@
 import os
-import sys
 import threading
 from argparse import ArgumentParser
 from time import sleep, time
@@ -45,6 +44,7 @@ def main(argv = None):
     play_parser.add_argument("--n-rounds", type=int, default=10, help="How many rounds to play")
     play_parser.add_argument("--save-replay", const=True, default=False, action='store', nargs='?', help='Store the game as .pt for a replay')
     play_parser.add_argument("--no-gui", default=False, action="store_true", help="Deactivate the user interface and play as fast as possible.")
+    play_parser.add_argument("--match-name", help="Give the match a name")
 
     # Replay arguments
     replay_parser = subparsers.add_parser("replay")
@@ -57,7 +57,8 @@ def main(argv = None):
                          help="Wait for key press until next movement")
         sub.add_argument("--update-interval", type=float, default=0.1,
                          help="How often agents take steps (ignored without GUI)")
-        sub.add_argument("--log_dir", type=str, default=os.path.dirname(os.path.abspath(__file__)) + "/logs")
+        sub.add_argument("--log-dir", default=os.path.dirname(os.path.abspath(__file__)) + "/logs")
+        sub.add_argument("--save-stats", const=True, default=False, action='store', nargs='?', help='Store the game results as .json for evaluation')
 
         # Video?
         sub.add_argument("--make-video", default=False, action="store_true",

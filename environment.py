@@ -1,13 +1,14 @@
+import json
 import logging
 import pickle
 import random
 from collections import namedtuple
 from datetime import datetime
-from logging.handlers import RotatingFileHandler
 from os.path import dirname
+from pathlib import Path
 from threading import Event
-from time import time
-from typing import List, Union
+from time import time, sleep
+from typing import List, Union, Tuple, Dict
 
 import numpy as np
 
@@ -18,7 +19,7 @@ from fallbacks import pygame
 from items import Coin, Explosion, Bomb
 
 WorldArgs = namedtuple("WorldArgs",
-                       ["no_gui", "fps", "turn_based", "update_interval", "save_replay", "replay", "make_video", "continue_without_training", "log_dir"])
+                       ["no_gui", "fps", "turn_based", "update_interval", "save_replay", "replay", "make_video", "continue_without_training", "log_dir", "save_stats", "match_name"])
 
 
 class Trophy:
@@ -32,6 +33,8 @@ class GenericWorld:
 
     running: bool = False
     step: int
+    replay: Dict
+    round_statistics: Dict
 
     agents: List[Agent]
     active_agents: List[Agent]
@@ -56,6 +59,7 @@ class GenericWorld:
         self.round = 0
         self.running = False
         self.ready_for_restart_flag = Event()
+        self.round_statistics = {}
 
     def setup_logging(self):
         self.logger = logging.getLogger('BombeRLeWorld')
@@ -68,6 +72,42 @@ class GenericWorld:
         self.logger.info('Initializing game world')
 
     def new_round(self):
+        if self.running:
+            self.logger.warning('New round requested while still running')
+            self.end_round()
+
+        self.round += 1
+        self.logger.info(f'STARTING ROUND #{self.round}')
+        pygame.display.set_caption(f'BombeRLe | Round #{self.round}')
+
+        # Bookkeeping
+        self.step = 0
+        self.bombs = []
+        self.explosions = []
+
+        self.running = True
+        if self.args.match_name is not None:
+            match_prefix = f"{self.args.match_name}"
+        else:
+            match_prefix = ""
+        self.round_id = f'{match_prefix}Round {self.round:02d} ({datetime.now().strftime("%Y-%m-%d %H-%M-%S")})'
+
+        # Arena with wall and crate layout
+        self.arena, self.coins, self.active_agents = self.build_arena()
+
+        for agent in self.active_agents:
+            agent.start_round()
+
+        self.replay = {
+            'round': self.round,
+            'arena': np.array(self.arena),
+            'coins': [c.get_state() for c in self.coins],
+            'agents': [a.get_state() for a in self.agents],
+            'actions': dict([(a.name, []) for a in self.agents]),
+            'permutations': []
+        }
+
+    def build_arena(self) -> Tuple[np.array, List[Coin], List[Agent]]:
         raise NotImplementedError()
 
     def add_agent(self, agent_dir, name, train=False):
@@ -216,6 +256,9 @@ class GenericWorld:
         self.explosions = [exp for exp in self.explosions if exp.active]
 
     def end_round(self):
+        if not self.running:
+            raise ValueError('End-of-round requested while no round was running')
+
         # Turn screenshots into videos
         if self.args.make_video:
             self.logger.debug(f'Turning screenshots into video files')
@@ -233,6 +276,19 @@ class GenericWorld:
                              f'screenshots/{self.round_id}_video.webm'])
             for f in glob.glob(f'screenshots/{self.round_id}_*.png'):
                 os.remove(f)
+
+        self.round_statistics[self.round_id] = {
+            "steps": self.step,
+            **{key: sum(a.statistics[key] for a in self.agents) for key in ["coins", "kills", "suicides"]}
+        }
+
+        self.running = False
+        # Wait in case there is still a game step running
+        if self.gui is not None:
+            sleep(self.args.update_interval)
+
+        self.logger.debug('Setting ready_for_restart_flag')
+        self.ready_for_restart_flag.set()
 
     def time_to_stop(self):
         # Check round stopping criteria
@@ -267,23 +323,20 @@ class GenericWorld:
             pygame.image.save(self.gui.screen, dirname(__file__) + f'/screenshots/{self.round_id}_{self.gui.frame:05d}.png')
 
     def end(self):
-        # Turn screenshots into videos
-        if self.args.make_video:
-            self.logger.debug(f'Turning screenshots into video files')
-            import subprocess, os, glob
-            subprocess.call(['ffmpeg', '-y', '-framerate', f'{self.args.fps}',
-                             '-f', 'image2', '-pattern_type', 'glob', '-i', f'screenshots/{self.round_id}_*.png',
-                             '-preset', 'veryslow', '-tune', 'animation', '-crf', '5', '-c:v', 'libx264', '-pix_fmt',
-                             'yuv420p',
-                             f'screenshots/{self.round_id}_video.mp4'])
-            subprocess.call(['ffmpeg', '-y', '-framerate', f'{self.args.fps}',
-                             '-f', 'image2', '-pattern_type', 'glob', '-i', f'screenshots/{self.round_id}_*.png',
-                             '-threads', '2', '-tile-columns', '2', '-frame-parallel', '0', '-g', '100', '-speed', '1',
-                             '-pix_fmt', 'yuv420p', '-qmin', '0', '-qmax', '10', '-crf', '5', '-b:v', '2M', '-c:v',
-                             'libvpx-vp9',
-                             f'screenshots/{self.round_id}_video.webm'])
-            for f in glob.glob(f'screenshots/{self.round_id}_*.png'):
-                os.remove(f)
+        if self.running:
+            self.end_round()
+
+        results = {'by_agent': {a.name: a.statistics for a in self.agents}}
+        for a in self.agents:
+            results['by_agent'][a.name]['score'] = a.total_score
+        results['by_round'] = self.round_statistics
+
+        if self.args.save_stats is not None:
+            name = Path(f'results/{self.round_id}.json' if self.args.save_stats is True else self.args.save_stats)
+            if not name.parent.exists():
+                name.parent.mkdir(parents=True)
+            with open(name, "w") as file:
+                json.dump(results, file, indent=4, sort_keys=True)
 
 
 class BombeRLeWorld(GenericWorld):
@@ -303,83 +356,46 @@ class BombeRLeWorld(GenericWorld):
                 name = agent_dir
             self.add_agent(agent_dir, name, train=train)
 
-    def new_round(self):
-        if self.running:
-            self.logger.warning('New round requested while still running')
-            self.end_round()
-
-        self.round += 1
-        self.logger.info(f'STARTING ROUND #{self.round}')
-        pygame.display.set_caption(f'BombeRLe | Round #{self.round}')
-
-        # Bookkeeping
-        self.step = 0
-        self.active_agents = []
-        self.bombs = []
-        self.explosions = []
-        self.round_id = f'Replay {datetime.now().strftime("%Y-%m-%d %H-%M-%S")}'
-
-        # Arena with wall and crate layout
-        self.arena = (np.random.rand(s.COLS, s.ROWS) < s.CRATE_DENSITY).astype(int)
-        self.arena[:1, :] = -1
-        self.arena[-1:, :] = -1
-        self.arena[:, :1] = -1
-        self.arena[:, -1:] = -1
+    def build_arena(self):
+        arena = (np.random.rand(s.COLS, s.ROWS) < s.CRATE_DENSITY).astype(int)
+        arena[:1, :] = -1
+        arena[-1:, :] = -1
+        arena[:, :1] = -1
+        arena[:, -1:] = -1
         for x in range(s.COLS):
             for y in range(s.ROWS):
                 if (x + 1) * (y + 1) % 2 == 1:
-                    self.arena[x, y] = -1
+                    arena[x, y] = -1
 
-        # Starting positions
         start_positions = [(1, 1), (1, s.ROWS - 2), (s.COLS - 2, 1), (s.COLS - 2, s.ROWS - 2)]
         random.shuffle(start_positions)
         for (x, y) in start_positions:
             for (xx, yy) in [(x, y), (x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]:
-                if self.arena[xx, yy] == 1:
-                    self.arena[xx, yy] = 0
+                if arena[xx, yy] == 1:
+                    arena[xx, yy] = 0
 
         # Distribute coins evenly
-        self.coins = []
-        """coin_pattern = np.array([
-            [1, 1, 1],
-            [0, 0, 1],
-        ])
-        coins = np.zeros_like(self.arena)
-        for x in range(1, s.COLS - 2, coin_pattern.shape[0]):
-            for i in range(coin_pattern.shape[0]):
-                for j in range(coin_pattern.shape[1]):
-                    if coin_pattern[i, j] == 1:
-                        self.coins.append(Coin((x + i, x + j), self.arena[x+i,x+j] == 0))
-                        coins[x + i, x + j] += 1"""
+        coins = []
         for i in range(3):
             for j in range(3):
-                n_crates = (self.arena[1 + 5 * i:6 + 5 * i, 1 + 5 * j:6 + 5 * j] == 1).sum()
+                n_crates = (arena[1 + 5 * i:6 + 5 * i, 1 + 5 * j:6 + 5 * j] == 1).sum()
                 while True:
                     x, y = np.random.randint(1 + 5 * i, 6 + 5 * i), np.random.randint(1 + 5 * j, 6 + 5 * j)
-                    if n_crates == 0 and self.arena[x, y] == 0:
-                        self.coins.append(Coin((x, y)))
-                        self.coins[-1].collectable = True
+                    if n_crates == 0 and arena[x, y] == 0:
+                        coins.append(Coin((x, y)))
+                        coins[-1].collectable = True
                         break
-                    elif self.arena[x, y] == 1:
-                        self.coins.append(Coin((x, y)))
+                    elif arena[x, y] == 1:
+                        coins.append(Coin((x, y)))
                         break
 
         # Reset agents and distribute starting positions
+        active_agents = []
         for agent in self.agents:
-            agent.start_round()
-            self.active_agents.append(agent)
+            active_agents.append(agent)
             agent.x, agent.y = start_positions.pop()
 
-        self.replay = {
-            'round': self.round,
-            'arena': np.array(self.arena),
-            'coins': [c.get_state() for c in self.coins],
-            'agents': [a.get_state() for a in self.agents],
-            'actions': dict([(a.name, []) for a in self.agents]),
-            'permutations': []
-        }
-
-        self.running = True
+        return arena, coins, active_agents
 
     def get_state_for_agent(self, agent: Agent):
         state = {
@@ -456,7 +472,6 @@ class BombeRLeWorld(GenericWorld):
             self.perform_agent_action(a, action)
 
     def end_round(self):
-        assert self.running, "End of round requested while not running"
         super().end_round()
 
         self.logger.info(f'WRAPPING UP ROUND #{self.round}')
@@ -476,21 +491,13 @@ class BombeRLeWorld(GenericWorld):
             with open(name, 'wb') as f:
                 pickle.dump(self.replay, f)
 
-        # Mark round as ended
-        self.running = False
-
-        self.logger.debug('Setting ready_for_restart_flag')
-        self.ready_for_restart_flag.set()
-
     def end(self):
-        if self.running:
-            self.end_round()
+        super().end()
         self.logger.info('SHUT DOWN')
         for a in self.agents:
             # Send exit message to shut down agent
             self.logger.debug(f'Sending exit message to agent <{a.name}>')
-
-
+            # todo multiprocessing shutdown
 
 
 class GUI:

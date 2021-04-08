@@ -1,5 +1,6 @@
 import pickle
 from time import sleep
+from typing import Tuple, List
 
 import numpy as np
 
@@ -18,69 +19,52 @@ class ReplayWorld(GenericWorld):
         self.logger.info(f'Loading replay file "{replay_file}"')
         self.replay_file = replay_file
         with open(replay_file, 'rb') as f:
-            self.replay = pickle.load(f)
-        if not 'n_steps' in self.replay:
-            self.replay['n_steps'] = s.MAX_STEPS
+            self.loaded_replay = pickle.load(f)
+        if not 'n_steps' in self.loaded_replay:
+            self.loaded_replay['n_steps'] = s.MAX_STEPS
 
         pygame.display.set_caption(f'{replay_file}')
 
         # Recreate the agents
         self.agents = [ReplayAgent(name, self.colors.pop())
-                       for (name, s, b, xy) in self.replay['agents']]
+                       for (name, _, b, xy) in self.loaded_replay['agents']]
         self.new_round()
 
-    def new_round(self):
-        self.logger.info('STARTING REPLAY')
+    def build_arena(self) -> Tuple[np.array, List[Coin], List[Agent]]:
+        arena = np.array(self.loaded_replay['arena'])
 
-        # Bookkeeping
-        self.step = 0
-        self.bombs = []
-        self.explosions = []
-        self.running = True
-        self.frame = 0
-
-        # Game world and objects
-        self.arena = np.array(self.replay['arena'])
-        self.coins = []
-        for xy in self.replay['coins']:
-            if self.arena[xy] == 0:
-                self.coins.append(Coin(xy, True))
+        coins = []
+        for xy in self.loaded_replay['coins']:
+            if arena[xy] == 0:
+                coins.append(Coin(xy, True))
             else:
-                self.coins.append(Coin(xy, False))
-        self.active_agents = [a for a in self.agents]
+                coins.append(Coin(xy, False))
+
+        agents = []
         for i, agent in enumerate(self.agents):
-            agent.start_round()
-            agent.x, agent.y = self.replay['agents'][i][-1]
-            agent.total_score = 0
+            agents.append(agent)
+            agent.x, agent.y = self.loaded_replay['agents'][i][-1]
+
+        return arena, coins, agents
 
     def poll_and_run_agents(self):
         # Perform recorded agent actions
-        perm = self.replay['permutations'][self.step - 1]
+        perm = self.loaded_replay['permutations'][self.step - 1]
+        self.replay['permutations'].append(perm)
         for i in perm:
             a = self.active_agents[i]
             self.logger.debug(f'Repeating action from agent <{a.name}>')
-            action = self.replay['actions'][a.name][self.step - 1]
+            action = self.loaded_replay['actions'][a.name][self.step - 1]
             self.logger.info(f'Agent <{a.name}> chose action {action}.')
+            self.replay['actions'][a.name].append(action)
             self.perform_agent_action(a, action)
 
     def time_to_stop(self):
         time_to_stop = super().time_to_stop()
-        if self.step == self.replay['n_steps']:
+        if self.step == self.loaded_replay['n_steps']:
             self.logger.info('Replay ends here, wrap up round')
             time_to_stop = True
         return time_to_stop
-
-    def end_round(self):
-        super().end_round()
-        if self.running:
-            self.running = False
-            # Wait in case there is still a game step running
-            sleep(self.args.update_interval)
-        else:
-            self.logger.warning('End-of-round requested while no round was running')
-
-        self.logger.debug('Setting ready_for_restart_flag')
-        self.ready_for_restart_flag.set()
 
 
 class ReplayAgent(Agent):

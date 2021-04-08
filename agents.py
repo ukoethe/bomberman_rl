@@ -3,14 +3,13 @@ import logging
 import multiprocessing as mp
 import os
 import queue
+from collections import defaultdict
 from inspect import signature
-from logging.handlers import RotatingFileHandler
 from time import time
 from types import SimpleNamespace
 from typing import Tuple, Any
 
-import numpy as np
-
+import events as e
 import settings as s
 from fallbacks import pygame
 
@@ -25,6 +24,19 @@ AGENT_API = {
         # "enemy_game_events_occurred": ["self", "enemy_name: str", "old_enemy_game_state: dict", "enemy_action: str", "enemy_game_state: dict", "enemy_events: List[str]"],
         "end_of_round": ["self", "last_game_state: dict", "last_action: str", "events: List[str]"]
     }
+}
+
+EVENT_STAT_MAP = {
+    e.KILLED_OPPONENT: 'kills',
+    e.KILLED_SELF: 'suicides',
+    e.COIN_COLLECTED: 'coins',
+    e.CRATE_DESTROYED: 'crates',
+    e.BOMB_DROPPED: 'bombs',
+    e.MOVED_LEFT: 'moves',
+    e.MOVED_RIGHT: 'moves',
+    e.MOVED_UP: 'moves',
+    e.MOVED_DOWN: 'moves',
+    e.INVALID_ACTION: 'invalid'
 }
 
 
@@ -68,6 +80,8 @@ class Agent:
 
         self.dead = None
         self.score = None
+
+        self.statistics = None
         self.trophies = None
 
         self.events = None
@@ -96,6 +110,8 @@ class Agent:
     def start_round(self):
         self.dead = False
         self.score = 0
+
+        self.statistics = defaultdict(int)
         self.trophies = []
 
         self.events = []
@@ -107,6 +123,8 @@ class Agent:
         self.last_action = None
 
     def add_event(self, event):
+        if event in EVENT_STAT_MAP:
+            self.statistics[EVENT_STAT_MAP[event]] += 1
         self.events.append(event)
 
     def get_state(self):
