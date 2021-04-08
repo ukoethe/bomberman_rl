@@ -332,7 +332,7 @@ class GenericWorld:
         results['by_round'] = self.round_statistics
 
         if self.args.save_stats is not False:
-            if self.args.save_stats is True:
+            if self.args.save_stats is not True:
                 file_name = self.args.save_stats
             elif self.args.match_name is not None:
                 file_name = f'results/{self.args.match_name}'
