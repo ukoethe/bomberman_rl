@@ -7,7 +7,7 @@ from datetime import datetime
 from os.path import dirname
 from pathlib import Path
 from threading import Event
-from time import time, sleep
+from time import time
 from typing import List, Union, Tuple, Dict
 
 import numpy as np
@@ -54,12 +54,15 @@ class GenericWorld:
         else:
             self.gui = GUI(args, self)
 
-        self.colors = s.AGENT_COLORS
+        self.colors = list(s.AGENT_COLORS)
 
         self.round = 0
+        self.round_statistics = {}
+
         self.running = False
         self.ready_for_restart_flag = Event()
-        self.round_statistics = {}
+        self.computing_flag = Event()
+        self.computing_flag.set()
 
     def setup_logging(self):
         self.logger = logging.getLogger('BombeRLeWorld')
@@ -157,6 +160,9 @@ class GenericWorld:
         raise NotImplementedError()
 
     def do_step(self, user_input='WAIT'):
+        self.computing_flag.clear()
+        assert self.running
+
         self.step += 1
         self.logger.info(f'STARTING STEP {self.step}')
 
@@ -168,6 +174,7 @@ class GenericWorld:
         self.collect_coins()
         self.update_bombs()
         self.evaluate_explosions()
+        self.computing_flag.set()
 
         if self.time_to_stop():
             self.end_round()
@@ -258,6 +265,9 @@ class GenericWorld:
     def end_round(self):
         if not self.running:
             raise ValueError('End-of-round requested while no round was running')
+        # Wait in case there is still a game step running
+        self.computing_flag.wait()
+        self.running = False
 
         # Turn screenshots into videos
         if self.args.make_video:
@@ -277,15 +287,13 @@ class GenericWorld:
             for f in glob.glob(f'screenshots/{self.round_id}_*.png'):
                 os.remove(f)
 
+        for a in self.agents:
+            a.note_stat("score", a.score)
+            a.note_stat("rounds")
         self.round_statistics[self.round_id] = {
             "steps": self.step,
             **{key: sum(a.statistics[key] for a in self.agents) for key in ["coins", "kills", "suicides"]}
         }
-
-        self.running = False
-        # Wait in case there is still a game step running
-        if self.gui is not None:
-            sleep(self.args.update_interval)
 
         self.logger.debug('Setting ready_for_restart_flag')
         self.ready_for_restart_flag.set()
@@ -326,7 +334,7 @@ class GenericWorld:
         if self.running:
             self.end_round()
 
-        results = {'by_agent': {a.name: a.statistics for a in self.agents}}
+        results = {'by_agent': {a.name: a.lifetime_statistics for a in self.agents}}
         for a in self.agents:
             results['by_agent'][a.name]['score'] = a.total_score
         results['by_round'] = self.round_statistics
@@ -335,9 +343,9 @@ class GenericWorld:
             if self.args.save_stats is not True:
                 file_name = self.args.save_stats
             elif self.args.match_name is not None:
-                file_name = f'results/{self.args.match_name}'
+                file_name = f'results/{self.args.match_name}.json'
             else:
-                file_name = f'results/{datetime.now().strftime("%Y-%m-%d %H-%M-%S")}'
+                file_name = f'results/{datetime.now().strftime("%Y-%m-%d %H-%M-%S")}.json'
 
             name = Path(file_name)
             if not name.parent.exists():
@@ -351,7 +359,6 @@ class BombeRLeWorld(GenericWorld):
         super().__init__(args)
 
         self.setup_agents(agents)
-        self.new_round()
 
     def setup_agents(self, agents):
         # Add specified agents and start their subprocesses

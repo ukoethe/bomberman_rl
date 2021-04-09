@@ -82,6 +82,7 @@ class Agent:
         self.score = None
 
         self.statistics = None
+        self.lifetime_statistics = defaultdict(int)
         self.trophies = None
 
         self.events = None
@@ -124,8 +125,12 @@ class Agent:
 
     def add_event(self, event):
         if event in EVENT_STAT_MAP:
-            self.statistics[EVENT_STAT_MAP[event]] += 1
+            self.note_stat(EVENT_STAT_MAP[event])
         self.events.append(event)
+
+    def note_stat(self, name, value=1):
+        self.statistics[name] += value
+        self.lifetime_statistics[name] += value
 
     def get_state(self):
         """Provide information about this agent for the global game state."""
@@ -160,6 +165,8 @@ class Agent:
     def wait_for_act(self):
         try:
             action, think_time = self.backend.get_with_time("act")
+            self.note_stat("time", think_time)
+            self.note_stat("steps")
             self.last_action = action
             return action, think_time
         except BaseException:
