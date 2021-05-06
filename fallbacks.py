@@ -16,6 +16,7 @@ try:
     with contextlib.redirect_stdout(None):
         import pygame
         LOADED_PYGAME = True
+    pygame.init()
 except ModuleNotFoundError:
     pygame = QuietFallback()
     LOADED_PYGAME = True

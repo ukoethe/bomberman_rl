@@ -35,7 +35,7 @@ class Coin(Item):
 class Bomb(Item):
     DEFAULT_AVATARS = {color: pygame.image.load(f'assets/bomb_{color}.png') for color in s.AGENT_COLORS}
 
-    def __init__(self, pos, owner, timer, power, color, custom_sprite=None):
+    def __init__(self, pos, owner, timer, power, bomb_sprite):
         super(Bomb, self).__init__()
         self.x = pos[0]
         self.y = pos[1]
@@ -44,15 +44,7 @@ class Bomb(Item):
         self.power = power
 
         self.active = True
-
-        self.color = color
-        self.custom_sprite = custom_sprite
-
-    @cached_property
-    def avatar(self):
-        if self.custom_sprite:
-            return self.custom_sprite
-        return Bomb.DEFAULT_AVATARS[self.color]
+        self.avatar = bomb_sprite
 
     def get_state(self):
         return (self.x, self.y), self.timer

@@ -1,5 +1,4 @@
 import pickle
-from time import sleep
 from typing import Tuple, List
 
 import numpy as np
@@ -26,9 +25,19 @@ class ReplayWorld(GenericWorld):
         pygame.display.set_caption(f'{replay_file}')
 
         # Recreate the agents
-        self.agents = [ReplayAgent(name, self.colors.pop())
-                       for (name, _, b, xy) in self.loaded_replay['agents']]
-        self.new_round()
+        agents = []
+        for name, _, b, xy in self.loaded_replay["agents"]:
+            avatar_sprite_desc = bomb_sprite_desc = self.colors.pop()
+            if "display_names" in self.loaded_replay:
+                display_name = self.loaded_replay["display_names"][name]
+                if name in self.loaded_replay["avatars"]:
+                    avatar_sprite_desc = self.loaded_replay["avatars"][name]
+                if name in self.loaded_replay["bombs"]:
+                    bomb_sprite_desc = self.loaded_replay["bombs"][name]
+            else:
+                display_name = name
+            agents.append(ReplayAgent(name, display_name, avatar_sprite_desc, bomb_sprite_desc))
+        self.agents = agents
 
     def build_arena(self) -> Tuple[np.array, List[Coin], List[Agent]]:
         arena = np.array(self.loaded_replay['arena'])
@@ -72,9 +81,9 @@ class ReplayAgent(Agent):
     Agents class firing off a predefined sequence of actions.
     """
 
-    def __init__(self, name, color):
+    def __init__(self, name, display_name, avatar_sprite_desc, bomb_sprite_desc):
         """Recreate the agent as it was at the beginning of the original game."""
-        super().__init__(color, name, None, False, None)
+        super().__init__(name, None, display_name, False, None, avatar_sprite_desc, bomb_sprite_desc)
 
     def setup(self):
         pass

@@ -1,19 +1,31 @@
 import os
 import threading
 from argparse import ArgumentParser
+from pathlib import Path
 from time import sleep, time
 
 import settings as s
-from environment import BombeRLeWorld, GenericWorld
+from environment import BombeRLeWorld, GenericWorld, GUI
 from fallbacks import pygame, tqdm, LOADED_PYGAME
 from replay import ReplayWorld
 
+ESCAPE_KEYS = (pygame.K_q, pygame.K_ESCAPE)
 
-def gui_controller(world, args, user_inputs, stop_flag: threading.Event, quit_flag: threading.Event):
+
+def gui_controller(world, gui, args, user_inputs, stop_flag: threading.Event, quit_flag: threading.Event):
+    screenshot_dir = Path(__file__).parent / "screenshots"
+    if not screenshot_dir.exists():
+        screenshot_dir.mkdir()
+
     while True:
         # Render (which takes time)
         last_frame = time()
-        world.render()
+        gui.render()
+
+        # Save screenshot
+        if world.running and world.args.make_video:
+            world.logger.debug(f'Saving screenshot for frame {gui.frame}')
+            pygame.image.save(gui.screen, str(screenshot_dir / f'{world.round_id}_{gui.frame:05d}.png'))
         pygame.display.flip()
 
         # Then sleep until next frame
@@ -28,16 +40,23 @@ def gui_controller(world, args, user_inputs, stop_flag: threading.Event, quit_fl
                 return
             elif event.type == pygame.KEYDOWN:
                 key_pressed = event.key
-                if key_pressed in (pygame.K_q, pygame.K_ESCAPE):
+                # End of game: any usual key quits
+                if not world.running and world.round >= args.n_rounds and (key_pressed in ESCAPE_KEYS or key_pressed in s.INPUT_MAP):
+                    return
+
+                # Stop round with stop keys
+                if world.running and key_pressed in ESCAPE_KEYS:
                     stop_flag.set()
                 # Convert keyboard input into actions
-                if s.INPUT_MAP.get(key_pressed, False):
+                elif key_pressed in s.INPUT_MAP:
                     if args.turn_based:
                         user_inputs.clear()
-                    user_inputs.append(s.INPUT_MAP.get(key_pressed))
+                    user_inputs.append(s.INPUT_MAP[key_pressed])
 
 
-def wait_for_gui(user_inputs, args, world):
+def gui_blocker(user_inputs, args, world):
+    # Start first round
+    yield
     last_update = time()
 
     while True:
@@ -49,10 +68,11 @@ def wait_for_gui(user_inputs, args, world):
             # Wait for update interval
             else:
                 now = time()
-                if world.gui is not None and (now - last_update < args.update_interval):
-                    sleep(args.update_interval - (now - last_update))
-                last_update = now
-        else:
+                wait_time = args.update_interval - (now - last_update)
+                if wait_time > 0:
+                    sleep(wait_time)
+                last_update = time()
+        elif world.round <= args.n_rounds:
             # Next key tells game to continue
             while len(user_inputs) == 0:
                 sleep(0.1)
@@ -61,18 +81,23 @@ def wait_for_gui(user_inputs, args, world):
 
 
 def game_logic(world: GenericWorld, user_inputs, args, stop_flag: threading.Event, quit_flag: threading.Event, blocker=None):
-    for _ in tqdm(range(args.n_rounds)):
-        world.new_round()
-
-        while world.running and not stop_flag.is_set() and not quit_flag.is_set():
-            if blocker is not None:
-                next(blocker)
-            world.do_step(user_inputs.pop(0) if len(user_inputs) else 'WAIT')
-        if quit_flag.is_set():
-            break
+    def wait():
         if blocker is not None:
             next(blocker)
-            # todo check correct order
+
+    for _ in tqdm(range(args.n_rounds)):
+        wait()
+        world.new_round()
+
+        while world.running:
+            wait()
+            if stop_flag.is_set() or quit_flag.is_set():
+                stop_flag.clear()
+                break
+            world.do_step(user_inputs.pop(0) if len(user_inputs) else 'WAIT')
+
+        if quit_flag.is_set():
+            break
     world.end()
 
 
@@ -118,12 +143,12 @@ def main(argv = None):
     if args.command_name == "replay":
         args.no_gui = False
         args.n_rounds = 1
+        args.match_name = Path(args.replay).name
 
     has_gui = not args.no_gui
     if has_gui:
         if not LOADED_PYGAME:
             raise ValueError("pygame could not loaded, cannot run with GUI")
-        pygame.init()
 
     # Initialize environment and agents
     if args.command_name == "play":
@@ -152,10 +177,11 @@ def main(argv = None):
 
     # Launch GUI
     if has_gui:
-        blocker = wait_for_gui(user_inputs, args, world)
+        gui = GUI(world)
+        blocker = gui_blocker(user_inputs, args, world)
         t = threading.Thread(target=game_logic, args=(world, user_inputs, args, stop_flag, quit_flag, blocker))
         t.start()
-        gui_controller(world, args, user_inputs, stop_flag, quit_flag)
+        gui_controller(world, gui, args, user_inputs, stop_flag, quit_flag)
     else:
         game_logic(world, user_inputs, args, stop_flag, quit_flag)
 

@@ -8,7 +8,7 @@ from os.path import dirname
 from pathlib import Path
 from threading import Event
 from time import time
-from typing import List, Union, Tuple, Dict
+from typing import List, Tuple, Dict
 
 import numpy as np
 
@@ -43,16 +43,11 @@ class GenericWorld:
     bombs: List[Bomb]
     explosions: List[Explosion]
 
-    gui: Union[None, "GUI"]
     round_id: str
 
     def __init__(self, args: WorldArgs):
         self.args = args
         self.setup_logging()
-        if self.args.no_gui:
-            self.gui = None
-        else:
-            self.gui = GUI(args, self)
 
         self.colors = list(s.AGENT_COLORS)
 
@@ -81,7 +76,6 @@ class GenericWorld:
 
         self.round += 1
         self.logger.info(f'STARTING ROUND #{self.round}')
-        pygame.display.set_caption(f'BombeRLe | Round #{self.round}')
 
         # Bookkeeping
         self.step = 0
@@ -122,7 +116,8 @@ class GenericWorld:
         # backend = ProcessAgentBackend(train, name, agent_dir)
         backend.start()
 
-        agent = Agent(self.colors.pop(), name, agent_dir, train, backend)
+        color = self.colors.pop()
+        agent = Agent(name, agent_dir, name, train, backend, color, color)
         self.agents.append(agent)
 
     def tile_is_free(self, x, y):
@@ -148,7 +143,7 @@ class GenericWorld:
             agent.add_event(e.MOVED_RIGHT)
         elif action == 'BOMB' and agent.bombs_left:
             self.logger.info(f'Agent <{agent.name}> drops bomb at {(agent.x, agent.y)}')
-            self.bombs.append(Bomb((agent.x, agent.y), agent, s.BOMB_TIMER, s.BOMB_POWER, agent.color, custom_sprite=agent.bomb_sprite))
+            self.bombs.append(Bomb((agent.x, agent.y), agent, s.BOMB_TIMER, s.BOMB_POWER, agent.bomb_sprite))
             agent.bombs_left = False
             agent.add_event(e.BOMB_DROPPED)
         elif action == 'WAIT':
@@ -321,14 +316,6 @@ class GenericWorld:
             return True
 
         return False
-
-    def render(self):
-        self.gui.render()
-
-        # Save screenshot
-        if self.args.make_video:
-            self.logger.debug(f'Saving screenshot for frame {self.gui.frame}')
-            pygame.image.save(self.gui.screen, dirname(__file__) + f'/screenshots/{self.round_id}_{self.gui.frame:05d}.png')
 
     def end(self):
         if self.running:
@@ -515,8 +502,7 @@ class BombeRLeWorld(GenericWorld):
 
 
 class GUI:
-    def __init__(self, args: WorldArgs, world: GenericWorld):
-        self.args = args
+    def __init__(self, world: GenericWorld):
         self.world = world
 
         # Initialize screen
@@ -557,6 +543,11 @@ class GUI:
     def render(self):
         self.frame += 1
         self.screen.blit(self.background, (0, 0))
+
+        if self.world.round == 0:
+            return
+
+        pygame.display.set_caption(f'BombeRLe | Round #{self.world.round}')
 
         # World
         for x in range(self.world.arena.shape[1]):

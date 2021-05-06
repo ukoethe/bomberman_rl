@@ -5,6 +5,7 @@ import os
 import queue
 from collections import defaultdict
 from inspect import signature
+from io import BytesIO
 from time import time
 from types import SimpleNamespace
 from typing import Tuple, Any
@@ -52,28 +53,34 @@ class Agent:
     calling events on its AgentBackend.
     """
 
-    def __init__(self, color, agent_name, code_name, train: bool, backend: "AgentBackend"):
+    def __init__(self, agent_name, code_name, display_name, train: bool, backend: "AgentBackend", avatar_sprite_desc, bomb_sprite_desc):
         self.backend = backend
 
         # Load custom avatar or standard robot avatar of assigned color
-        self.color = color
         try:
-            self.avatar = pygame.image.load(f'agent_code/{code_name}/avatar.png')
+            if isinstance(avatar_sprite_desc, bytes):
+                self.avatar = pygame.image.load(BytesIO(avatar_sprite_desc))
+            else:
+                self.avatar = pygame.image.load(f'agent_code/{code_name}/avatar.png')
             assert self.avatar.get_size() == (30, 30)
         except Exception as e:
-            self.avatar = pygame.image.load(f'assets/robot_{self.color}.png')
+            self.avatar = pygame.image.load(f'assets/robot_{avatar_sprite_desc}.png')
         # Load custom bomb sprite
         try:
-            self.bomb_sprite = pygame.image.load(f'agent_code/{code_name}/bomb.png')
-            assert self.bomb_sprite.get_size() == (30, 30)
+            if isinstance(avatar_sprite_desc, bytes):
+                self.bomb_sprite = pygame.image.load(BytesIO(bomb_sprite_desc))
+            else:
+                self.bomb_sprite = pygame.image.load(f'agent_code/{code_name}/bomb.png')
+            assert self.avatar.get_size() == (30, 30)
         except Exception as e:
-            self.bomb_sprite = None
+            self.bomb_sprite = pygame.image.load(f'assets/bomb_{bomb_sprite_desc}.png')
         # Prepare overlay that will indicate dead agent on the scoreboard
         self.shade = pygame.Surface((30, 30), pygame.SRCALPHA)
         self.shade.fill((0, 0, 0, 208))
 
         self.name = agent_name
         self.code_name = code_name
+        self.display_name = display_name
         self.train = train
 
         self.total_score = 0
