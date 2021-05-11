@@ -2,9 +2,9 @@ import json
 import logging
 import pickle
 import random
+import subprocess
 from collections import namedtuple
 from datetime import datetime
-from os.path import dirname
 from pathlib import Path
 from threading import Event
 from time import time
@@ -23,9 +23,9 @@ WorldArgs = namedtuple("WorldArgs",
 
 
 class Trophy:
-    coin_trophy = pygame.transform.smoothscale(pygame.image.load('assets/coin.png'), (15, 15))
-    suicide_trophy = pygame.transform.smoothscale(pygame.image.load('assets/explosion_2.png'), (15, 15))
-    time_trophy = pygame.image.load('assets/hourglass.png')
+    coin_trophy = pygame.transform.smoothscale(pygame.image.load(s.ASSET_DIR / 'coin.png'), (15, 15))
+    suicide_trophy = pygame.transform.smoothscale(pygame.image.load(s.ASSET_DIR / 'explosion_2.png'), (15, 15))
+    time_trophy = pygame.image.load(s.ASSET_DIR / 'hourglass.png')
 
 
 class GenericWorld:
@@ -74,20 +74,19 @@ class GenericWorld:
             self.logger.warning('New round requested while still running')
             self.end_round()
 
-        self.round += 1
-        self.logger.info(f'STARTING ROUND #{self.round}')
+        new_round = self.round + 1
+        self.logger.info(f'STARTING ROUND #{new_round}')
 
         # Bookkeeping
         self.step = 0
         self.bombs = []
         self.explosions = []
 
-        self.running = True
         if self.args.match_name is not None:
             match_prefix = f"{self.args.match_name} | "
         else:
             match_prefix = ""
-        self.round_id = f'{match_prefix}Round {self.round:02d} ({datetime.now().strftime("%Y-%m-%d %H-%M-%S")})'
+        self.round_id = f'{match_prefix}Round {new_round:02d} ({datetime.now().strftime("%Y-%m-%d %H-%M-%S")})'
 
         # Arena with wall and crate layout
         self.arena, self.coins, self.active_agents = self.build_arena()
@@ -96,13 +95,16 @@ class GenericWorld:
             agent.start_round()
 
         self.replay = {
-            'round': self.round,
+            'round': new_round,
             'arena': np.array(self.arena),
             'coins': [c.get_state() for c in self.coins],
             'agents': [a.get_state() for a in self.agents],
             'actions': dict([(a.name, []) for a in self.agents]),
             'permutations': []
         }
+
+        self.round = new_round
+        self.running = True
 
     def build_arena(self) -> Tuple[np.array, List[Coin], List[Agent]]:
         raise NotImplementedError()
@@ -263,24 +265,6 @@ class GenericWorld:
         # Wait in case there is still a game step running
         self.computing_flag.wait()
         self.running = False
-
-        # Turn screenshots into videos
-        if self.args.make_video:
-            self.logger.debug(f'Turning screenshots into video files')
-            import subprocess, os, glob
-            subprocess.call(['ffmpeg', '-y', '-framerate', f'{self.args.fps}',
-                             '-f', 'image2', '-pattern_type', 'glob', '-i', f'screenshots/{self.round_id}_*.png',
-                             '-preset', 'veryslow', '-tune', 'animation', '-crf', '5', '-c:v', 'libx264', '-pix_fmt',
-                             'yuv420p',
-                             f'screenshots/{self.round_id}_video.mp4'])
-            subprocess.call(['ffmpeg', '-y', '-framerate', f'{self.args.fps}',
-                             '-f', 'image2', '-pattern_type', 'glob', '-i', f'screenshots/{self.round_id}_*.png',
-                             '-threads', '2', '-tile-columns', '2', '-frame-parallel', '0', '-g', '100', '-speed', '1',
-                             '-pix_fmt', 'yuv420p', '-qmin', '0', '-qmax', '10', '-crf', '5', '-b:v', '2M', '-c:v',
-                             'libvpx-vp9',
-                             f'screenshots/{self.round_id}_video.webm'])
-            for f in glob.glob(f'screenshots/{self.round_id}_*.png'):
-                os.remove(f)
 
         for a in self.agents:
             a.note_stat("score", a.score)
@@ -504,22 +488,23 @@ class BombeRLeWorld(GenericWorld):
 class GUI:
     def __init__(self, world: GenericWorld):
         self.world = world
+        self.screenshot_dir = Path(__file__).parent / "screenshots"
 
         # Initialize screen
         self.screen = pygame.display.set_mode((s.WIDTH, s.HEIGHT))
         pygame.display.set_caption('BombeRLe')
-        icon = pygame.image.load(f'assets/bomb_yellow.png')
+        icon = pygame.image.load(s.ASSET_DIR / f'bomb_yellow.png')
         pygame.display.set_icon(icon)
 
         # Background and tiles
         self.background = pygame.Surface((s.WIDTH, s.HEIGHT))
         self.background = self.background.convert()
         self.background.fill((0, 0, 0))
-        self.t_wall = pygame.image.load('assets/brick.png')
-        self.t_crate = pygame.image.load('assets/crate.png')
+        self.t_wall = pygame.image.load(s.ASSET_DIR / 'brick.png')
+        self.t_crate = pygame.image.load(s.ASSET_DIR / 'crate.png')
 
         # Font for scores and such
-        font_name = dirname(__file__) + '/assets/emulogic.ttf'
+        font_name = s.ASSET_DIR / 'emulogic.ttf'
         self.fonts = {
             'huge': pygame.font.Font(font_name, 20),
             'big': pygame.font.Font(font_name, 16),
@@ -541,12 +526,12 @@ class GUI:
         self.screen.blit(text_surface, text_rect)
 
     def render(self):
-        self.frame += 1
         self.screen.blit(self.background, (0, 0))
 
         if self.world.round == 0:
             return
 
+        self.frame += 1
         pygame.display.set_caption(f'BombeRLe | Round #{self.world.round}')
 
         # World
@@ -586,7 +571,7 @@ class GUI:
         for i, a in enumerate(agents):
             bounce = 0 if (a is not leading or self.world.running) else np.abs(10 * np.sin(5 * time()))
             a.render(self.screen, 600, y_base + 50 * i - 15 - bounce)
-            self.render_text(a.name, 650, y_base + 50 * i,
+            self.render_text(a.display_name, 650, y_base + 50 * i,
                              (64, 64, 64) if a.dead else (255, 255, 255),
                              valign='center', size='small')
             for j, trophy in enumerate(a.trophies):
@@ -602,14 +587,48 @@ class GUI:
             color = np.int_((255 * (np.sin(3 * time()) / 3 + .66),
                              255 * (np.sin(4 * time() + np.pi / 3) / 3 + .66),
                              255 * (np.sin(5 * time() - np.pi / 3) / 3 + .66)))
-            self.render_text(leading.name, x_center, 320, color,
+            self.render_text(leading.display_name, x_center, 320, color,
                              valign='top', halign='center', size='huge')
             self.render_text('has won the round!', x_center, 350, color,
                              valign='top', halign='center', size='big')
-            leading_total = max(self.world.agents, key=lambda a: (a.total_score, a.name))
+            leading_total = max(self.world.agents, key=lambda a: (a.total_score, a.display_name))
             if leading_total is leading:
-                self.render_text(f'{leading_total.name} is also in the lead.', x_center, 390, (128, 128, 128),
+                self.render_text(f'{leading_total.display_name} is also in the lead.', x_center, 390, (128, 128, 128),
                                  valign='top', halign='center', size='medium')
             else:
-                self.render_text(f'But {leading_total.name} is in the lead.', x_center, 390, (128, 128, 128),
+                self.render_text(f'But {leading_total.display_name} is in the lead.', x_center, 390, (128, 128, 128),
                                  valign='top', halign='center', size='medium')
+
+        if self.world.running and self.world.args.make_video:
+            self.world.logger.debug(f'Saving screenshot for frame {self.frame}')
+            pygame.image.save(self.screen, str(self.screenshot_dir / f'{self.world.round_id}_{self.frame:05d}.png'))
+
+    def make_video(self):
+        # Turn screenshots into videos
+        assert self.world.args.make_video is not False
+
+        if self.world.args.make_video is True:
+            files = [self.screenshot_dir / f'{self.world.round_id}_video.mp4',
+                     self.screenshot_dir / f'{self.world.round_id}_video.webm']
+        else:
+            files = [Path(self.world.args.make_video)]
+
+        self.world.logger.debug(f'Turning screenshots into video')
+
+        PARAMS = {
+            ".mp4": ['-preset', 'veryslow', '-tune', 'animation', '-crf', '5', '-c:v', 'libx264',
+                     '-pix_fmt', 'yuv420p'],
+            ".webm": ['-threads', '2', '-tile-columns', '2', '-frame-parallel', '0', '-g', '100', '-speed', '1', '-pix_fmt', 'yuv420p', '-qmin', '0', '-qmax', '10', '-crf', '5', '-b:v', '2M', '-c:v', 'libvpx-vp9', ]
+        }
+
+        for video_file in files:
+            subprocess.call([
+                'ffmpeg', '-y', '-framerate', f'{self.world.args.fps}',
+                '-f', 'image2', '-pattern_type', 'glob',
+                '-i', self.screenshot_dir / f'{self.world.round_id}_*.png',
+                *PARAMS[video_file.suffix],
+                video_file
+            ])
+        print("Done writing videos.")
+        for f in self.screenshot_dir.glob(f'{self.world.round_id}_*.png'):
+            f.unlink()

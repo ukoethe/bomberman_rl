@@ -13,20 +13,21 @@ ESCAPE_KEYS = (pygame.K_q, pygame.K_ESCAPE)
 
 
 def gui_controller(world, gui, args, user_inputs, stop_flag: threading.Event, quit_flag: threading.Event):
-    screenshot_dir = Path(__file__).parent / "screenshots"
-    if not screenshot_dir.exists():
-        screenshot_dir.mkdir()
+    if args.make_video and not gui.screenshot_dir.exists():
+        gui.screenshot_dir.mkdir()
 
+    was_running = False
     while True:
         # Render (which takes time)
         last_frame = time()
         gui.render()
-
-        # Save screenshot
-        if world.running and world.args.make_video:
-            world.logger.debug(f'Saving screenshot for frame {gui.frame}')
-            pygame.image.save(gui.screen, str(screenshot_dir / f'{world.round_id}_{gui.frame:05d}.png'))
         pygame.display.flip()
+
+        # Save video if passed from running to not running
+        is_running = world.running
+        if not is_running and was_running and args.make_video:
+            gui.make_video()
+        was_running = is_running
 
         # Then sleep until next frame
         sleep_time = 1 / args.fps - (time() - last_frame)
@@ -127,7 +128,7 @@ def main(argv = None):
 
     # Interaction
     for sub in [play_parser, replay_parser]:
-        sub.add_argument("--fps", type=int, default=15, help="FPS of the GUI (does not change game)")
+        sub.add_argument("--fps", type=int, default=-1, help="FPS of the GUI (does not change game; default: match update-interval)")
         sub.add_argument("--turn-based", default=False, action="store_true",
                          help="Wait for key press until next movement")
         sub.add_argument("--update-interval", type=float, default=0.1,
@@ -136,7 +137,7 @@ def main(argv = None):
         sub.add_argument("--save-stats", const=True, default=False, action='store', nargs='?', help='Store the game results as .json for evaluation')
 
         # Video?
-        sub.add_argument("--make-video", default=False, action="store_true",
+        sub.add_argument("--make-video", const=True, default=False, action='store', nargs='?',
                          help="Make a video from the game")
 
     args = parser.parse_args(argv)
@@ -149,6 +150,8 @@ def main(argv = None):
     if has_gui:
         if not LOADED_PYGAME:
             raise ValueError("pygame could not loaded, cannot run with GUI")
+        if args.fps == -1:
+            args.fps = 1 / args.update_interval
 
     # Initialize environment and agents
     if args.command_name == "play":

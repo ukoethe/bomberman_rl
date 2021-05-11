@@ -20,7 +20,7 @@ class Item(object):
 
 
 class Coin(Item):
-    avatar = pygame.image.load('assets/coin.png')
+    avatar = pygame.image.load(s.ASSET_DIR / 'coin.png')
 
     def __init__(self, pos, collectable=False):
         super(Coin, self).__init__()
@@ -33,7 +33,7 @@ class Coin(Item):
 
 
 class Bomb(Item):
-    DEFAULT_AVATARS = {color: pygame.image.load(f'assets/bomb_{color}.png') for color in s.AGENT_COLORS}
+    DEFAULT_AVATARS = {color: pygame.image.load(s.ASSET_DIR / f'bomb_{color}.png') for color in s.AGENT_COLORS}
 
     def __init__(self, pos, owner, timer, power, bomb_sprite):
         super(Bomb, self).__init__()
@@ -74,7 +74,7 @@ class Bomb(Item):
 
 
 class Explosion(Item):
-    STAGES = [pygame.image.load(f'assets/explosion_{i}.png') for i in range(6)]
+    STAGES = [pygame.image.load(s.ASSET_DIR / f'explosion_{i}.png') for i in range(6)]
 
     def __init__(self, blast_coords, screen_coords, owner, timer):
         super().__init__()

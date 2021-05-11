@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 from fallbacks import pygame
 
@@ -16,6 +17,8 @@ GRID_SIZE = 30
 WIDTH = 1000
 HEIGHT = 600
 GRID_OFFSET = [(HEIGHT - ROWS * GRID_SIZE) // 2] * 2
+
+ASSET_DIR = Path(__file__).parent / "assets"
 
 AGENT_COLORS = ['blue', 'green', 'yellow', 'pink']
 
