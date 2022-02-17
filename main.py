@@ -24,8 +24,8 @@ class Timekeeper:
         self.next_time = time() + self.interval
 
     def wait(self):
-        duration = self.next_time - time()
-        if duration > 0:
+        if not self.is_due():
+            duration = self.next_time - time()
             sleep(duration)
 
 

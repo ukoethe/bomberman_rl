@@ -343,36 +343,43 @@ class BombeRLeWorld(GenericWorld):
             self.add_agent(agent_dir, name, train=train)
 
     def build_arena(self):
-        arena = (self.rng.random((s.COLS, s.ROWS)) < s.CRATE_DENSITY).astype(int)
-        arena[:1, :] = -1
-        arena[-1:, :] = -1
-        arena[:, :1] = -1
-        arena[:, -1:] = -1
+        # Fill the arena with crates in random locations
+        arena = np.zeros((s.COLS, s.ROWS), int)
+        WALL = -1
+        FREE = 0
+        CRATE = 1
+
+        # Crates in random locations
+        arena[self.rng.random((s.COLS, s.ROWS)) < s.CRATE_DENSITY] = CRATE
+
+        # Walls
+        arena[:1, :] = WALL
+        arena[-1:, :] = WALL
+        arena[:, :1] = WALL
+        arena[:, -1:] = WALL
         for x in range(s.COLS):
             for y in range(s.ROWS):
                 if (x + 1) * (y + 1) % 2 == 1:
-                    arena[x, y] = -1
+                    arena[x, y] = WALL
 
+        # Clean the start positions
         start_positions = [(1, 1), (1, s.ROWS - 2), (s.COLS - 2, 1), (s.COLS - 2, s.ROWS - 2)]
         for (x, y) in start_positions:
             for (xx, yy) in [(x, y), (x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]:
                 if arena[xx, yy] == 1:
-                    arena[xx, yy] = 0
+                    arena[xx, yy] = FREE
 
-        # Distribute coins evenly
+        # Place coins at random, at preference under crates
         coins = []
-        for i in range(3):
-            for j in range(3):
-                n_crates = (arena[1 + 5 * i:6 + 5 * i, 1 + 5 * j:6 + 5 * j] == 1).sum()
-                while True:
-                    x, y = self.rng.integers(1 + 5 * i, 6 + 5 * i), self.rng.integers(1 + 5 * j, 6 + 5 * j)
-                    if n_crates == 0 and arena[x, y] == 0:
-                        coins.append(Coin((x, y)))
-                        coins[-1].collectable = True
-                        break
-                    elif arena[x, y] == 1:
-                        coins.append(Coin((x, y)))
-                        break
+        all_positions = np.stack(np.meshgrid(np.arange(s.COLS), np.arange(s.ROWS), indexing="ij"), -1)
+        crate_positions = self.rng.permutation(all_positions[arena == CRATE])
+        free_positions = self.rng.permutation(all_positions[arena == FREE])
+        coin_positions = np.concatenate([
+            crate_positions,
+            free_positions
+        ], 0)[:s.COIN_COUNT]
+        for x, y in coin_positions:
+            coins.append(Coin((x, y), collectable=arena[x, y] == FREE))
 
         # Reset agents and distribute starting positions
         active_agents = []
