@@ -1,7 +1,6 @@
 import json
 import logging
 import pickle
-import random
 import subprocess
 from collections import namedtuple
 from datetime import datetime
@@ -19,7 +18,7 @@ from fallbacks import pygame
 from items import Coin, Explosion, Bomb
 
 WorldArgs = namedtuple("WorldArgs",
-                       ["no_gui", "fps", "turn_based", "update_interval", "save_replay", "replay", "make_video", "continue_without_training", "log_dir", "save_stats", "match_name"])
+                       ["no_gui", "fps", "turn_based", "update_interval", "save_replay", "replay", "make_video", "continue_without_training", "log_dir", "save_stats", "match_name", "seed"])
 
 
 class Trophy:
@@ -53,6 +52,8 @@ class GenericWorld:
 
         self.round = 0
         self.round_statistics = {}
+
+        self.rng = np.random.default_rng(args.seed)
 
         self.running = False
         self.ready_for_restart_flag = Event()
@@ -342,7 +343,7 @@ class BombeRLeWorld(GenericWorld):
             self.add_agent(agent_dir, name, train=train)
 
     def build_arena(self):
-        arena = (np.random.rand(s.COLS, s.ROWS) < s.CRATE_DENSITY).astype(int)
+        arena = (self.rng.random((s.COLS, s.ROWS)) < s.CRATE_DENSITY).astype(int)
         arena[:1, :] = -1
         arena[-1:, :] = -1
         arena[:, :1] = -1
@@ -353,7 +354,6 @@ class BombeRLeWorld(GenericWorld):
                     arena[x, y] = -1
 
         start_positions = [(1, 1), (1, s.ROWS - 2), (s.COLS - 2, 1), (s.COLS - 2, s.ROWS - 2)]
-        random.shuffle(start_positions)
         for (x, y) in start_positions:
             for (xx, yy) in [(x, y), (x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]:
                 if arena[xx, yy] == 1:
@@ -365,7 +365,7 @@ class BombeRLeWorld(GenericWorld):
             for j in range(3):
                 n_crates = (arena[1 + 5 * i:6 + 5 * i, 1 + 5 * j:6 + 5 * j] == 1).sum()
                 while True:
-                    x, y = np.random.randint(1 + 5 * i, 6 + 5 * i), np.random.randint(1 + 5 * j, 6 + 5 * j)
+                    x, y = self.rng.integers(1 + 5 * i, 6 + 5 * i), self.rng.integers(1 + 5 * j, 6 + 5 * j)
                     if n_crates == 0 and arena[x, y] == 0:
                         coins.append(Coin((x, y)))
                         coins[-1].collectable = True
@@ -376,9 +376,9 @@ class BombeRLeWorld(GenericWorld):
 
         # Reset agents and distribute starting positions
         active_agents = []
-        for agent in self.agents:
+        for agent, start_position in zip(self.agents, self.rng.permutation(start_positions)):
             active_agents.append(agent)
-            agent.x, agent.y = start_positions.pop()
+            agent.x, agent.y = start_position
 
         return arena, coins, active_agents
 
@@ -433,7 +433,7 @@ class BombeRLeWorld(GenericWorld):
                 a.act(self.get_state_for_agent(a))
 
         # Give agents time to decide
-        perm = np.random.permutation(len(self.active_agents))
+        perm = self.rng.permutation(len(self.active_agents))
         self.replay['permutations'].append(perm)
         for i in perm:
             a = self.active_agents[i]

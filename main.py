@@ -1,104 +1,98 @@
 import os
-import threading
 from argparse import ArgumentParser
 from pathlib import Path
 from time import sleep, time
+from tqdm import tqdm
 
 import settings as s
-from environment import BombeRLeWorld, GenericWorld, GUI
-from fallbacks import pygame, tqdm, LOADED_PYGAME
+from environment import BombeRLeWorld, GUI
+from fallbacks import pygame, LOADED_PYGAME
 from replay import ReplayWorld
 
 ESCAPE_KEYS = (pygame.K_q, pygame.K_ESCAPE)
 
 
-def gui_controller(world, gui, args, user_inputs, stop_flag: threading.Event, quit_flag: threading.Event):
-    if args.make_video and not gui.screenshot_dir.exists():
+class Timekeeper:
+    def __init__(self, interval):
+        self.interval = interval
+        self.next_time = None
+
+        self.note()
+
+    def is_due(self):
+        return time() >= self.next_time
+
+    def note(self):
+        self.next_time = time() + self.interval
+
+    def wait(self):
+        duration = self.next_time - time()
+        if duration > 0:
+            sleep(duration)
+
+
+def gui_controller(world, n_rounds, /,
+                   gui, every_step, turn_based, make_video, update_interval):
+    if make_video and not gui.screenshot_dir.exists():
         gui.screenshot_dir.mkdir()
 
-    was_running = False
-    while True:
-        # Render (which takes time)
-        last_frame = time()
-        gui.render()
-        pygame.display.flip()
+    gui_timekeeper = Timekeeper(update_interval)
 
-        # Save video if passed from running to not running
-        is_running = world.running
-        if not is_running and was_running and args.make_video:
-            gui.make_video()
-        was_running = is_running
+    def render(wait_until_due):
+        # If every step should be displayed, wait until it is due to be shown
+        if wait_until_due:
+            gui_timekeeper.wait()
 
-        # Then sleep until next frame
-        sleep_time = 1 / args.fps - (time() - last_frame)
-        if sleep_time > 0:
-            sleep(sleep_time)
+        if gui_timekeeper.is_due():
+            gui_timekeeper.note()
+            # Render (which takes time)
+            gui.render()
+            pygame.display.flip()
 
-        # Check GUI events
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                quit_flag.set()
-                return
-            elif event.type == pygame.KEYDOWN:
-                key_pressed = event.key
-                # End of game: any usual key quits
-                if not world.running and world.round >= args.n_rounds and (key_pressed in ESCAPE_KEYS or key_pressed in s.INPUT_MAP):
-                    return
-
-                # Stop round with stop keys
-                if world.running and key_pressed in ESCAPE_KEYS:
-                    stop_flag.set()
-                # Convert keyboard input into actions
-                elif key_pressed in s.INPUT_MAP:
-                    if args.turn_based:
-                        user_inputs.clear()
-                    user_inputs.append(s.INPUT_MAP[key_pressed])
-
-
-def gui_blocker(user_inputs, args, world):
-    # Start first round
-    yield
-    last_update = time()
-
-    while True:
-        if world.running:
-            # Wait for user input
-            if args.turn_based:
-                while len(user_inputs) == 0:
-                    sleep(0.1)
-            # Wait for update interval
-            else:
-                now = time()
-                wait_time = args.update_interval - (now - last_update)
-                if wait_time > 0:
-                    sleep(wait_time)
-                last_update = time()
-        elif world.round <= args.n_rounds:
-            # Next key tells game to continue
-            while len(user_inputs) == 0:
-                sleep(0.1)
-            user_inputs.pop()
-        yield
-
-
-def game_logic(world: GenericWorld, user_inputs, args, stop_flag: threading.Event, quit_flag: threading.Event, blocker=None):
-    def wait():
-        if blocker is not None:
-            next(blocker)
-
-    for _ in tqdm(range(args.n_rounds)):
-        wait()
+    user_input = None
+    for _ in tqdm(range(n_rounds)):
         world.new_round()
-
         while world.running:
-            wait()
-            if stop_flag.is_set() or quit_flag.is_set():
-                stop_flag.clear()
-                break
-            world.do_step(user_inputs.pop(0) if len(user_inputs) else 'WAIT')
+            # Advances step (for turn based: only if user input is available)
+            if world.running and not (turn_based and user_input is None):
+                world.do_step(user_input)
+                user_input = None
+            else:
+                # Might want to wait
+                pass
 
-        if quit_flag.is_set():
-            break
+            # Only render when the last frame is not too old
+            if gui is not None:
+                render(every_step)
+
+                # Check GUI events
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        return
+                    elif event.type == pygame.KEYDOWN:
+                        key_pressed = event.key
+                        if key_pressed in ESCAPE_KEYS:
+                            world.end_round()
+                        elif key_pressed in s.INPUT_MAP:
+                            user_input = s.INPUT_MAP[key_pressed]
+
+        # Save video of last game
+        if make_video:
+            gui.make_video()
+
+        # Render end screen until next round is queried
+        if gui is not None:
+            do_continue = False
+            while not do_continue:
+                render(True)
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        return
+                    elif event.type == pygame.KEYDOWN:
+                        key_pressed = event.key
+                        if key_pressed in s.INPUT_MAP or key_pressed in ESCAPE_KEYS:
+                            do_continue = True
+
     world.end()
 
 
@@ -117,10 +111,15 @@ def main(argv = None):
     play_parser.add_argument("--continue-without-training", default=False, action="store_true")
     # play_parser.add_argument("--single-process", default=False, action="store_true")
 
+    play_parser.add_argument("--seed", type=int, help="Reset the world's random number generator to a known number for reproducibility")
+
     play_parser.add_argument("--n-rounds", type=int, default=10, help="How many rounds to play")
     play_parser.add_argument("--save-replay", const=True, default=False, action='store', nargs='?', help='Store the game as .pt for a replay')
-    play_parser.add_argument("--no-gui", default=False, action="store_true", help="Deactivate the user interface and play as fast as possible.")
     play_parser.add_argument("--match-name", help="Give the match a name")
+
+    group = play_parser.add_mutually_exclusive_group()
+    group.add_argument("--every-step", default=False, action="store_true", help="Render the game state after every action.")
+    group.add_argument("--no-gui", default=False, action="store_true", help="Deactivate the user interface and play as fast as possible.")
 
     # Replay arguments
     replay_parser = subparsers.add_parser("replay")
@@ -128,7 +127,6 @@ def main(argv = None):
 
     # Interaction
     for sub in [play_parser, replay_parser]:
-        sub.add_argument("--fps", type=int, default=-1, help="FPS of the GUI (does not change game; default: match update-interval)")
         sub.add_argument("--turn-based", default=False, action="store_true",
                          help="Wait for key press until next movement")
         sub.add_argument("--update-interval", type=float, default=0.1,
@@ -150,8 +148,6 @@ def main(argv = None):
     if has_gui:
         if not LOADED_PYGAME:
             raise ValueError("pygame could not loaded, cannot run with GUI")
-        if args.fps == -1:
-            args.fps = 1 / args.update_interval
 
     # Initialize environment and agents
     if args.command_name == "play":
@@ -165,28 +161,21 @@ def main(argv = None):
             agents.append((agent_name, len(agents) < args.train))
 
         world = BombeRLeWorld(args, agents)
+        every_step = args.every_step
     elif args.command_name == "replay":
         world = ReplayWorld(args)
+        every_step = True
     else:
         raise ValueError(f"Unknown command {args.command_name}")
-
-    # Emulate Windows process spawning behaviour under Unix (for testing)
-    # mp.set_start_method('spawn')
-
-    # Potential communication from GUI
-    user_inputs = []
-    stop_flag = threading.Event()
-    quit_flag = threading.Event()
 
     # Launch GUI
     if has_gui:
         gui = GUI(world)
-        blocker = gui_blocker(user_inputs, args, world)
-        t = threading.Thread(target=game_logic, args=(world, user_inputs, args, stop_flag, quit_flag, blocker))
-        t.start()
-        gui_controller(world, gui, args, user_inputs, stop_flag, quit_flag)
     else:
-        game_logic(world, user_inputs, args, stop_flag, quit_flag)
+        gui = None
+    gui_controller(world, args.n_rounds,
+                   gui=gui, every_step=every_step, turn_based=args.turn_based,
+                   make_video=args.make_video, update_interval=args.update_interval)
 
 
 if __name__ == '__main__':
