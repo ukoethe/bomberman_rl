@@ -180,7 +180,7 @@ class Agent:
             self.note_stat("steps")
             self.last_action = action
             return action, think_time
-        except BaseException:
+        except:
             if self.train:
                 raise
             return 'WAIT', float("inf")
@@ -256,7 +256,7 @@ class AgentRunner:
 
             self.result_queue.put((event_name, duration, event_result))
         except BaseException as e:
-            self.wlogger.error(f"An exception occurred while calling {event_name}: {e}")
+            self.wlogger.exception(e)
             self.result_queue.put((event_name, 0, e))
 
 
@@ -295,7 +295,7 @@ class AgentBackend:
 
 class SequentialAgentBackend(AgentBackend):
     """
-    AgentConnector realised by a separate thread (easy debugging).
+    AgentConnector realised in main thread (easy debugging).
     """
 
     def __init__(self, train, agent_name, code_name):
