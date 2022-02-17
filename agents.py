@@ -123,12 +123,16 @@ class Agent:
         self.trophies = []
 
         self.events = []
-        self.available_think_time = s.TIMEOUT
+        self.available_think_time = self.base_timeout
 
         self.bombs_left = True
 
         self.last_game_state = None
         self.last_action = None
+
+    @property
+    def base_timeout(self):
+        return s.TRAIN_TIMEOUT if self.train else s.TIMEOUT
 
     def add_event(self, event):
         if event in EVENT_STAT_MAP:

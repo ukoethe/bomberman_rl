@@ -29,6 +29,7 @@ EXPLOSION_TIMER = 2
 
 # Rules for agents
 TIMEOUT = 0.5
+TRAIN_TIMEOUT = float("inf")
 REWARD_KILL = 5
 REWARD_COIN = 1
 
