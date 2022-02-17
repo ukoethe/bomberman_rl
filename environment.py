@@ -18,7 +18,7 @@ from fallbacks import pygame
 from items import Coin, Explosion, Bomb
 
 WorldArgs = namedtuple("WorldArgs",
-                       ["no_gui", "fps", "turn_based", "update_interval", "save_replay", "replay", "make_video", "continue_without_training", "log_dir", "save_stats", "match_name", "seed"])
+                       ["no_gui", "fps", "turn_based", "update_interval", "save_replay", "replay", "make_video", "continue_without_training", "log_dir", "save_stats", "match_name", "seed", "silence_errors"])
 
 
 class Trophy:
@@ -438,7 +438,18 @@ class BombeRLeWorld(GenericWorld):
         for i in perm:
             a = self.active_agents[i]
             if a.available_think_time > 0:
-                action, think_time = a.wait_for_act()
+                try:
+                    action, think_time = a.wait_for_act()
+                except KeyboardInterrupt:
+                    # Stop the game
+                    raise
+                except:
+                    if not self.args.silence_errors:
+                        raise
+                    # Agents with errors cannot continue
+                    action = "ERROR"
+                    think_time = float("inf")
+
                 self.logger.info(f'Agent <{a.name}> chose action {action} in {think_time:.2f}s.')
                 if think_time > a.available_think_time:
                     next_think_time = a.base_timeout - (think_time - a.available_think_time)

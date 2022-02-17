@@ -174,16 +174,11 @@ class Agent:
         self.backend.send_event("act", game_state)
 
     def wait_for_act(self):
-        try:
-            action, think_time = self.backend.get_with_time("act")
-            self.note_stat("time", think_time)
-            self.note_stat("steps")
-            self.last_action = action
-            return action, think_time
-        except:
-            if self.train:
-                raise
-            return 'WAIT', float("inf")
+        action, think_time = self.backend.get_with_time("act")
+        self.note_stat("time", think_time)
+        self.note_stat("steps")
+        self.last_action = action
+        return action, think_time
 
     def round_ended(self):
         self.backend.send_event("end_of_round", self.last_game_state, self.last_action, self.events)

@@ -17,10 +17,8 @@ class Timekeeper:
         self.interval = interval
         self.next_time = None
 
-        self.note()
-
     def is_due(self):
-        return time() >= self.next_time
+        return self.next_time is None or time() >= self.next_time
 
     def note(self):
         self.next_time = time() + self.interval
@@ -31,8 +29,8 @@ class Timekeeper:
             sleep(duration)
 
 
-def gui_controller(world, n_rounds, /,
-                   gui, every_step, turn_based, make_video, update_interval):
+def world_controller(world, n_rounds, /,
+                     gui, every_step, turn_based, make_video, update_interval):
     if make_video and not gui.screenshot_dir.exists():
         gui.screenshot_dir.mkdir()
 
@@ -53,14 +51,6 @@ def gui_controller(world, n_rounds, /,
     for _ in tqdm(range(n_rounds)):
         world.new_round()
         while world.running:
-            # Advances step (for turn based: only if user input is available)
-            if world.running and not (turn_based and user_input is None):
-                world.do_step(user_input)
-                user_input = None
-            else:
-                # Might want to wait
-                pass
-
             # Only render when the last frame is not too old
             if gui is not None:
                 render(every_step)
@@ -75,6 +65,14 @@ def gui_controller(world, n_rounds, /,
                             world.end_round()
                         elif key_pressed in s.INPUT_MAP:
                             user_input = s.INPUT_MAP[key_pressed]
+
+            # Advances step (for turn based: only if user input is available)
+            if world.running and not (turn_based and user_input is None):
+                world.do_step(user_input)
+                user_input = None
+            else:
+                # Might want to wait
+                pass
 
         # Save video of last game
         if make_video:
@@ -116,6 +114,8 @@ def main(argv = None):
     play_parser.add_argument("--n-rounds", type=int, default=10, help="How many rounds to play")
     play_parser.add_argument("--save-replay", const=True, default=False, action='store', nargs='?', help='Store the game as .pt for a replay')
     play_parser.add_argument("--match-name", help="Give the match a name")
+
+    play_parser.add_argument("--silence-errors", default=False, action="store_true", help="Ignore errors from agents")
 
     group = play_parser.add_mutually_exclusive_group()
     group.add_argument("--every-step", default=False, action="store_true", help="Render the game state after every action.")
@@ -173,9 +173,9 @@ def main(argv = None):
         gui = GUI(world)
     else:
         gui = None
-    gui_controller(world, args.n_rounds,
-                   gui=gui, every_step=every_step, turn_based=args.turn_based,
-                   make_video=args.make_video, update_interval=args.update_interval)
+    world_controller(world, args.n_rounds,
+                     gui=gui, every_step=every_step, turn_based=args.turn_based,
+                     make_video=args.make_video, update_interval=args.update_interval)
 
 
 if __name__ == '__main__':
