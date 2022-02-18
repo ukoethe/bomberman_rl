@@ -194,10 +194,12 @@ class GenericWorld:
         remaining_explosions = []
         for explosion in self.explosions:
             explosion.timer -= 1
-            if explosion.timer < 0:
+            if explosion.timer <= 0:
                 explosion.next_stage()
             if explosion.stage is not None:
                 remaining_explosions.append(explosion)
+            else:
+                explosion.owner.bombs_left = True
         self.explosions = remaining_explosions
 
     def update_bombs(self):
@@ -229,9 +231,8 @@ class GenericWorld:
                 # Create explosion
                 screen_coords = [(s.GRID_OFFSET[0] + s.GRID_SIZE * x, s.GRID_OFFSET[1] + s.GRID_SIZE * y) for (x, y) in
                                  blast_coords]
-                self.explosions.append(Explosion(blast_coords, screen_coords, bomb.owner, s.EXPLOSION_TIMER - 1))
+                self.explosions.append(Explosion(blast_coords, screen_coords, bomb.owner, s.EXPLOSION_TIMER))
                 bomb.active = False
-                bomb.owner.bombs_left = True
             else:
                 # Progress countdown
                 bomb.timer -= 1
@@ -410,8 +411,9 @@ class BombeRLeWorld(GenericWorld):
 
         explosion_map = np.zeros(self.arena.shape)
         for exp in self.explosions:
-            for (x, y) in exp.blast_coords:
-                explosion_map[x, y] = max(explosion_map[x, y], exp.timer)
+            if exp.is_dangerous():
+                for (x, y) in exp.blast_coords:
+                    explosion_map[x, y] = max(explosion_map[x, y], exp.timer - 1)
         state['explosion_map'] = explosion_map
 
         return state

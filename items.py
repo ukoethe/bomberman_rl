@@ -92,12 +92,12 @@ class Explosion(Item):
     def next_stage(self):
         try:
             self.stage += 1
-            self.timer = len(Explosion.ASSETS[self.stage]) - 1
+            self.timer = len(Explosion.ASSETS[self.stage])
         except IndexError:
             self.stage = None
 
     def render(self, screen, **kwargs):
-        img = pygame.transform.rotate(Explosion.ASSETS[self.stage][self.timer], (-50 * time()) % 360)
+        img = pygame.transform.rotate(Explosion.ASSETS[self.stage][self.timer - 1], (-50 * time()) % 360)
         rect = img.get_rect()
         for (x, y) in self.screen_coords:
             rect.center = x + 15, y + 15

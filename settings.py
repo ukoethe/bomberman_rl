@@ -37,7 +37,7 @@ AGENT_COLORS = ['blue', 'green', 'yellow', 'pink']
 # Game rules
 BOMB_POWER = 3
 BOMB_TIMER = 4
-EXPLOSION_TIMER = 1
+EXPLOSION_TIMER = 3
 
 # Rules for agents
 TIMEOUT = 0.5
