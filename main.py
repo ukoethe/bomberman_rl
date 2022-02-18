@@ -120,7 +120,7 @@ def main(argv = None):
     play_parser.add_argument("--silence-errors", default=False, action="store_true", help="Ignore errors from agents")
 
     group = play_parser.add_mutually_exclusive_group()
-    group.add_argument("--fast", default=False, action="store_true", help="Play more steps per GUI render.")
+    group.add_argument("--skip-frames", default=False, action="store_true", help="Play several steps per GUI render.")
     group.add_argument("--no-gui", default=False, action="store_true", help="Deactivate the user interface and play as fast as possible.")
 
     # Replay arguments
@@ -163,7 +163,7 @@ def main(argv = None):
             agents.append((agent_name, len(agents) < args.train))
 
         world = BombeRLeWorld(args, agents)
-        every_step = not args.fast
+        every_step = not args.skip_frames
     elif args.command_name == "replay":
         world = ReplayWorld(args)
         every_step = True
