@@ -18,7 +18,7 @@ from fallbacks import pygame
 from items import Coin, Explosion, Bomb
 
 WorldArgs = namedtuple("WorldArgs",
-                       ["no_gui", "fps", "turn_based", "update_interval", "save_replay", "replay", "make_video", "continue_without_training", "log_dir", "save_stats", "match_name", "seed", "silence_errors"])
+                       ["no_gui", "fps", "turn_based", "update_interval", "save_replay", "replay", "make_video", "continue_without_training", "log_dir", "save_stats", "match_name", "seed", "silence_errors", "scenario"])
 
 
 class Trophy:
@@ -338,14 +338,15 @@ class BombeRLeWorld(GenericWorld):
             self.add_agent(agent_dir, name, train=train)
 
     def build_arena(self):
-        # Fill the arena with crates in random locations
-        arena = np.zeros((s.COLS, s.ROWS), int)
         WALL = -1
         FREE = 0
         CRATE = 1
+        arena = np.zeros((s.COLS, s.ROWS), int)
+
+        scenario_info = s.SCENARIOS[self.args.scenario]
 
         # Crates in random locations
-        arena[self.rng.random((s.COLS, s.ROWS)) < s.CRATE_DENSITY] = CRATE
+        arena[self.rng.random((s.COLS, s.ROWS)) < scenario_info["CRATE_DENSITY"]] = CRATE
 
         # Walls
         arena[:1, :] = WALL
@@ -372,7 +373,7 @@ class BombeRLeWorld(GenericWorld):
         coin_positions = np.concatenate([
             crate_positions,
             free_positions
-        ], 0)[:s.COIN_COUNT]
+        ], 0)[:scenario_info["COIN_COUNT"]]
         for x, y in coin_positions:
             coins.append(Coin((x, y), collectable=arena[x, y] == FREE))
 

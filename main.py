@@ -109,6 +109,8 @@ def main(argv = None):
     play_parser.add_argument("--continue-without-training", default=False, action="store_true")
     # play_parser.add_argument("--single-process", default=False, action="store_true")
 
+    play_parser.add_argument("--scenario", default="classic", choices=s.SCENARIOS)
+
     play_parser.add_argument("--seed", type=int, help="Reset the world's random number generator to a known number for reproducibility")
 
     play_parser.add_argument("--n-rounds", type=int, default=10, help="How many rounds to play")
@@ -118,7 +120,7 @@ def main(argv = None):
     play_parser.add_argument("--silence-errors", default=False, action="store_true", help="Ignore errors from agents")
 
     group = play_parser.add_mutually_exclusive_group()
-    group.add_argument("--every-step", default=False, action="store_true", help="Render the game state after every action.")
+    group.add_argument("--fast", default=False, action="store_true", help="Play more steps per GUI render.")
     group.add_argument("--no-gui", default=False, action="store_true", help="Deactivate the user interface and play as fast as possible.")
 
     # Replay arguments
@@ -161,7 +163,7 @@ def main(argv = None):
             agents.append((agent_name, len(agents) < args.train))
 
         world = BombeRLeWorld(args, agents)
-        every_step = args.every_step
+        every_step = not args.fast
     elif args.command_name == "replay":
         world = ReplayWorld(args)
         every_step = True
