@@ -1,4 +1,3 @@
-from functools import cached_property
 from time import time
 
 import settings as s
@@ -74,7 +73,10 @@ class Bomb(Item):
 
 
 class Explosion(Item):
-    STAGES = [pygame.image.load(s.ASSET_DIR / f'explosion_{i}.png') for i in range(6)]
+    ASSETS = [
+        [pygame.image.load(s.ASSET_DIR / f'explosion_{i}.png') for i in range(4)],
+        [pygame.image.load(s.ASSET_DIR / f'smoke_{i}.png') for i in range(2)]
+    ]
 
     def __init__(self, blast_coords, screen_coords, owner, timer):
         super().__init__()
@@ -82,11 +84,20 @@ class Explosion(Item):
         self.screen_coords = screen_coords
         self.owner = owner
         self.timer = timer
-        self.active = True
-        self.stages = Explosion.STAGES
+        self.stage = 0
+
+    def is_dangerous(self):
+        return self.stage == 0
+
+    def next_stage(self):
+        try:
+            self.stage += 1
+            self.timer = len(Explosion.ASSETS[self.stage]) - 1
+        except IndexError:
+            self.stage = None
 
     def render(self, screen, **kwargs):
-        img = pygame.transform.rotate(self.stages[self.timer], (-50 * time()) % 360)
+        img = pygame.transform.rotate(Explosion.ASSETS[self.stage][self.timer], (-50 * time()) % 360)
         rect = img.get_rect()
         for (x, y) in self.screen_coords:
             rect.center = x + 15, y + 15

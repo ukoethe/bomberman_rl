@@ -23,7 +23,7 @@ WorldArgs = namedtuple("WorldArgs",
 
 class Trophy:
     coin_trophy = pygame.transform.smoothscale(pygame.image.load(s.ASSET_DIR / 'coin.png'), (15, 15))
-    suicide_trophy = pygame.transform.smoothscale(pygame.image.load(s.ASSET_DIR / 'explosion_2.png'), (15, 15))
+    suicide_trophy = pygame.transform.smoothscale(pygame.image.load(s.ASSET_DIR / 'explosion_0.png'), (15, 15))
     time_trophy = pygame.image.load(s.ASSET_DIR / 'hourglass.png')
 
 
@@ -168,7 +168,9 @@ class GenericWorld:
 
         self.poll_and_run_agents()
 
+        # Progress world elements based
         self.collect_coins()
+        self.update_explosions()
         self.update_bombs()
         self.evaluate_explosions()
         self.send_game_events()
@@ -186,6 +188,17 @@ class GenericWorld:
                         a.update_score(s.REWARD_COIN)
                         a.add_event(e.COIN_COLLECTED)
                         a.trophies.append(Trophy.coin_trophy)
+
+    def update_explosions(self):
+        # Progress explosions
+        remaining_explosions = []
+        for explosion in self.explosions:
+            explosion.timer -= 1
+            if explosion.timer < 0:
+                explosion.next_stage()
+            if explosion.stage is not None:
+                remaining_explosions.append(explosion)
+        self.explosions = remaining_explosions
 
     def update_bombs(self):
         """
@@ -216,7 +229,7 @@ class GenericWorld:
                 # Create explosion
                 screen_coords = [(s.GRID_OFFSET[0] + s.GRID_SIZE * x, s.GRID_OFFSET[1] + s.GRID_SIZE * y) for (x, y) in
                                  blast_coords]
-                self.explosions.append(Explosion(blast_coords, screen_coords, bomb.owner, s.EXPLOSION_TIMER))
+                self.explosions.append(Explosion(blast_coords, screen_coords, bomb.owner, s.EXPLOSION_TIMER - 1))
                 bomb.active = False
                 bomb.owner.bombs_left = True
             else:
@@ -229,7 +242,7 @@ class GenericWorld:
         agents_hit = set()
         for explosion in self.explosions:
             # Kill agents
-            if explosion.timer > 1:
+            if explosion.is_dangerous():
                 for a in self.active_agents:
                     if (not a.dead) and (a.x, a.y) in explosion.blast_coords:
                         agents_hit.add(a)
@@ -244,12 +257,8 @@ class GenericWorld:
                             explosion.owner.update_score(s.REWARD_KILL)
                             explosion.owner.add_event(e.KILLED_OPPONENT)
                             explosion.owner.trophies.append(pygame.transform.smoothscale(a.avatar, (15, 15)))
-            # Show smoke for a little longer
-            if explosion.timer <= 0:
-                explosion.active = False
 
-            # Progress countdown
-            explosion.timer -= 1
+        # Remove hit agents
         for a in agents_hit:
             a.dead = True
             self.active_agents.remove(a)
@@ -257,7 +266,6 @@ class GenericWorld:
             for aa in self.active_agents:
                 if aa is not a:
                     aa.add_event(e.OPPONENT_ELIMINATED)
-        self.explosions = [exp for exp in self.explosions if exp.active]
 
     def end_round(self):
         if not self.running:
