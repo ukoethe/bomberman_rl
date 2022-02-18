@@ -1,6 +1,6 @@
-import pickle
-import random
 from collections import namedtuple, deque
+
+import pickle
 from typing import List
 
 import events as e
@@ -61,8 +61,9 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
 def end_of_round(self, last_game_state: dict, last_action: str, events: List[str]):
     """
     Called at the end of each game or when the agent died to hand out final rewards.
+    This replaces game_events_occurred in this round.
 
-    This is similar to reward_update. self.events will contain all events that
+    This is similar to game_events_occurred. self.events will contain all events that
     occurred during your agent's final step.
 
     This is *one* of the places where you could update your agent.

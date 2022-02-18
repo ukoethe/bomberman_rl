@@ -56,9 +56,6 @@ class GenericWorld:
         self.rng = np.random.default_rng(args.seed)
 
         self.running = False
-        self.ready_for_restart_flag = Event()
-        self.computing_flag = Event()
-        self.computing_flag.set()
 
     def setup_logging(self):
         self.logger = logging.getLogger('BombeRLeWorld')
@@ -157,8 +154,10 @@ class GenericWorld:
     def poll_and_run_agents(self):
         raise NotImplementedError()
 
+    def send_game_events(self):
+        pass
+
     def do_step(self, user_input='WAIT'):
-        self.computing_flag.clear()
         assert self.running
 
         self.step += 1
@@ -172,7 +171,7 @@ class GenericWorld:
         self.collect_coins()
         self.update_bombs()
         self.evaluate_explosions()
-        self.computing_flag.set()
+        self.send_game_events()
 
         if self.time_to_stop():
             self.end_round()
@@ -264,7 +263,6 @@ class GenericWorld:
         if not self.running:
             raise ValueError('End-of-round requested while no round was running')
         # Wait in case there is still a game step running
-        self.computing_flag.wait()
         self.running = False
 
         for a in self.agents:
@@ -274,9 +272,6 @@ class GenericWorld:
             "steps": self.step,
             **{key: sum(a.statistics[key] for a in self.agents) for key in ["coins", "kills", "suicides"]}
         }
-
-        self.logger.debug('Setting ready_for_restart_flag')
-        self.ready_for_restart_flag.set()
 
     def time_to_stop(self):
         # Check round stopping criteria
@@ -390,6 +385,9 @@ class BombeRLeWorld(GenericWorld):
         return arena, coins, active_agents
 
     def get_state_for_agent(self, agent: Agent):
+        if agent.dead:
+            return None
+
         state = {
             'round': self.round,
             'step': self.step,
@@ -409,31 +407,7 @@ class BombeRLeWorld(GenericWorld):
 
         return state
 
-    def send_training_events(self):
-        # Send events to all agents that expect them, then reset and wait for them
-        for a in self.agents:
-            if a.train:
-                if not a.dead:
-                    a.process_game_events(self.get_state_for_agent(a))
-                for enemy in self.active_agents:
-                    if enemy is not a:
-                        pass
-                        # a.process_enemy_game_events(self.get_state_for_agent(enemy), enemy)
-        for a in self.agents:
-            if a.train:
-                if not a.dead:
-                    a.wait_for_game_event_processing()
-                for enemy in self.active_agents:
-                    if enemy is not a:
-                        pass
-                        # a.wait_for_enemy_game_event_processing()
-        for a in self.active_agents:
-            a.store_game_state(self.get_state_for_agent(a))
-            a.reset_game_events()
-
     def poll_and_run_agents(self):
-        self.send_training_events()
-
         # Tell agents to act
         for a in self.active_agents:
             if a.available_think_time > 0:
@@ -474,6 +448,28 @@ class BombeRLeWorld(GenericWorld):
 
             self.replay['actions'][a.name].append(action)
             self.perform_agent_action(a, action)
+
+    def send_game_events(self):
+        # Send events to all agents that expect them, then reset and wait for them
+        for a in self.agents:
+            if a.train:
+                if not a.dead:
+                    a.process_game_events(self.get_state_for_agent(a))
+                for enemy in self.active_agents:
+                    if enemy is not a:
+                        pass
+                        # a.process_enemy_game_events(self.get_state_for_agent(enemy), enemy)
+        for a in self.agents:
+            if a.train:
+                if not a.dead:
+                    a.wait_for_game_event_processing()
+                for enemy in self.active_agents:
+                    if enemy is not a:
+                        pass
+                        # a.wait_for_enemy_game_event_processing()
+        for a in self.active_agents:
+            a.store_game_state(self.get_state_for_agent(a))
+            a.reset_game_events()
 
     def end_round(self):
         super().end_round()
@@ -648,6 +644,6 @@ class GUI:
                 *PARAMS[video_file.suffix],
                 video_file
             ])
-        print("Done writing videos.")
+        self.world.logger.info("Done writing videos.")
         for f in self.screenshot_dir.glob(f'{self.world.round_id}_*.png'):
             f.unlink()
