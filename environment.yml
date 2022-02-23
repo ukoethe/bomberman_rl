@@ -1,0 +1,13 @@
+name: ml_homework
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - numpy
+  - scipy
+  - matplotlib
+  - pip
+  - pandas
+
+  - pip:
+    - pre-commit

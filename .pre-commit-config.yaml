@@ -1,0 +1,41 @@
+repos:
+  # Make sure that Jupyter notebooks under version control
+  # have their outputs stripped before committing
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.5.0
+    hooks:
+      - id: nbstripout
+        files: ".ipynb"
+
+  # Run Black - the uncompromising Python code formatter
+  - repo: https://github.com/psf/black
+    rev: 22.1.0
+    hooks:
+      - id: black-jupyter
+
+  # Add some general purpose useful hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+      # Make sure that contained YAML files are well-formed
+      - id: check-yaml
+      # Trim trailing whitespace of all sorts
+      - id: trailing-whitespace
+      # Check validity of JSON files
+      - id: check-json
+      # Format JSON files consistently
+      - id: pretty-format-json
+        args:
+          - --autofix
+
+  # Automatically format/sanitize setup.cfg
+  - repo: https://github.com/asottile/setup-cfg-fmt
+    rev: v1.20.0
+    hooks:
+      - id: setup-cfg-fmt
+
+
+
+
+
+
