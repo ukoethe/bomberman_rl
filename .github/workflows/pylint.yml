@@ -1,9 +1,6 @@
 name: Pylint
 
-on:
-  push:
-    paths:
-    - 'agent_code/coarse_life-threatening/**'
+on: [push]
 
 jobs:
   build:
@@ -23,4 +20,4 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files '*.py')
+        pylint $(git ls-files 'agent_code/coarse_life-threatening/*.py')
