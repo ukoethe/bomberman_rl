@@ -19,9 +19,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install pylint
         pip install pytest
-    - name: Analysing the code with pylint
-      run: |
-        pylint $(git ls-files 'agent_code/coli_agent/*.py')
     - name: Test with pytest
       run: |
         pytest
+    - name: Analysing the code with pylint
+      run: |
+        pylint $(git ls-files 'agent_code/coli_agent/*.py')
