@@ -3,7 +3,7 @@ name: Pylint
 on:
   push:
     paths:
-    - 'agent_code/coarse_life-threatening'
+    - 'agent_code/coarse_life-threatening/**'
 
 jobs:
   build:
