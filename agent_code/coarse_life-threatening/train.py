@@ -1,4 +1,6 @@
 def setup_training(self):
+    """Sets up training
+    """
     pass
 
 def game_events_occurred(self, old_game_state, self_action, new_game_state, events):
