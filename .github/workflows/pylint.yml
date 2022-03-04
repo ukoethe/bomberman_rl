@@ -1,7 +1,8 @@
 name: Pylint
 
-on: [push]
-  paths:
+on:
+  push:
+    paths:
     - 'agent_code/coarse_life-threatening'
 
 jobs:
