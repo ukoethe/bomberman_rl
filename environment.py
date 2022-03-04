@@ -196,10 +196,10 @@ class GenericWorld:
             explosion.timer -= 1
             if explosion.timer <= 0:
                 explosion.next_stage()
+                if explosion.stage == 1:
+                    explosion.owner.bombs_left = True
             if explosion.stage is not None:
                 remaining_explosions.append(explosion)
-            else:
-                explosion.owner.bombs_left = True
         self.explosions = remaining_explosions
 
     def update_bombs(self):
