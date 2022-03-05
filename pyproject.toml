@@ -5,7 +5,7 @@ description = "Pack"
 authors = ["Aileen Reichelt", "Ivo Schaper", "Kieu Trang Nguyen Vu"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.8,<3.11"
 numpy = "^1.22.2"
 pygame = "^2.1.2"
 
