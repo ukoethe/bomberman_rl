@@ -8,6 +8,9 @@ authors = ["Aileen Reichelt", "Ivo Schaper", "Kieu Trang Nguyen Vu"]
 python = "^3.8,<3.11"
 numpy = "^1.22.2"
 pygame = "^2.1.2"
+tqdm = "^4.63.0"
+scipy = "^1.8.0"
+sklearn = "^0.0"
 
 [tool.poetry.dev-dependencies]
 
