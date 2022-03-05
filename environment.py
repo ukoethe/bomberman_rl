@@ -53,7 +53,7 @@ class GenericWorld:
         self.round = 0
         self.round_statistics = {}
 
-        self.rng = np.random.default_rng(args.seed)
+        self.rng = np.random.default_rng(args.seed if 'seed' in args else None)
 
         self.running = False
 
