@@ -71,7 +71,7 @@ class Agent:
                 self.bomb_sprite = pygame.image.load(BytesIO(bomb_sprite_desc))
             else:
                 self.bomb_sprite = pygame.image.load(f'agent_code/{code_name}/bomb.png')
-            assert self.avatar.get_size() == (30, 30)
+            assert self.bomb_sprite.get_size() == (30, 30)
         except Exception as e:
             self.bomb_sprite = pygame.image.load(s.ASSET_DIR / f'bomb_{bomb_sprite_desc}.png')
         # Prepare overlay that will indicate dead agent on the scoreboard
