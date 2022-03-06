@@ -1,0 +1,16 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+-   repo: https://github.com/PyCQA/isort
+    rev: 5.10.0
+    hooks:
+      - id: isort
+        args: ["--profile", "black", "-w", "88", "-m", "3", "--tc"]
+-   repo: https://github.com/psf/black
+    rev: 21.10b0
+    hooks:
+    -   id: black
+        args: [--config=pyproject.toml]
