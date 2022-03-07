@@ -24,7 +24,7 @@ jobs:
         poetry install
     - name: Test with pytest
       run: |
-        pytest
+        poetry run pytest
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files 'agent_code/coli_agent/*.py')
+        poetry run pylint $(git ls-files 'agent_code/coli_agent/*.py')
