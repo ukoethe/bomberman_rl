@@ -29,7 +29,7 @@ class Timekeeper:
             sleep(duration)
 
 
-def world_controller(world, n_rounds, /,
+def world_controller(world, n_rounds, *,
                      gui, every_step, turn_based, make_video, update_interval):
     if make_video and not gui.screenshot_dir.exists():
         gui.screenshot_dir.mkdir()
