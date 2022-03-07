@@ -2,8 +2,6 @@ import os
 
 import numpy as np
 
-from agent_code.tpl_agent.callbacks import state_to_features
-
 ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"]
 
 
@@ -34,6 +32,10 @@ def act(self, game_state: dict) -> str:
     # TODO: Do we want to go 100% exploitation once we have learnt the q-table?
     # Alternative is to sample from the learnt q_table distribution.
     return ACTIONS[np.argmax(self.q_table[state])]
+
+
+def state_to_features(game_state):
+    pass
 
 
 # Only to demonstrate test
