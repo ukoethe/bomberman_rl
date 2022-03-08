@@ -28,7 +28,6 @@ def reward_from_events(self, events: List[str]) -> int:
     """
     Returns a summed up reward/penalty for a given list of events that happened
 
-    Currently not assigning penalty to INVALID_ACTION because then it shouldn't even get this far (?).
     Also not assigning reward/penalty to definitely(?) neutral actions MOVE LEFT/RIGHT/UP/DOWN or WAIT.
     """
     # TODO: customs events
@@ -44,6 +43,7 @@ def reward_from_events(self, events: List[str]) -> int:
         e.KILLED_SELF: -5,  # you dummy
         # e.OPPONENT_ELIMINATED: 0,
         e.SURVIVED_ROUND: 1,  # could possibly lead to not being active
+        e.INVALID_ACTION: -1,  # necessary? (maybe for penalizing trying to move through walls/crates)
     }
     reward_sum = 0
     for event in events:
