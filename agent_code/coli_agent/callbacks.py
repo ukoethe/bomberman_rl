@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 import numpy as np
 
@@ -9,11 +10,12 @@ def setup(self):
     """Sets up everything. (First call)"""
     if self.train or not os.path.isfile("q_table.npy"):
         self.logger.info("Setting up Q-Learning algorithm")
+        self.timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self.number_of_states = 20  # TODO: make this dynamic
         self.q_table = np.zeros(shape=(self.number_of_states, len(ACTIONS)))
         self.exploration_rate_initial = 0.5
         self.exploration_rate_end = 0.05  # at end of all episodes
-        self.exploration_decay_rate = 0.05  # 0.1 will reach min after ~ 100 episodes
+        self.exploration_decay_rate = 0.01  # 0.1 will reach min after ~ 100 episodes
         # Finally this will call setup_training in train.py
 
     else:
