@@ -9,7 +9,7 @@ import events as e
 # TODO: set rewards/penalties
 
 # Coins
-DECREASED_COIN_DISTANCE = "DECREASED_COIN_DISTANCE"  # move towards nearest coing
+DECREASED_COIN_DISTANCE = "DECREASED_COIN_DISTANCE"  # move towards nearest coin
 INCREASED_COIN_DISTANCE = "INCREASED_COIN_DISTANCE"  # opposite for balance
 # calculation of "coin distance" should take into consideration walls & crates (crates add some distance but don't need to be steered around?)
 # penalty for moving towards bomb should be higher than reward for moving towards coin
