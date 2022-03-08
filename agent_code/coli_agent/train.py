@@ -4,6 +4,29 @@ import numpy as np
 
 import events as e
 
+# Custom Events (Ideas)
+# TODO: actually implement these
+# TODO: set rewards/penalties
+
+# Coins
+DECREASED_COIN_DISTANCE = "DECREASED_COIN_DISTANCE"  # move towards nearest coing
+INCREASED_COIN_DISTANCE = "INCREASED_COIN_DISTANCE"  # opposite for balance
+# calculation of "coin distance" should take into consideration walls & crates (crates add some distance but don't need to be steered around?)
+# penalty for moving towards bomb should be higher than reward for moving towards coin
+
+# Navigation
+STAGNATED = "STAGNATED"  # agent is still within 4-tile-radius of location 5 turns ago (4/5 bc of bomb explosion time, idk if it makes sense)
+PROGRESSED = "PROGRESSED"  # opposite for balance
+
+# Bombs
+FLED = "FLED"  # was in danger zone but didn't get killed when bomb exploded
+RETREATED = "REATREATED"  # increased distance towards a bomb in danger zone
+SUICIDAL = "SUICIDAL"  # waited or moved towards bomb in danger zone
+
+# Enemies
+DECREASED_ENEMY_DISTANCE = "DECREASED_ENEMY_DISTANCE"  # but how do you even reward this? is it good or bad? in what situations which?
+INCREASED_COIN_DISTANCE = "INCREASED_COIN_DISTANCE"  # opposite for balance
+
 
 def setup_training(self):
     """Sets up training"""
@@ -30,8 +53,8 @@ def reward_from_events(self, events: List[str]) -> int:
 
     Also not assigning reward/penalty to definitely(?) neutral actions MOVE LEFT/RIGHT/UP/DOWN or WAIT.
     """
-    # TODO: customs events
-    # TODO: different rewards for different learning subtasks?
+    # TODO: custom events
+    # TODO: different rewards for different learning scenarios?
     game_rewards = {
         e.BOMB_DROPPED: 0.25,  # adjust aggressiveness
         # e.BOMB_EXPLODED: 0,
