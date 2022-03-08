@@ -43,10 +43,10 @@ def game_events_occurred(self, old_game_state, self_action, new_game_state, even
         )
     )
     state, action, next_state, reward = (
-        self.transitions[-1]["state"],
-        self.transitions[-1]["action"],
-        self.transitions[-1]["next_state"],
-        self.transitions[-1]["reward"],
+        self.transitions[-1][0],
+        self.transitions[-1][1],
+        self.transitions[-1][2],
+        self.transitions[-1][3],
     )
 
     self.rewards_of_episode += reward
@@ -67,14 +67,15 @@ def end_of_round(self, last_game_state, last_action, events):
             reward_from_events(self, events),
         )
     )
-    self.rewards_of_episode += self.transitions[-1]["reward"]
+    self.rewards_of_episode += self.transitions[-1][3]
 
     self.logger.info(
         f"Total rewards in episode {self.episode}: {self.rewards_of_episode}"
     )
     self.rewards_of_episode = 0
 
-    np.save(f"q_table-{self.timestamp}", self.q_table)
+    if self.episode % 250 == 0:
+        np.save(f"q_table-{self.timestamp}", self.q_table)
 
     self.episode += 1
     self.exploration_rate = self.exploration_rate_end + (

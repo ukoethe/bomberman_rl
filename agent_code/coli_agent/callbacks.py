@@ -33,7 +33,7 @@ def act(self, game_state: dict) -> str:
     self.logger.debug("Exploiting")
     # TODO: Do we want to go 100% exploitation once we have learnt the q-table?
     # Alternative is to sample from the learnt q_table distribution.
-    return ACTIONS[np.argmax(self.q_table[state])]
+    return ACTIONS[np.argmax(self.q_table[state])]  # [3, 6, 8, 1, 2, 5]
 
 
 def state_to_features(game_state):
