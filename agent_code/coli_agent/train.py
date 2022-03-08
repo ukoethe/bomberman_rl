@@ -39,6 +39,10 @@ def game_events_occurred(self, old_game_state, self_action, new_game_state, even
     data and filling the experience buffer.
 
     Also, the actual learning takes place here.
+
+    Will call state_to_features, and can then use these features for adding our custom events.
+    (if features = ... -> events.append(OUR_EVENT)). But events can also be added independently of features,
+    just using game state in general. Leveraging of features more just to avoid code duplication.
     """
 
 
