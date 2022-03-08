@@ -14,6 +14,9 @@ TRANSITION_HISTORY_SIZE = 3  # keep only ... last transitions
 def setup_training(self):
     """Sets up training"""
     self.exploration_rate = self.exploration_rate_initial
+    self.learning_rate = 0.1
+    self.discount_rate = 0.99
+
     # (s, a, s', r)
     self.transitions = deque(maxlen=TRANSITION_HISTORY_SIZE)
     self.episode = 0  # need to keep track of episodes
@@ -26,16 +29,45 @@ def game_events_occurred(self, old_game_state, self_action, new_game_state, even
 
     Also, the actual learning takes place here.
     """
-    return
+    self.logger.debug(
+        f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}'
+    )
+
+    # state_to_features is defined in callbacks.py
+    self.transitions.append(
+        Transition(
+            state_to_features(old_game_state),
+            self_action,
+            state_to_features(new_game_state),
+            reward_from_events(self, events),
+        )
+    )
+    state, action, next_state, reward = (
+        self.transitions[-1]["state"],
+        self.transitions[-1]["action"],
+        self.transitions[-1]["next_state"],
+        self.transitions[-1]["reward"],
+    )
+
+    self.rewards_of_episode += reward
+    self.q_table[state, action] = self.q_table[state, action] + self.learning_rate * (
+        reward
+        + self.discount_rate * np.max(self.q_table[next_state])
+        - self.q_table[state, action]
+    )
 
 
 def end_of_round(self, last_game_state, last_action, events):
     """Called once per agent after the last step of a round."""
-    reward = reward_from_events(self, events)
     self.transitions.append(
-        Transition(state_to_features(last_game_state), last_action, None, reward)
+        Transition(
+            state_to_features(last_game_state),
+            last_action,
+            None,
+            reward_from_events(self, events),
+        )
     )
-    self.rewards_of_episode += reward
+    self.rewards_of_episode += self.transitions[-1]["reward"]
 
     self.logger.info(
         f"Total rewards in episode {self.episode}: {self.rewards_of_episode}"
