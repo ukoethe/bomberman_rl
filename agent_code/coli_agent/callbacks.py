@@ -9,7 +9,7 @@ def setup(self):
     """Sets up everything. (First call)"""
     if self.train or not os.path.isfile("q_table.npy"):
         self.logger.info("Setting up Q-Learning algorithm")
-        self.number_of_states = 20  # TODO: make this dynamic
+        self.number_of_states = 4  # TODO: make this dynamic
         self.q_table = np.zeros(shape=(self.number_of_states, len(ACTIONS)))
         self.exploration_rate_initial = 0.5
         self.exploration_rate_end = 0.05  # at end of all episodes
