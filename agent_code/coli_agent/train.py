@@ -60,16 +60,16 @@ def reward_from_events(self, events: List[str]) -> int:
     # TODO: custom events
     # TODO: different rewards for different learning scenarios?
     game_rewards = {
-        e.BOMB_DROPPED: 0.25,  # adjust aggressiveness
+        e.BOMB_DROPPED: 2,  # adjust aggressiveness
         # e.BOMB_EXPLODED: 0,
-        e.COIN_COLLECTED: 1,
-        e.COIN_FOUND: 0.5,
-        # e.CRATE_DESTROYED: 0,  # possibly use if agent isn't destroying enough crates
+        e.COIN_COLLECTED: 10,
+        # e.COIN_FOUND: 5,  # direct consequence from crate destroyed, redundant reward?
+        e.CRATE_DESTROYED: 4,
         e.GOT_KILLED: -5,  # adjust passivity
-        e.KILLED_OPPONENT: 5,
+        e.KILLED_OPPONENT: 50,
         e.KILLED_SELF: -5,  # you dummy
-        # e.OPPONENT_ELIMINATED: 0,
-        e.SURVIVED_ROUND: 1,  # could possibly lead to not being active
+        e.OPPONENT_ELIMINATED: 0.05,  # good because less danger or bad because other agent scored points?
+        # e.SURVIVED_ROUND: 0,  # could possibly lead to not being active - actually penalize if agent too passive?
         e.INVALID_ACTION: -1,  # necessary? (maybe for penalizing trying to move through walls/crates)
     }
     reward_sum = 0
