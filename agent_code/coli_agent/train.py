@@ -9,23 +9,39 @@ import events as e
 # TODO: set rewards/penalties
 
 # Coins
-DECREASED_COIN_DISTANCE = "DECREASED_COIN_DISTANCE"  # move towards nearest coin
+DECREASED_COIN_DISTANCE = "DECREASED_COIN_DISTANCE"  # move towards nearest coin, penalty should be higher than reward
 INCREASED_COIN_DISTANCE = "INCREASED_COIN_DISTANCE"  # opposite for balance
-# calculation of "coin distance" should take into consideration walls & crates (crates add some distance but don't need to be steered around?)
+# calculation of "coin distance" should take into consideration walls & crates (interpret crates as walls)
+# take into consideration whether another agent is closer to the coin (nearest coin = coin is nearest to us and we are, out of all agents, nearest to coin)
 # penalty for moving towards bomb should be higher than reward for moving towards coin
 
+# Crates
+# have nearest crate feature and reward going there -- take into consideration where there are many crates near (e.g. 5 crates two files away is better than 2 crates 1 tile away)
+# Agent-Coin ratio: reward going after crates when there's many coins left (max: 9) and reward going after agents when there aren't
+
 # Navigation
-STAGNATED = "STAGNATED"  # agent is still within 4-tile-radius of location 5 turns ago (4/5 bc of bomb explosion time, idk if it makes sense)
-PROGRESSED = "PROGRESSED"  # opposite for balance
+# STAGNATED = "STAGNATED"  # agent is still within 4-tile-radius of location 5 turns ago (4/5 bc of bomb explosion time, idk if it makes sense)
+# PROGRESSED = "PROGRESSED"  # opposite for balance
+# EXLPORE = "EXLPORE" # reward moving away from starting position/quadrant
+REVISITED_TILE = "REVISITED_TILE"  # low penalty (bc sometimes necessary to survive)
+NEW_TILE = "NEW_TILE"  # low reward, but a bit higher than the penalty
+
+# Walls
+DECREASED_NEIGHBORING_WALLS = "DECREASED_NEIGHBORING_WALLS"  # low reward
+INCREASED_NEIGHBORING_WALLS = (
+    "INCREASED_NEIGHBORING_WALLS"  # low, penalty, penalty higher than reward
+)
 
 # Bombs
 FLED = "FLED"  # was in danger zone but didn't get killed when bomb exploded
-RETREATED = "REATREATED"  # increased distance towards a bomb in danger zone
-SUICIDAL = "SUICIDAL"  # waited or moved towards bomb in danger zone
+RETREATED = "RETREATED"  # increased distance towards a bomb in danger zone
+SUICIDAL = "SUICIDAL"  # waited or moved towards bomb in danger zone, penalty higher than RETREATED reward
 
 # Enemies
-DECREASED_ENEMY_DISTANCE = "DECREASED_ENEMY_DISTANCE"  # but how do you even reward this? is it good or bad? in what situations which?
-INCREASED_COIN_DISTANCE = "INCREASED_COIN_DISTANCE"  # opposite for balance
+# DECREASED_ENEMY_DISTANCE = "DECREASED_ENEMY_DISTANCE"  # but how do you even reward this? is it good or bad? in what situations which?
+# INCREASED_ENEMY_DISTANCE = "INCREASED_ENEMY_DISTANCE"  # opposite for balance
+# do not include as events, but do include a feature "enemy distance" as weighted sum (distance to nearest is 4x as important as distance to farthest)
+# idea: reward caging enemies
 
 
 def setup_training(self):
