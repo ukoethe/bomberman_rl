@@ -7,6 +7,10 @@ ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"]
 
 def setup(self):
     """Sets up everything. (First call)"""
+
+    # Where to put?
+    self.history = [0, None]  # [num_of_coins_collected, tiles_visited]
+
     if self.train or not os.path.isfile("q_table.npy"):
         self.logger.info("Setting up Q-Learning algorithm")
         self.number_of_states = 4  # TODO: make this dynamic
@@ -23,7 +27,7 @@ def setup(self):
 
 def act(self, game_state: dict) -> str:
     """Takes in the current game state and returns the chosen action in form of a string."""
-    state = state_to_features(game_state)
+    state = state_to_features(game_state, self.history)
     if self.train and np.random.random() < self.exploration_rate:
         self.logger.debug("Exploring")
         return np.random.choice(ACTIONS)
