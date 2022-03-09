@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 import numpy as np
 
@@ -13,11 +14,12 @@ def setup(self):
 
     if self.train or not os.path.isfile("q_table.npy"):
         self.logger.info("Setting up Q-Learning algorithm")
+        self.timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self.number_of_states = 4  # TODO: make this dynamic
         self.q_table = np.zeros(shape=(self.number_of_states, len(ACTIONS)))
         self.exploration_rate_initial = 0.5
         self.exploration_rate_end = 0.05  # at end of all episodes
-        self.exploration_decay_rate = 0.05  # 0.1 will reach min after ~ 100 episodes
+        self.exploration_decay_rate = 0.01  # 0.1 will reach min after ~ 100 episodes
         # Finally this will call setup_training in train.py
 
     else:
@@ -35,7 +37,7 @@ def act(self, game_state: dict) -> str:
     self.logger.debug("Exploiting")
     # TODO: Do we want to go 100% exploitation once we have learnt the q-table?
     # Alternative is to sample from the learnt q_table distribution.
-    return ACTIONS[np.argmax(self.q_table[state])]
+    return ACTIONS[np.argmax(self.q_table[state])]  # [3, 6, 8, 1, 2, 5]
 
 
 def _get_neighboring_tiles(own_coord, n):

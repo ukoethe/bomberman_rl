@@ -1,8 +1,17 @@
+
+from collections import deque, namedtuple
 from typing import List
 
 import numpy as np
 
 import events as e
+
+from agent_code.coli_agent.callbacks import state_to_features
+
+Transition = namedtuple("Transition", ("state", "action", "next_state", "reward"))
+
+TRANSITION_HISTORY_SIZE = 3  # keep only ... last transitions
+
 
 # Custom Events (Ideas)
 # TODO: actually implement these
@@ -46,8 +55,14 @@ SUICIDAL = "SUICIDAL"  # waited or moved towards bomb in danger zone, penalty hi
 
 def setup_training(self):
     """Sets up training"""
-    self.number_of_episodes = 100
     self.exploration_rate = self.exploration_rate_initial
+    self.learning_rate = 0.1
+    self.discount_rate = 0.99
+
+    # (s, a, s', r)
+    self.transitions = deque(maxlen=TRANSITION_HISTORY_SIZE)
+    self.episode = 0  # need to keep track of episodes
+    self.rewards_of_episode = 0
 
 
 def game_events_occurred(self, old_game_state, self_action, new_game_state, events):
@@ -60,11 +75,61 @@ def game_events_occurred(self, old_game_state, self_action, new_game_state, even
     (if features = ... -> events.append(OUR_EVENT)). But events can also be added independently of features,
     just using game state in general. Leveraging of features more just to avoid code duplication.
     """
+    self.logger.debug(
+        f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}'
+    )
+
+    # state_to_features is defined in callbacks.py
+    self.transitions.append(
+        Transition(
+            state_to_features(old_game_state),
+            self_action,
+            state_to_features(new_game_state),
+            reward_from_events(self, events),
+        )
+    )
+    state, action, next_state, reward = (
+        self.transitions[-1][0],
+        self.transitions[-1][1],
+        self.transitions[-1][2],
+        self.transitions[-1][3],
+    )
+
+    self.rewards_of_episode += reward
+    self.q_table[state, action] = self.q_table[state, action] + self.learning_rate * (
+        reward
+        + self.discount_rate * np.max(self.q_table[next_state])
+        - self.q_table[state, action]
+    )
 
 
 def end_of_round(self, last_game_state, last_action, events):
-    """Called once per agent (?) after the last step of a round."""
-    pass
+    """Called once per agent after the last step of a round."""
+    self.transitions.append(
+        Transition(
+            state_to_features(last_game_state),
+            last_action,
+            None,
+            reward_from_events(self, events),
+        )
+    )
+    self.rewards_of_episode += self.transitions[-1][3]
+
+    self.logger.info(
+        f"Total rewards in episode {self.episode}: {self.rewards_of_episode}"
+    )
+    self.rewards_of_episode = 0
+
+
+    if self.episode % 250 == 0:
+        np.save(f"q_table-{self.timestamp}", self.q_table)
+
+    self.episode += 1
+    self.exploration_rate = self.exploration_rate_end + (
+        self.exploration_rate_initial - self.exploration_rate_end
+    ) * np.exp(
+        -self.exploration_decay_rate * self.episode
+    )  # decay
 
 
 def reward_from_events(self, events: List[str]) -> int:
@@ -88,16 +153,10 @@ def reward_from_events(self, events: List[str]) -> int:
         # e.SURVIVED_ROUND: 0,  # could possibly lead to not being active - actually penalize if agent too passive?
         e.INVALID_ACTION: -1,  # necessary? (maybe for penalizing trying to move through walls/crates)
     }
+
     reward_sum = 0
     for event in events:
         if event in game_rewards:
             reward_sum += game_rewards[event]
     self.logger.info(f"Awarded {reward_sum} for events {', '.join(events)}")
     return reward_sum
-
-
-def training_loop(self):
-    for episode in range(self.number_of_episodes):
-        self.exploration_rate = self.exploration_rate_end + (
-            self.exploration_rate_initial - self.exploration_rate_end
-        ) * np.exp(-self.exploration_decay_rate * episode)
