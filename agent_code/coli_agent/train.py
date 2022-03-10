@@ -1,12 +1,10 @@
-
 from collections import deque, namedtuple
 from typing import List
 
 import numpy as np
 
 import events as e
-
-from agent_code.coli_agent.callbacks import state_to_features
+from agent_code.coli_agent.callbacks import ACTIONS, state_to_features
 
 Transition = namedtuple("Transition", ("state", "action", "next_state", "reward"))
 
@@ -65,7 +63,9 @@ def setup_training(self):
     self.rewards_of_episode = 0
 
 
-def game_events_occurred(self, old_game_state, self_action, new_game_state, events):
+def game_events_occurred(
+    self, old_game_state, self_action: str, new_game_state, events
+):
     """Called once after each time step except the last. Used to collect training
     data and filling the experience buffer.
 
@@ -79,12 +79,16 @@ def game_events_occurred(self, old_game_state, self_action, new_game_state, even
         f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}'
     )
 
+    # skip first timestep
+    if old_game_state is None:
+        return
+
     # state_to_features is defined in callbacks.py
     self.transitions.append(
         Transition(
-            state_to_features(old_game_state),
+            state_to_features(old_game_state, self.history),
             self_action,
-            state_to_features(new_game_state),
+            state_to_features(new_game_state, self.history),
             reward_from_events(self, events),
         )
     )
@@ -95,19 +99,25 @@ def game_events_occurred(self, old_game_state, self_action, new_game_state, even
         self.transitions[-1][3],
     )
 
+    action_idx = ACTIONS.index(action)
+    self.logger.debug(action_idx)  # this is not executed currently
+
     self.rewards_of_episode += reward
-    self.q_table[state, action] = self.q_table[state, action] + self.learning_rate * (
+    self.q_table[state, action_idx] = self.q_table[
+        state, action_idx
+    ] + self.learning_rate * (
         reward
         + self.discount_rate * np.max(self.q_table[next_state])
-        - self.q_table[state, action]
+        - self.q_table[state, action_idx]
     )
+    self.logger.debug(f"Updated q-table: {self.q_table}")
 
 
 def end_of_round(self, last_game_state, last_action, events):
     """Called once per agent after the last step of a round."""
     self.transitions.append(
         Transition(
-            state_to_features(last_game_state),
+            state_to_features(last_game_state, self.history),
             last_action,
             None,
             reward_from_events(self, events),
@@ -119,7 +129,6 @@ def end_of_round(self, last_game_state, last_action, events):
         f"Total rewards in episode {self.episode}: {self.rewards_of_episode}"
     )
     self.rewards_of_episode = 0
-
 
     if self.episode % 250 == 0:
         np.save(f"q_table-{self.timestamp}", self.q_table)
