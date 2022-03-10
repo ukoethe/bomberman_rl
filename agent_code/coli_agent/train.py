@@ -154,6 +154,7 @@ def reward_from_events(self, events: List[str]) -> int:
         # e.BOMB_EXPLODED: 0,
         e.COIN_COLLECTED: 10,
         # e.COIN_FOUND: 5,  # direct consequence from crate destroyed, redundant reward?
+        e.WAITED: -1,  # adjust passivity
         e.CRATE_DESTROYED: 4,
         e.GOT_KILLED: -5,  # adjust passivity
         e.KILLED_OPPONENT: 50,
