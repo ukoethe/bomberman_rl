@@ -100,7 +100,7 @@ def game_events_occurred(
     )
 
     action_idx = ACTIONS.index(action)
-    self.logger.debug(action_idx)  # this is not executed currently
+    self.logger.debug(action_idx)
 
     self.rewards_of_episode += reward
     self.q_table[state, action_idx] = self.q_table[
@@ -157,10 +157,10 @@ def reward_from_events(self, events: List[str]) -> int:
         e.CRATE_DESTROYED: 4,
         e.GOT_KILLED: -5,  # adjust passivity
         e.KILLED_OPPONENT: 50,
-        e.KILLED_SELF: -5,  # you dummy
+        e.KILLED_SELF: -10,  # you dummy --- this *also* triggers GOT_KILLED
         e.OPPONENT_ELIMINATED: 0.05,  # good because less danger or bad because other agent scored points?
         # e.SURVIVED_ROUND: 0,  # could possibly lead to not being active - actually penalize if agent too passive?
-        e.INVALID_ACTION: -1,  # necessary? (maybe for penalizing trying to move through walls/crates)
+        e.INVALID_ACTION: -1,  # necessary? (maybe for penalizing trying to move through walls/crates) - yes, seems to be necessary to learn that one cannot place a bomb after another placed bomb is still not exploded
     }
 
     reward_sum = 0
