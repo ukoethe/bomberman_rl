@@ -1,12 +1,10 @@
-
 from collections import deque, namedtuple
 from typing import List
 
 import numpy as np
 
 import events as e
-
-from agent_code.coli_agent.callbacks import state_to_features
+from agent_code.coli_agent.callbacks import ACTIONS, state_to_features
 
 Transition = namedtuple("Transition", ("state", "action", "next_state", "reward"))
 
@@ -65,7 +63,9 @@ def setup_training(self):
     self.rewards_of_episode = 0
 
 
-def game_events_occurred(self, old_game_state, self_action, new_game_state, events):
+def game_events_occurred(
+    self, old_game_state, self_action: str, new_game_state, events
+):
     """Called once after each time step except the last. Used to collect training
     data and filling the experience buffer.
 
@@ -79,12 +79,16 @@ def game_events_occurred(self, old_game_state, self_action, new_game_state, even
         f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}'
     )
 
+    # skip first timestep
+    if old_game_state is None:
+        return
+
     # state_to_features is defined in callbacks.py
     self.transitions.append(
         Transition(
-            state_to_features(old_game_state),
+            state_to_features(old_game_state, self.history),
             self_action,
-            state_to_features(new_game_state),
+            state_to_features(new_game_state, self.history),
             reward_from_events(self, events),
         )
     )
@@ -95,19 +99,25 @@ def game_events_occurred(self, old_game_state, self_action, new_game_state, even
         self.transitions[-1][3],
     )
 
+    action_idx = ACTIONS.index(action)
+    self.logger.debug(action_idx)
+
     self.rewards_of_episode += reward
-    self.q_table[state, action] = self.q_table[state, action] + self.learning_rate * (
+    self.q_table[state, action_idx] = self.q_table[
+        state, action_idx
+    ] + self.learning_rate * (
         reward
         + self.discount_rate * np.max(self.q_table[next_state])
-        - self.q_table[state, action]
+        - self.q_table[state, action_idx]
     )
+    self.logger.debug(f"Updated q-table: {self.q_table}")
 
 
 def end_of_round(self, last_game_state, last_action, events):
     """Called once per agent after the last step of a round."""
     self.transitions.append(
         Transition(
-            state_to_features(last_game_state),
+            state_to_features(last_game_state, self.history),
             last_action,
             None,
             reward_from_events(self, events),
@@ -119,7 +129,6 @@ def end_of_round(self, last_game_state, last_action, events):
         f"Total rewards in episode {self.episode}: {self.rewards_of_episode}"
     )
     self.rewards_of_episode = 0
-
 
     if self.episode % 250 == 0:
         np.save(f"q_table-{self.timestamp}", self.q_table)
@@ -145,13 +154,14 @@ def reward_from_events(self, events: List[str]) -> int:
         # e.BOMB_EXPLODED: 0,
         e.COIN_COLLECTED: 10,
         # e.COIN_FOUND: 5,  # direct consequence from crate destroyed, redundant reward?
+        e.WAITED: -1,  # adjust passivity
         e.CRATE_DESTROYED: 4,
         e.GOT_KILLED: -5,  # adjust passivity
         e.KILLED_OPPONENT: 50,
-        e.KILLED_SELF: -5,  # you dummy
+        e.KILLED_SELF: -10,  # you dummy --- this *also* triggers GOT_KILLED
         e.OPPONENT_ELIMINATED: 0.05,  # good because less danger or bad because other agent scored points?
         # e.SURVIVED_ROUND: 0,  # could possibly lead to not being active - actually penalize if agent too passive?
-        e.INVALID_ACTION: -1,  # necessary? (maybe for penalizing trying to move through walls/crates)
+        e.INVALID_ACTION: -1,  # necessary? (maybe for penalizing trying to move through walls/crates) - yes, seems to be necessary to learn that one cannot place a bomb after another placed bomb is still not exploded
     }
 
     reward_sum = 0

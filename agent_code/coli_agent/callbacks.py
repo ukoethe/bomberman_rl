@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from typing import List, Tuple
 
 import numpy as np
 
@@ -30,17 +31,23 @@ def setup(self):
 def act(self, game_state: dict) -> str:
     """Takes in the current game state and returns the chosen action in form of a string."""
     state = state_to_features(game_state, self.history)
+
     if self.train and np.random.random() < self.exploration_rate:
         self.logger.debug("Exploring")
-        return np.random.choice(ACTIONS)
+        action = np.random.choice(ACTIONS)
+        self.logger.debug(f"Action chosen: {action}")
+        return action
 
     self.logger.debug("Exploiting")
     # TODO: Do we want to go 100% exploitation once we have learnt the q-table?
     # Alternative is to sample from the learnt q_table distribution.
-    return ACTIONS[np.argmax(self.q_table[state])]  # [3, 6, 8, 1, 2, 5]
+    # print(state)
+    action = ACTIONS[np.argmax(self.q_table[state])]
+    self.logger.debug(f"Action chosen: {action}")
+    return action
 
 
-def _get_neighboring_tiles(own_coord, n):
+def _get_neighboring_tiles(own_coord, n) -> List[Tuple[int]]:
     own_coord_x = own_coord[0]
     own_coord_y = own_coord[1]
     neighboring_coordinates = []
@@ -64,9 +71,13 @@ def state_to_features(game_state, history) -> np.array:
     # TODO: vectorize?
     # TODO: combine different for loops (!)
     """Parses game state to features"""
-    features = np.zeros(4)
+    features = np.zeros(2)
 
-    own_position = game_state["self"][-1]
+    try:
+        own_position = game_state["self"][-1]
+    except TypeError:
+        print("First game state is none")
+        return
 
     # How many walls
     wall_counter = 0
@@ -79,7 +90,7 @@ def state_to_features(game_state, history) -> np.array:
             print(
                 "tried to access tile out of bounds (walls)"
             )  # TODO remove, just for "debugging"
-    features[0] = wall_counter
+    features[0] = wall_counter > 2
 
     # Within bomb explosion zone
     # TODO shoul we have feature "bomb distance" (instead or additionally)? should that be nearest or all bombs (like enemies?)?
@@ -87,8 +98,12 @@ def state_to_features(game_state, history) -> np.array:
     range_3_coordinates = _get_neighboring_tiles(own_position, 3)
     for coord in range_3_coordinates:
         try:
-            bomb_present = (
-                True if game_state["bombs"][coord][0] != 0 else False
+            bomb_present = any(
+                [
+                    bomb
+                    for bomb in game_state["bombs"]
+                    if bomb[0] in range_3_coordinates and bomb[1] != 0
+                ]
             )  # access to bombs might be wrong
             features[1] = bomb_present
         except IndexError:
@@ -96,15 +111,27 @@ def state_to_features(game_state, history) -> np.array:
 
     # Position
     # maybe take out? not sure if necessary
-    features[2] = own_position[0]
-    features[3] = own_position[1]
+    # features[2] = own_position[0]
+    # features[3] = own_position[1]
 
     # Agent-Coin ratio
     # num_of_agents_left = len(game_state["others"])
     # we need to access past
     # features[4] = num_of_agents_left/num_of_coins_left
 
-    return features
+    if np.array_equal(features, np.array([0, 0])):
+        return 0
+
+    elif np.array_equal(features, np.array([0, 1])):
+        return 1
+
+    elif np.array_equal(features, np.array([1, 0])):
+        return 2
+
+    elif np.array_equal(features, np.array([1, 1])):
+        return 3
+
+    # return features
 
 
 # Only to demonstrate test
