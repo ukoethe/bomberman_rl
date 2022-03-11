@@ -119,6 +119,18 @@ def game_events_occurred(
     )
     self.logger.debug(f"Updated q-table: {self.q_table}")
 
+    # if we want to have a wall counting reward, use this to add the event
+    # wall_counter = 0
+    # neighboring_coordinates = _get_neighboring_tiles(own_position, 1)
+    # for coord in neighboring_coordinates:
+    #     try:
+    #         if game_state["field"][coord] == -1:  # geht das? wer weiß
+    #             wall_counter += 1
+    #     except IndexError:
+    #         print(
+    #             "tried to access tile out of bounds (walls)"
+    #         )  # TODO remove, just for "debugging"
+
 
 def end_of_round(self, last_game_state, last_action, events):
     """Called once per agent after the last step of a round."""
@@ -152,7 +164,7 @@ def reward_from_events(self, events: List[str]) -> int:
     """
     Returns a summed up reward/penalty for a given list of events that happened
 
-    Also not assigning reward/penalty to definitely(?) neutral actions MOVE LEFT/RIGHT/UP/DOWN or WAIT.
+    Not assigning reward/penalty to definitely(?) neutral actions MOVE LEFT/RIGHT/UP/DOWN or WAIT.
     """
 
     game_rewards = {
