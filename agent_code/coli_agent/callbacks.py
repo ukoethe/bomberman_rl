@@ -1,8 +1,17 @@
 import os
+from copy import deepcopy
 from datetime import datetime
 from typing import List, Tuple
 
+import networkx as nx
 import numpy as np
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import shortest_path
+
+from settings import COLS, ROWS
+
+graph = str
+action = str
 
 ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"]
 
@@ -21,6 +30,8 @@ def setup(self):
         self.exploration_rate_initial = 0.5
         self.exploration_rate_end = 0.05  # at end of all episodes
         self.exploration_decay_rate = 0.01  # 0.1 will reach min after ~ 100 episodes
+
+        self.lattice_graph = nx.grid_2d_graph(m=COLS, n=ROWS)
         # Finally this will call setup_training in train.py
 
     else:
@@ -30,7 +41,7 @@ def setup(self):
 
 def act(self, game_state: dict) -> str:
     """Takes in the current game state and returns the chosen action in form of a string."""
-    state = state_to_features(game_state, self.history)
+    state = state_to_features(self, game_state, self.history)
 
     if self.train and np.random.random() < self.exploration_rate:
         self.logger.debug("Exploring")
@@ -67,7 +78,49 @@ def _get_neighboring_tiles(own_coord, n) -> List[Tuple[int]]:
     return neighboring_coordinates
 
 
-def state_to_features(game_state, history) -> np.array:
+def _get_graph(self, game_state) -> graph:
+    """Calculates the adjacency matrix of the current game state.
+    Every coordinate is a node.]
+
+    Vertex between nodes <==> both nodes are empty
+
+    Considers walls, crates, other players and bombs as "walls", i.e. not connected"""
+
+    # walls and crates are obstacles
+    obstacles = [
+        index for index, field in np.ndenumerate(game_state["field"]) if field != 0
+    ]
+
+    print(obstacles)
+
+    # other players are obstacles too
+    for other_player in game_state["others"]:
+        obstacles.append(other_player[3])  # third element stores the coordinates
+
+    print(obstacles)
+
+    graph = deepcopy(self.lattice_graph)
+
+    # inplace operation
+    graph.remove_nodes_from(obstacles)  # removes nodes and all edges of that node
+    return graph
+
+
+def _get_shortest_path_length(game_state, x, y) -> int:
+    """Calclulates length of shortest path (Manhattan distance) at current time step (without looking ahead to the future)
+    between points x and y *and* considers obstacles (i.e. walls, crates, other players and bombs)."""
+    graph = _get_graph(game_state)
+
+    # use Djikstra to find shortest path
+    shortest_path(graph, method="D", directed=False, unweighted=True, indices=[])
+    return
+
+
+def _get_shortest_path_direction(game_state, x, y) -> str:
+    pass
+
+
+def state_to_features(self, game_state, history) -> np.array:
     # TODO: vectorize?
     # TODO: combine different for loops (!)
     """Parses game state to features"""
@@ -108,6 +161,8 @@ def state_to_features(game_state, history) -> np.array:
             features[1] = bomb_present
         except IndexError:
             print("tried to access tile out of bounds (bomb)")  # TODO remove
+
+    print(_get_graph(self, game_state))
 
     # Position
     # maybe take out? not sure if necessary
