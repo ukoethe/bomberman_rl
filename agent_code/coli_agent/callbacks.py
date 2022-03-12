@@ -17,7 +17,7 @@ def setup(self):
     if self.train or not os.path.isfile("q_table.npy"):
         self.logger.info("Setting up Q-Learning algorithm")
         self.timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        self.number_of_states = 4  # TODO: make this dynamic
+        self.number_of_states = 5  # TODO: make this dynamic
         self.q_table = np.zeros(shape=(self.number_of_states, len(ACTIONS)))
         self.exploration_rate_initial = 0.5
         self.exploration_rate_end = 0.05  # at end of all episodes
@@ -72,7 +72,7 @@ def state_to_features(game_state, history) -> np.array:
     # TODO: vectorize?
     # TODO: combine different for loops (!)
     """Parses game state to features"""
-    features = np.zeros(2)
+    features = np.zeros(5)
 
     try:
         own_position = game_state["self"][-1]
