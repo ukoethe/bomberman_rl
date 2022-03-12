@@ -16,7 +16,7 @@ def setup(self):
     if self.train or not os.path.isfile("q_table.npy"):
         self.logger.info("Setting up Q-Learning algorithm")
         self.timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        self.number_of_states = 4  # TODO: make this dynamic
+        self.number_of_states = 12  # TODO: make this dynamic
         self.q_table = np.zeros(shape=(self.number_of_states, len(ACTIONS)))
         self.exploration_rate_initial = 0.5
         self.exploration_rate_end = 0.05  # at end of all episodes
@@ -67,11 +67,61 @@ def _get_neighboring_tiles(own_coord, n) -> List[Tuple[int]]:
     return neighboring_coordinates
 
 
+def get_neighboring_tiles_except_walls(own_coord, n, game_state):
+    directions = ["N", "E", "S", "W"]
+    own_coord_x, own_coord_y = own_coord[0], own_coord[1]
+    all_good_fields = []
+
+    for d in range(len(directions)):
+        good_fields = []
+        for i in range(1, n + 1):
+            try:
+                if directions[d] == "N":
+                    if (
+                        game_state["field"][own_coord_x][own_coord_y + i] == 0
+                        or game_state["field"][own_coord_x][own_coord_y + i] == 1
+                    ):
+                        good_fields += [(own_coord_x, own_coord_y + i)]
+                    else:
+                        break
+                elif directions[d] == "E":
+                    if (
+                        game_state["field"][own_coord_x + i][own_coord_y] == 0
+                        or game_state["field"][own_coord_x + i][own_coord_y] == 1
+                    ):
+                        good_fields += [(own_coord_x + i, own_coord_y)]
+                    else:
+                        break
+                elif directions[d] == "S":
+                    if (
+                        game_state["field"][own_coord_x][own_coord_y - i] == 0
+                        or game_state["field"][own_coord_x][own_coord_y - i] == 1
+                    ):
+                        good_fields += [(own_coord_x, own_coord_y - i)]
+                    else:
+                        break
+                elif directions[d] == "W":
+                    if (
+                        game_state["field"][own_coord_x - i][own_coord_y] == 0
+                        or game_state["field"][own_coord_x - i][own_coord_y] == 1
+                    ):
+                        good_fields += [(own_coord_x - i, own_coord_y)]
+                    else:
+                        break
+            except IndexError:
+                # print("Border")
+                break
+
+        all_good_fields += good_fields
+
+    return all_good_fields
+
+
 def state_to_features(game_state, history) -> np.array:
     # TODO: vectorize?
     # TODO: combine different for loops (!)
     """Parses game state to features"""
-    features = np.zeros(2)
+    features = [0] * 3
 
     try:
         own_position = game_state["self"][-1]
@@ -79,59 +129,122 @@ def state_to_features(game_state, history) -> np.array:
         print("First game state is none")
         return
 
-    # How many walls
-    wall_counter = 0
-    neighboring_coordinates = _get_neighboring_tiles(own_position, 1)
-    for coord in neighboring_coordinates:
-        try:
-            if game_state["field"][coord] == -1:  # geht das? wer weiß
-                wall_counter += 1
-        except IndexError:
-            print(
-                "tried to access tile out of bounds (walls)"
-            )  # TODO remove, just for "debugging"
-    features[0] = wall_counter > 2
+    # # How many walls
+    # wall_counter = 0
+    # neighboring_coordinates = _get_neighboring_tiles(own_position, 1)
+    # for coord in neighboring_coordinates:
+    #     try:
+    #         if game_state["field"][coord] == -1:  # geht das? wer weiß
+    #             wall_counter += 1
+    #     except IndexError:
+    #         print(
+    #             "tried to access tile out of bounds (walls)"
+    #         )  # TODO remove, just for "debugging"
+    # features[0] = wall_counter > 2
 
-    # Within bomb explosion zone
-    # TODO shoul we have feature "bomb distance" (instead or additionally)? should that be nearest or all bombs (like enemies?)?
-    # TODO take countdown into consideration?
-    range_3_coordinates = _get_neighboring_tiles(own_position, 3)
-    for coord in range_3_coordinates:
-        try:
-            bomb_present = any(
-                [
-                    bomb
-                    for bomb in game_state["bombs"]
-                    if bomb[0] in range_3_coordinates and bomb[1] != 0
-                ]
-            )  # access to bombs might be wrong
-            features[1] = bomb_present
-        except IndexError:
-            print("tried to access tile out of bounds (bomb)")  # TODO remove
+    # # Within bomb explosion zone
+    # # TODO shoul we have feature "bomb distance" (instead or additionally)? should that be nearest or all bombs (like enemies?)?
+    # # TODO take countdown into consideration?
+    # range_3_coordinates = _get_neighboring_tiles(own_position, 3)
+    # for coord in range_3_coordinates:
+    #     try:
+    #         bomb_present = any(
+    #             [
+    #                 bomb
+    #                 for bomb in game_state["bombs"]
+    #                 if bomb[0] in range_3_coordinates and bomb[1] != 0
+    #             ]
+    #         )  # access to bombs might be wrong
+    #         features[1] = bomb_present
+    #     except IndexError:
+    #         print("tried to access tile out of bounds (bomb)")  # TODO remove
 
-    # Position
-    # maybe take out? not sure if necessary
-    # features[2] = own_position[0]
-    # features[3] = own_position[1]
+    # # Position
+    # # maybe take out? not sure if necessary
+    # # features[2] = own_position[0]
+    # # features[3] = own_position[1]
 
-    # Agent-Coin ratio
-    # num_of_agents_left = len(game_state["others"])
-    # we need to access past
-    # features[4] = num_of_agents_left/num_of_coins_left
+    # # Agent-Coin ratio
+    # # num_of_agents_left = len(game_state["others"])
+    # # we need to access past
+    # # features[4] = num_of_agents_left/num_of_coins_left
 
-    if np.array_equal(features, np.array([0, 0])):
-        return 0
+    # if np.array_equal(features, np.array([0, 0])):
+    #     return 0
 
-    elif np.array_equal(features, np.array([0, 1])):
-        return 1
+    # elif np.array_equal(features, np.array([0, 1])):
+    #     return 1
 
-    elif np.array_equal(features, np.array([1, 0])):
-        return 2
+    # elif np.array_equal(features, np.array([1, 0])):
+    #     return 2
 
-    elif np.array_equal(features, np.array([1, 1])):
-        return 3
+    # elif np.array_equal(features, np.array([1, 1])):
+    #     return 3
+
+    # Feature 1: if on hot field or not
+    all_hot_fields, if_dangerous = [], []
+    if len(game_state["bombs"]) > 0:
+        for bomb in game_state["bombs"]:
+            bomb_pos = bomb[0]  # coordinates of bomb as type tuple
+            neighbours_except_walls = get_neighboring_tiles_except_walls(
+                bomb_pos, 3, game_state=game_state
+            )
+            if neighbours_except_walls != None:
+                all_hot_fields += neighbours_except_walls
+
+        if len(all_hot_fields) > 0:
+            for lava in all_hot_fields:
+                in_danger = own_position == lava
+                if_dangerous.append(in_danger)
+
+            features[0] = int(any(if_dangerous))
+    else:
+        features[0] = 0
+
+    # Feature 9: amount of possibly destroyed crates: small: 0, medium: 1<4, high: >= 4
+    neighbours = get_neighboring_tiles_except_walls(
+        own_position, 3, game_state=game_state
+    )
+    crate_coordinates = []
+
+    if neighbours != None:
+        for coord in neighbours:
+            if game_state["field"][coord[0]][coord[1]] == 1:
+                crate_coordinates += [coord]
+
+        if len(crate_coordinates) == 0:
+            features[1] = 1
+        elif 1 <= len(crate_coordinates) < 4:
+            features[1] = 2
+        elif len(crate_coordinates) >= 4:
+            features[1] = 3
+
+    else:
+        features[1] = 0
+
+    # Feature 10: if in opponents area
+    all_enemy_fields = []
+    for enemy in game_state["others"]:
+        neighbours_except_walls = get_neighboring_tiles_except_walls(
+            enemy[-1], 3, game_state=game_state
+        )
+        if neighbours_except_walls != None:
+            all_enemy_fields += neighbours_except_walls
+
+    if len(all_enemy_fields) > 0:
+        for bad_field in all_enemy_fields:
+            in_danger = own_position == bad_field
+            if_dangerous.append(in_danger)
+
+        features[2] = int(any(if_dangerous))
+    else:
+        features[2] = 0
 
     # return features
+
+    # return None
+
+    # return 10000
 
 
 # Only to demonstrate test
