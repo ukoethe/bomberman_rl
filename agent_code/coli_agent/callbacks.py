@@ -47,7 +47,6 @@ def act(self, game_state: dict) -> str:
     # TODO: Do we want to go 100% exploitation once we have learnt the q-table?
     # Alternative is to sample from the learnt q_table distribution.
     # print(state)
-    self.logger.debug(f"Size q-table: {self.q_table.shape}")
     self.logger.debug(f"State: {state}")
     action = ACTIONS[np.argmax(self.q_table[state])]
     self.logger.debug(f"Action chosen: {action}")
@@ -243,8 +242,6 @@ def features_to_state(self, feature_vector: np.array) -> int:
     # TODO: handle case that file can't be opened, read or that feature vector can't be found (currently: returns None)
     with open("indexed_state_list.csv", encoding="utf-8", mode="r") as f:
         for i, state in enumerate(f.readlines()):
-            self.logger.debug(f"State lookup. Stripped state string: {state.strip()}.")
-            self.logger.debug(f"Feature vector string: {str(feature_vector)}")
             if state.strip() == str(feature_vector):
                 return i
 
