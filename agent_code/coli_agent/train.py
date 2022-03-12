@@ -10,45 +10,52 @@ Transition = namedtuple("Transition", ("state", "action", "next_state", "reward"
 
 TRANSITION_HISTORY_SIZE = 3  # keep only ... last transitions
 
-
-# Custom Events (Ideas)
+# --- Custom Events ---
 # TODO: actually implement these
-# TODO: set rewards/penalties
 
-# Coins
-DECREASED_COIN_DISTANCE = "DECREASED_COIN_DISTANCE"  # move towards nearest coin, penalty should be higher than reward
-INCREASED_COIN_DISTANCE = "INCREASED_COIN_DISTANCE"  # opposite for balance
-# calculation of "coin distance" should take into consideration walls & crates (interpret crates as walls)
-# take into consideration whether another agent is closer to the coin (nearest coin = coin is nearest to us and we are, out of all agents, nearest to coin)
+# - Events with direct state feature correspondence -
+
+WAS_BLOCKED = (
+    "WAS_BLOCKED"  # tried to move into a wall/crate/enemy/explosion (strong penalty)
+)
+MOVED = "MOVED"  # moved somewhere and wasn't blocked (small reward)
+
+PROGRESSED = "PROGRESSED"  # in last 5 turns, agent visited at least 3 unique tiles
+
+FLED = "FLED"  # was in "danger zone" of a bomb and moved out of it (reward)
+SUICIDAL = "SUICIDAL"  # moved from safe field into "danger" zone of bomb (penalty, higher than reward)
+
+# USED_SHORTEST_COIN_PATH = "USED_SHORTEST_COIN_PATH"  # moved along the shortest distance path to nearest coin (used the feature)
+# coin distance is calculated using graph pathfinding, takes into consideration walls, crates, explosions + whether another agent is nearer
 # penalty for moving towards bomb should be higher than reward for moving towards coin
+# if there are no more collectible coins, the coin feature automatically switches to indicating the nearest crate:
+# USED_SHORTEST_CRATE_PATH = "USED_SHORTEST_CRATE_PATH"
 
-# Crates
-# have nearest crate feature and reward going there -- take into consideration where there are many crates near (e.g. 5 crates two files away is better than 2 crates 1 tile away)
-# Agent-Coin ratio: reward going after crates when there's many coins left (max: 9) and reward going after agents when there aren't
+DECREASED_COIN_DISTANCE = "DECREASED_COIN_DISTANCE"  # decreased length of shortest path to nearest coin BY ONE
+INCREASED_COIN_DISTANCE = "INCREASED_COIN_DISTANCE"  # increased length of shortest path to nearest coin BY ONE
+DECREASED_CRATE_DISTANCE = "DECREASED_CRATE_DISTANCE"  # decreased length of shortest path to nearest crate BY ONE
+INCREASED_CRATE_DISTANCE = "INCREASED_CRATE_DISTANCE"  # increased length of shortest path to nearest crate BY ONE
 
-# Navigation
-# STAGNATED = "STAGNATED"  # agent is still within 4-tile-radius of location 5 turns ago (4/5 bc of bomb explosion time, idk if it makes sense)
-# PROGRESSED = "PROGRESSED"  # opposite for balance
-# EXLPORE = "EXLPORE" # reward moving away from starting position/quadrant
-REVISITED_TILE = "REVISITED_TILE"  # low penalty (bc sometimes necessary to survive)
-NEW_TILE = "NEW_TILE"  # low reward, but a bit higher than the penalty
+INCREASED_SURROUNDING_CRATES = "INCREASED_SURROUNDING_CRATES"  # low reward
+DECREASED_SURROUNDING_CRATES = (
+    "DECREASED_SURROUNDING_CRATES"  # equal or slightly higher penalty for balance
+)
 
-# Walls
+# - Events without direct state feature correspondence -
+
+# idea: Agent-Coin ratio: reward going after crates when there's many coins left (max: 9) and reward going after agents when there aren't
+# idea: reward caging enemies
+
+EXLPORE = "EXLPORE"  # slightly reward moving into a new quadrant
+
 DECREASED_NEIGHBORING_WALLS = "DECREASED_NEIGHBORING_WALLS"  # low reward
 INCREASED_NEIGHBORING_WALLS = (
     "INCREASED_NEIGHBORING_WALLS"  # low, penalty, penalty higher than reward
 )
 
-# Bombs
-FLED = "FLED"  # was in danger zone but didn't get killed when bomb exploded
-RETREATED = "RETREATED"  # increased distance towards a bomb in danger zone
-SUICIDAL = "SUICIDAL"  # waited or moved towards bomb in danger zone, penalty higher than RETREATED reward
-
-# Enemies
-# DECREASED_ENEMY_DISTANCE = "DECREASED_ENEMY_DISTANCE"  # but how do you even reward this? is it good or bad? in what situations which?
-# INCREASED_ENEMY_DISTANCE = "INCREASED_ENEMY_DISTANCE"  # opposite for balance
-# do not include as events, but do include a feature "enemy distance" as weighted sum (distance to nearest is 4x as important as distance to farthest)
-# idea: reward caging enemies
+# more fine-grained bomb area movements
+INCREASED_BOMB_DISTANCE = "INCREASED_BOMB_DISTANCE"
+DECREASED_BOMB_DISTANCE = "DECREASED_BOMB_DISTANCE"
 
 
 def setup_training(self):
@@ -112,6 +119,18 @@ def game_events_occurred(
     )
     self.logger.debug(f"Updated q-table: {self.q_table}")
 
+    # if we want to have a wall counting reward, use this to add the event
+    # wall_counter = 0
+    # neighboring_coordinates = _get_neighboring_tiles(own_position, 1)
+    # for coord in neighboring_coordinates:
+    #     try:
+    #         if game_state["field"][coord] == -1:  # geht das? wer weiß
+    #             wall_counter += 1
+    #     except IndexError:
+    #         print(
+    #             "tried to access tile out of bounds (walls)"
+    #         )  # TODO remove, just for "debugging"
+
 
 def end_of_round(self, last_game_state, last_action, events):
     """Called once per agent after the last step of a round."""
@@ -145,23 +164,37 @@ def reward_from_events(self, events: List[str]) -> int:
     """
     Returns a summed up reward/penalty for a given list of events that happened
 
-    Also not assigning reward/penalty to definitely(?) neutral actions MOVE LEFT/RIGHT/UP/DOWN or WAIT.
+    Not assigning reward/penalty to definitely(?) neutral actions MOVE LEFT/RIGHT/UP/DOWN or WAIT.
     """
-    # TODO: custom events
-    # TODO: different rewards for different learning scenarios?
+
     game_rewards = {
-        e.BOMB_DROPPED: 2,  # adjust aggressiveness
+        e.BOMB_DROPPED: 5,  # adjust aggressiveness
         # e.BOMB_EXPLODED: 0,
-        e.COIN_COLLECTED: 10,
+        e.COIN_COLLECTED: 50,
         # e.COIN_FOUND: 5,  # direct consequence from crate destroyed, redundant reward?
-        e.WAITED: -1,  # adjust passivity
+        e.WAITED: -3,  # adjust passivity
         e.CRATE_DESTROYED: 4,
-        e.GOT_KILLED: -5,  # adjust passivity
-        e.KILLED_OPPONENT: 50,
+        e.GOT_KILLED: -50,  # adjust passivity
+        e.KILLED_OPPONENT: 200,
         e.KILLED_SELF: -10,  # you dummy --- this *also* triggers GOT_KILLED
         e.OPPONENT_ELIMINATED: 0.05,  # good because less danger or bad because other agent scored points?
         # e.SURVIVED_ROUND: 0,  # could possibly lead to not being active - actually penalize if agent too passive?
         e.INVALID_ACTION: -1,  # necessary? (maybe for penalizing trying to move through walls/crates) - yes, seems to be necessary to learn that one cannot place a bomb after another placed bomb is still not exploded
+        WAS_BLOCKED: -20,
+        MOVED: 0.5,
+        PROGRESSED: 2,  # higher?
+        FLED: 15,
+        SUICIDAL: -15,
+        DECREASED_COIN_DISTANCE: 8,
+        INCREASED_COIN_DISTANCE: -8,  # higher? lower? idk
+        DECREASED_CRATE_DISTANCE: 1,
+        INCREASED_CRATE_DISTANCE: -1,
+        INCREASED_SURROUNDING_CRATES: 1.5,
+        # EXLPORE: 2,
+        DECREASED_NEIGHBORING_WALLS: 1,
+        INCREASED_NEIGHBORING_WALLS: -1,
+        # INCREASED_BOMB_DISTANCE: 5,
+        # DECREASED_BOMB_DISTANCE: -5
     }
 
     reward_sum = 0
