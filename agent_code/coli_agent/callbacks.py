@@ -81,59 +81,53 @@ def state_to_features(game_state, history) -> np.array:
         print("First game state is none")
         return
 
-    # How many walls
-    wall_counter = 0
-    neighboring_coordinates = _get_neighboring_tiles(own_position, 1)
-    for coord in neighboring_coordinates:
-        try:
-            if game_state["field"][coord] == -1:  # geht das? wer weiß
-                wall_counter += 1
-        except IndexError:
-            print(
-                "tried to access tile out of bounds (walls)"
-            )  # TODO remove, just for "debugging"
-    features[0] = wall_counter > 2
+    # Feature 2-5 ("Blockages")
+    for i, neighboring_coord in enumerate(_get_neighboring_tiles(own_position, 1)):
+        neighboring_x, neighboring_y = neighboring_coord
+        neighboring_content = game_state["field"][neighboring_x][
+            neighboring_y
+        ]  # content of tile, e.g. crate=1
+        explosion = (
+            True
+            if game_state["explosion_map"][neighboring_x][neighboring_y] != 0
+            else False
+        )
+        ripe_bomb = False  # "ripe" = about to explode
+        if (neighboring_coord, 0) in game_state["bombs"] or (
+            neighboring_coord,
+            1,
+        ) in game_state["bombs"]:
+            ripe_bomb = True
+        if (
+            neighboring_content != 0
+            or neighboring_coord in enemy_positions
+            or explosion
+            or ripe_bomb
+        ):
+            features[i] = 1
+        else:
+            features[i] = 0
 
-    # Within bomb explosion zone
-    # TODO shoul we have feature "bomb distance" (instead or additionally)? should that be nearest or all bombs (like enemies?)?
-    # TODO take countdown into consideration?
-    range_3_coordinates = _get_neighboring_tiles(own_position, 3)
-    for coord in range_3_coordinates:
-        try:
-            bomb_present = any(
-                [
-                    bomb
-                    for bomb in game_state["bombs"]
-                    if bomb[0] in range_3_coordinates and bomb[1] != 0
-                ]
-            )  # access to bombs might be wrong
-            features[1] = bomb_present
-        except IndexError:
-            print("tried to access tile out of bounds (bomb)")  # TODO remove
+    # Feature 6 ("Going to new tiles")
+    num_visited_tiles = len(
+        history[2]
+    )  # history[2] contains agent coords of last 5 turns
+    if num_visited_tiles > 1:  # otherwise the feature is and is supposed to be 0 anyway
+        num_unique_visited_tiles = len(set(history[2]))
+        # of 5 tiles, 3 should be new -> 60%. for start of the episode: 1 out of 2, 2 out of 3, 2 out of 4
+        features[5] = (
+            1 if np.floor((num_unique_visited_tiles / num_visited_tiles)) > 0.6 else 0
+        )
 
-    # Position
-    # maybe take out? not sure if necessary
-    # features[2] = own_position[0]
-    # features[3] = own_position[1]
+    return features_to_state(features)
 
-    # Agent-Coin ratio
-    # num_of_agents_left = len(game_state["others"])
-    # we need to access past
-    # features[4] = num_of_agents_left/num_of_coins_left
 
-    if np.array_equal(features, np.array([0, 0])):
-        return 0
-
-    elif np.array_equal(features, np.array([0, 1])):
-        return 1
-
-    elif np.array_equal(features, np.array([1, 0])):
-        return 2
-
-    elif np.array_equal(features, np.array([1, 1])):
-        return 3
-
-    # return features
+def features_to_state(feature_vector: np.array) -> int:
+    with open("indexed_state_list.csv", encoding="utf-8", mode="r") as f:
+        for i, state in enumerate(f.readlines()):
+            if state == str(feature_vector):
+                return i
+    return None  # TODO shouldn't happen, handle this better
 
 
 # Only to demonstrate test
