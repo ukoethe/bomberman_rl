@@ -93,9 +93,9 @@ def game_events_occurred(
     # state_to_features is defined in callbacks.py
     self.transitions.append(
         Transition(
-            state_to_features(old_game_state, self.history),
+            state_to_features(self, old_game_state, self.history),
             self_action,
-            state_to_features(new_game_state, self.history),
+            state_to_features(self, new_game_state, self.history),
             reward_from_events(self, events),
         )
     )
@@ -136,7 +136,7 @@ def end_of_round(self, last_game_state, last_action, events):
     """Called once per agent after the last step of a round."""
     self.transitions.append(
         Transition(
-            state_to_features(last_game_state, self.history),
+            state_to_features(self, last_game_state, self.history),
             last_action,
             None,
             reward_from_events(self, events),
