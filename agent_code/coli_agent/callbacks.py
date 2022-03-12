@@ -14,10 +14,12 @@ def setup(self):
     # Where to put?
     self.history = [0, deque(maxlen=5)]  # [num_of_coins_collected, tiles_visited]
 
-    if self.train or not os.path.isfile("q_table.npy"):
+    if self.train or not os.path.isfile(
+        "/home/aileen/heiBOX/2021_22 WS/FML/final_project/bomberman_rl/agent_code/coli_agent/q_table-2022-03-12T22:46:03.npy"
+    ):
         self.logger.info("Setting up Q-Learning algorithm")
         self.timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        self.number_of_states = 44  # TODO: make this dynamic
+        self.number_of_states = 384  # TODO: make this dynamic
         self.q_table = np.zeros(shape=(self.number_of_states, len(ACTIONS)))
         self.exploration_rate_initial = 0.5
         self.exploration_rate_end = 0.05  # at end of all episodes
@@ -26,12 +28,14 @@ def setup(self):
 
     else:
         self.logger.info("Loading learnt Q-Table")
-        self.q_table = np.load("q_table.npy")
+        self.q_table = np.load(
+            "/home/aileen/heiBOX/2021_22 WS/FML/final_project/bomberman_rl/agent_code/coli_agent/q_table-2022-03-12T22:46:03.npy"
+        )
 
 
 def act(self, game_state: dict) -> str:
     """Takes in the current game state and returns the chosen action in form of a string."""
-    state = state_to_features(game_state, self.history)
+    state = state_to_features(self, game_state, self.history)
 
     if self.train and np.random.random() < self.exploration_rate:
         self.logger.debug("Exploring")
@@ -43,6 +47,8 @@ def act(self, game_state: dict) -> str:
     # TODO: Do we want to go 100% exploitation once we have learnt the q-table?
     # Alternative is to sample from the learnt q_table distribution.
     # print(state)
+    self.logger.debug(f"Size q-table: {self.q_table.shape}")
+    self.logger.debug(f"State: {state}")
     action = ACTIONS[np.argmax(self.q_table[state])]
     self.logger.debug(f"Action chosen: {action}")
     return action
@@ -68,12 +74,12 @@ def _get_neighboring_tiles(own_coord, n) -> List[Tuple[int]]:
     return neighboring_coordinates
 
 
-def get_neighboring_tiles_until_wall(own_coord, n, game_state):
+def get_neighboring_tiles_until_wall(own_coord, n, game_state) -> List[Tuple[int]]:
     directions = ["N", "E", "S", "W"]
     own_coord_x, own_coord_y = own_coord[0], own_coord[1]
     all_good_fields = []
 
-    for d in range(len(directions)):
+    for d, _ in enumerate(directions):
         good_fields = []
         for i in range(1, n + 1):
             try:
@@ -118,7 +124,7 @@ def get_neighboring_tiles_until_wall(own_coord, n, game_state):
     return all_good_fields
 
 
-def state_to_features(game_state, history) -> np.array:
+def state_to_features(self, game_state, history) -> np.array:
     # TODO: vectorize?
     # TODO: combine different for loops (!)
     """Parses game state to features"""
@@ -139,7 +145,7 @@ def state_to_features(game_state, history) -> np.array:
             neighbours_until_wall = get_neighboring_tiles_until_wall(
                 bomb_pos, 3, game_state=game_state
             )
-            if neighbours_until_wall != None:
+            if neighbours_until_wall:
                 all_hot_fields += neighbours_until_wall
 
         if len(all_hot_fields) > 0:
@@ -150,7 +156,7 @@ def state_to_features(game_state, history) -> np.array:
             features[0] = int(any(if_dangerous))
     else:
         features[0] = 0
-        
+
     # Feature 2-5 ("Blockages")
     for i, neighboring_coord in enumerate(_get_neighboring_tiles(own_position, 1)):
         neighboring_x, neighboring_y = neighboring_coord
@@ -174,16 +180,16 @@ def state_to_features(game_state, history) -> np.array:
             or explosion
             or ripe_bomb
         ):
-            features[1+i] = 1
+            features[1 + i] = 1
         else:
-            features[1+i] = 0
-    
+            features[1 + i] = 0
+
     # Feature 6 ("Going to new tiles")
     num_visited_tiles = len(
-        history[2]
+        history[1]
     )  # history[2] contains agent coords of last 5 turns
     if num_visited_tiles > 1:  # otherwise the feature is and is supposed to be 0 anyway
-        num_unique_visited_tiles = len(set(history[2]))
+        num_unique_visited_tiles = len(set(history[1]))
         # of 5 tiles, 3 should be new -> 60%. for start of the episode: 1 out of 2, 2 out of 3, 2 out of 4
         features[5] = (
             1 if np.floor((num_unique_visited_tiles / num_visited_tiles)) > 0.6 else 0
@@ -195,17 +201,17 @@ def state_to_features(game_state, history) -> np.array:
     )
     crate_coordinates = []
 
-    if neighbours != None:
+    if neighbours:
         for coord in neighbours:
             if game_state["field"][coord[0]][coord[1]] == 1:
                 crate_coordinates += [coord]
 
         if len(crate_coordinates) == 0:
-            features[6] = 1
+            features[6] = 0
         elif 1 <= len(crate_coordinates) < 4:
-            features[6] = 2
+            features[6] = 1
         elif len(crate_coordinates) >= 4:
-            features[6] = 3
+            features[6] = 2
 
     else:
         features[6] = 0
@@ -216,7 +222,7 @@ def state_to_features(game_state, history) -> np.array:
         neighbours_until_wall = get_neighboring_tiles_until_wall(
             enemy[-1], 3, game_state=game_state
         )
-        if neighbours_until_wall != None:
+        if neighbours_until_wall:
             all_enemy_fields += neighbours_until_wall
 
     if len(all_enemy_fields) > 0:
@@ -228,14 +234,18 @@ def state_to_features(game_state, history) -> np.array:
     else:
         features[7] = 0
 
-    return features_to_state(features)
+    self.logger.debug(f"Feature vector: {features}")
+
+    return features_to_state(self, features)
 
 
-def features_to_state(feature_vector: np.array) -> int:
+def features_to_state(self, feature_vector: np.array) -> int:
     # TODO: handle case that file can't be opened, read or that feature vector can't be found (currently: returns None)
     with open("indexed_state_list.csv", encoding="utf-8", mode="r") as f:
         for i, state in enumerate(f.readlines()):
-            if state == str(feature_vector):
+            self.logger.debug(f"State lookup. Stripped state string: {state.strip()}.")
+            self.logger.debug(f"Feature vector string: {str(feature_vector)}")
+            if state.strip() == str(feature_vector):
                 return i
 
 
