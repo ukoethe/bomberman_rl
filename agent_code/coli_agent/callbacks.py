@@ -1,4 +1,5 @@
 import os
+from collections import deque
 from datetime import datetime
 from typing import List, Tuple
 
@@ -11,7 +12,7 @@ def setup(self):
     """Sets up everything. (First call)"""
 
     # Where to put?
-    self.history = [0, None]  # [num_of_coins_collected, tiles_visited]
+    self.history = [0, deque(maxlen=5)]  # [num_of_coins_collected, tiles_visited]
 
     if self.train or not os.path.isfile("q_table.npy"):
         self.logger.info("Setting up Q-Learning algorithm")
