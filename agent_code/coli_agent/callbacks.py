@@ -75,6 +75,7 @@ def state_to_features(game_state, history) -> np.array:
 
     try:
         own_position = game_state["self"][-1]
+        enemy_positions = [enemy[-1] for enemy in game_state["others"]]
     except TypeError:
         print("First game state is none")
         return
