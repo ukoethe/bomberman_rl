@@ -13,5 +13,5 @@ def test_adding_one():
 
 # def test_wall_features(game_state_beginning):
 #     "Test if wall feature correctly counts walls"
-#     f = state_to_features(game_state_beginning)
+#     f = state_to_features(self, game_state_beginning)
 #     assert f[0] == 2
