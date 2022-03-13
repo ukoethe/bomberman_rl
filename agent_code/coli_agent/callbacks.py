@@ -5,6 +5,7 @@ from typing import List, Tuple
 
 import numpy as np
 
+Coordinate = Tuple[int]
 ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"]
 
 
@@ -53,7 +54,7 @@ def act(self, game_state: dict) -> str:
     return action
 
 
-def _get_neighboring_tiles(own_coord, n) -> List[Tuple[int]]:
+def _get_neighboring_tiles(own_coord, n) -> List[Coordinate]:
     own_coord_x = own_coord[0]
     own_coord_y = own_coord[1]
     neighboring_coordinates = []
@@ -73,7 +74,7 @@ def _get_neighboring_tiles(own_coord, n) -> List[Tuple[int]]:
     return neighboring_coordinates
 
 
-def get_neighboring_tiles_until_wall(own_coord, n, game_state) -> List[Tuple[int]]:
+def get_neighboring_tiles_until_wall(own_coord, n, game_state) -> List[Coordinate]:
     directions = ["N", "E", "S", "W"]
     own_coord_x, own_coord_y = own_coord[0], own_coord[1]
     all_good_fields = []
