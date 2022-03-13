@@ -189,10 +189,8 @@ def state_to_features(self, game_state, history) -> np.array:
     )  # history[2] contains agent coords of last 5 turns
     if num_visited_tiles > 1:  # otherwise the feature is and is supposed to be 0 anyway
         num_unique_visited_tiles = len(set(history[1]))
-        # of 5 tiles, 3 should be new -> 60%. for start of the episode: 1 out of 2, 2 out of 3, 2 out of 4
-        features[5] = (
-            1 if np.floor((num_unique_visited_tiles / num_visited_tiles)) > 0.6 else 0
-        )
+        # of 5 tiles, 3 should be new -> 60%. for start of the episode: 2 out of 2, 2 out of 3, 3 out of 4
+        features[5] = 1 if (num_unique_visited_tiles / num_visited_tiles) >= 0.6 else 0
 
     # Feature 7/9: amount of possibly destroyed crates: small: 0, medium: 1<4, high: >= 4
     neighbours = get_neighboring_tiles_until_wall(
