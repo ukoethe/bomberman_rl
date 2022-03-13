@@ -49,8 +49,8 @@ def act(self, game_state: dict) -> str:
         for index, field in np.ndenumerate(game_state["explosion_map"])
         if field != 0
     ]
-    print(f"Active explsion: {active_explosions}")
-    print(f"Bombs: {game_state['bombs']}")
+    self.logger.info(f"Active explosion: {active_explosions}")
+    self.logger.info(f"Bombs: {game_state['bombs']}")
 
     if self.train and np.random.random() < self.exploration_rate:
         self.logger.debug("Exploring")
@@ -109,11 +109,11 @@ def _get_graph(self, game_state) -> graph:
         for index, field in np.ndenumerate(game_state["explosion_map"])
         if field != 0
     ]
-    print(f"Active explsion: {active_explosions}")
-    print(f"Bombs: {game_state['bombs']}")
+    # print(f"Active explosion: {active_explosions}")
+    # print(f"Bombs: {game_state['bombs']}")
     obstacles += active_explosions
 
-    print(obstacles)
+    self.logger.info(f"Obstacles: {obstacles}")
 
     graph = deepcopy(self.lattice_graph)
 
@@ -135,13 +135,34 @@ def _find_shortest_path(graph, a, b) -> Tuple[graph, int]:
 
 
 def _get_action(self_coord, shortest_path) -> action:
-    pass
+    print(self_coord)
+    print(shortest_path[0])
+    print(shortest_path[1])
+    goal_coord = shortest_path[0]  # check if shortest_path[0] or shortest_path[1]
+
+    if self_coord[0] == goal_coord[0]:
+        if self_coord[1] + 1 == goal_coord[1]:
+            return "DOWN"
+
+        elif self_coord[1] - 1 == goal_coord[1]:
+            return "UP"
+
+    elif self_coord[1] == goal_coord[1]:
+        if self_coord[0] + 1 == goal_coord[0]:
+            return "RIGHT"
+
+        elif self_coord[0] - 1 == goal_coord[1]:
+            return "LEFT"
 
 
-def _shortest_path_feature(game_state) -> action:
-    graph = _get_graph(game_state)
+def _shortest_path_feature(self, game_state) -> action:
+    graph = _get_graph(self, game_state)
+
+    self.logger.info(f"Current Graph: {graph}")
 
     self_coord = game_state["self"][3]
+
+    self.logger.info(f"Current self coord: {self_coord}")
 
     # no coins on board and no crates (maybe also no opponents ==> suicide?) ==> just return something
     if not any(game_state["coins"]) and not any(
@@ -149,36 +170,41 @@ def _shortest_path_feature(game_state) -> action:
     ):
         return "UP"
 
-    # no coins available ==> calculate direction of path to nearest crate
     elif not any(game_state["coins"]):
-        best = (None, np.inf)
+        return "UP"
 
-        crates_coordinates = [
-            index for index, field in np.ndenumerate(game_state["field"]) if field == 1
-        ]
-        for crate_coord in crates_coordinates:
-            current_path, current_path_length = _find_shortest_path(
-                graph, self_coord, crate_coord
-            )
+    # no coins available ==> calculate direction of path to nearest crate
+    # elif not any(game_state["coins"]):
+    #     best = (None, np.inf)
 
-            # not gonna get better than 1, might save a bit of computation time
-            if current_path_length == 1:
-                return _get_action(self_coord, current_path)
+    #     crates_coordinates = [
+    #         index for index, field in np.ndenumerate(game_state["field"]) if field == 1
+    #     ]
+    #     for crate_coord in crates_coordinates:
+    #         current_path, current_path_length = _find_shortest_path(
+    #             graph, self_coord, crate_coord
+    #         )
 
-            elif current_path_length < best[1]:
-                best = (current_path, current_path_length)
+    #         # not gonna get better than 1, might save a bit of computation time
+    #         if current_path_length == 1:
+    #             return _get_action(self_coord, current_path)
 
-        return _get_action(self_coord, best[0])
+    #         elif current_path_length < best[1]:
+    #             best = (current_path, current_path_length)
+
+    #     return _get_action(self_coord, best[0])
 
     # calculate distance to nearest coin that no one else is closer to
     else:
+        self.logger.info("There is a coin")
         coins_coordinates = game_state["coins"]
         closest_paths_to_coins = []
 
         # find shortest paths to all coins by all agents
         for coin_coord in coins_coordinates:
+            self.logger.info(f"Looking at coin at: {coin_coord}")
             current_path, current_path_length = _find_shortest_path(
-                graph, self_coord, crate_coord
+                graph, self_coord, coin_coord
             )
 
             for other_agent in game_state["others"]:
@@ -259,6 +285,8 @@ def state_to_features(self, game_state, history) -> np.array:
     # num_of_agents_left = len(game_state["others"])
     # we need to access past
     # features[4] = num_of_agents_left/num_of_coins_left
+
+    print(_shortest_path_feature(self, game_state))
 
     if np.array_equal(features, np.array([0, 0])):
         return 0
