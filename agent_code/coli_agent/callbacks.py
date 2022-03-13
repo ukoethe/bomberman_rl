@@ -6,11 +6,10 @@ from typing import List, Tuple
 import networkx as nx
 import numpy as np
 from scipy.sparse import csr_matrix
-from scipy.sparse.csgraph import shortest_path
 
 from settings import COLS, ROWS
 
-graph = str
+graph = nx.Graph
 action = str
 
 ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"]
@@ -42,6 +41,16 @@ def setup(self):
 def act(self, game_state: dict) -> str:
     """Takes in the current game state and returns the chosen action in form of a string."""
     state = state_to_features(self, game_state, self.history)
+
+    print(_get_graph(self, game_state))
+
+    active_explosions = [
+        index
+        for index, field in np.ndenumerate(game_state["explosion_map"])
+        if field != 0
+    ]
+    print(f"Active explsion: {active_explosions}")
+    print(f"Bombs: {game_state['bombs']}")
 
     if self.train and np.random.random() < self.exploration_rate:
         self.logger.debug("Exploring")
@@ -84,18 +93,25 @@ def _get_graph(self, game_state) -> graph:
 
     Vertex between nodes <==> both nodes are empty
 
-    Considers walls, crates, other players and bombs as "walls", i.e. not connected"""
+    Considers walls, crates, active explosions and (maybe other players) as "walls", i.e. not connected"""
 
     # walls and crates are obstacles
     obstacles = [
         index for index, field in np.ndenumerate(game_state["field"]) if field != 0
     ]
 
-    print(obstacles)
+    # TODO: Find out what works better - considering other players as obstacles (technically true) or not
+    # for other_player in game_state["others"]:
+    # obstacles.append(other_player[3])  # third element stores the coordinates
 
-    # other players are obstacles too
-    for other_player in game_state["others"]:
-        obstacles.append(other_player[3])  # third element stores the coordinates
+    active_explosions = [
+        index
+        for index, field in np.ndenumerate(game_state["explosion_map"])
+        if field != 0
+    ]
+    print(f"Active explsion: {active_explosions}")
+    print(f"Bombs: {game_state['bombs']}")
+    obstacles += active_explosions
 
     print(obstacles)
 
@@ -106,18 +122,90 @@ def _get_graph(self, game_state) -> graph:
     return graph
 
 
-def _get_shortest_path_length(game_state, x, y) -> int:
-    """Calclulates length of shortest path (Manhattan distance) at current time step (without looking ahead to the future)
-    between points x and y *and* considers obstacles (i.e. walls, crates, other players and bombs)."""
-    graph = _get_graph(game_state)
+def _find_shortest_path(graph, a, b) -> Tuple[graph, int]:
+    """Calclulates length of shortest path at current time step (without looking ahead to the future)
+    between points a and b."""
 
     # use Djikstra to find shortest path
-    shortest_path(graph, method="D", directed=False, unweighted=True, indices=[])
-    return
+    shortest_path = nx.shortest_path(
+        graph, source=a, target=b, weight=None, method="dijkstra"
+    )
+    shortest_path_length = len(shortest_path)
+    return shortest_path, shortest_path_length
 
 
-def _get_shortest_path_direction(game_state, x, y) -> str:
+def _get_action(self_coord, shortest_path) -> action:
     pass
+
+
+def _shortest_path_feature(game_state) -> action:
+    graph = _get_graph(game_state)
+
+    self_coord = game_state["self"][3]
+
+    # no coins on board and no crates (maybe also no opponents ==> suicide?) ==> just return something
+    if not any(game_state["coins"]) and not any(
+        [index for index, field in np.ndenumerate(game_state["field"]) if field == 1]
+    ):
+        return "UP"
+
+    # no coins available ==> calculate direction of path to nearest crate
+    elif not any(game_state["coins"]):
+        best = (None, np.inf)
+
+        crates_coordinates = [
+            index for index, field in np.ndenumerate(game_state["field"]) if field == 1
+        ]
+        for crate_coord in crates_coordinates:
+            current_path, current_path_length = _find_shortest_path(
+                graph, self_coord, crate_coord
+            )
+
+            # not gonna get better than 1, might save a bit of computation time
+            if current_path_length == 1:
+                return _get_action(self_coord, current_path)
+
+            elif current_path_length < best[1]:
+                best = (current_path, current_path_length)
+
+        return _get_action(self_coord, best[0])
+
+    # calculate distance to nearest coin that no one else is closer to
+    else:
+        coins_coordinates = game_state["coins"]
+        closest_paths_to_coins = []
+
+        # find shortest paths to all coins by all agents
+        for coin_coord in coins_coordinates:
+            current_path, current_path_length = _find_shortest_path(
+                graph, self_coord, crate_coord
+            )
+
+            for other_agent in game_state["others"]:
+                best_other_agent = (None, np.inf)
+                other_agent_coord = other_agent[3]
+                (
+                    current_path_other_agent,
+                    current_path_length_other_agent,
+                ) = _find_shortest_path(graph, other_agent_coord, coin_coord)
+
+                if current_path_length_other_agent < best_other_agent[1]:
+                    best_other_agent = (
+                        current_path_other_agent,
+                        current_path_length_other_agent,
+                    )
+
+            closest_paths_to_coins.append(
+                ((current_path, current_path_length), best_other_agent)
+            )
+
+        # sort ascending by shortest length of our
+        for closest_path_to_coin in closest_paths_to_coins.sort(key=lambda x: x[0][1]):
+            if closest_path_to_coin[0][1] <= closest_path_to_coin[1][1]:
+                return _get_action(self_coord, closest_path_to_coin[0][0])
+
+        # if we are not closest to any coin return action that leads us to the coin we are nearest too anyway
+        return _get_action(closest_paths_to_coins[0][0][0])
 
 
 def state_to_features(self, game_state, history) -> np.array:
@@ -161,8 +249,6 @@ def state_to_features(self, game_state, history) -> np.array:
             features[1] = bomb_present
         except IndexError:
             print("tried to access tile out of bounds (bomb)")  # TODO remove
-
-    print(_get_graph(self, game_state))
 
     # Position
     # maybe take out? not sure if necessary
