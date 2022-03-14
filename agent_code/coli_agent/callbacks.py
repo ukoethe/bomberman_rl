@@ -12,7 +12,7 @@ from settings import COLS, ROWS
 graph = nx.Graph
 action = str
 
-ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT"]  # , "BOMB"]
+ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"]
 
 
 def setup(self):
