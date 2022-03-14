@@ -66,7 +66,7 @@ def setup_training(self):
 def game_events_occurred(
     self, old_game_state, self_action: str, new_game_state, events
 ):
-    """Called once after each time step except the last. Used to collect training
+    """Called once after each time step (after act()) except the last. Used to collect training
     data and filling the experience buffer.
 
     Also, the actual learning takes place here.
@@ -81,7 +81,13 @@ def game_events_occurred(
 
     # skip first timestep
     if old_game_state is None:
+        self.logger.debug(f"Decided for action: {self_action}")
+        self.logger.debug("First game state is None - skipping...")
         return
+
+    self.logger.debug(f'Old coords: {old_game_state["self"][3]}')
+    self.logger.debug(f'New coords: {new_game_state["self"][3]}')
+    self.logger.debug(f"Action: {self_action}")
 
     # state_to_features is defined in callbacks.py
     self.transitions.append(
@@ -106,7 +112,7 @@ def game_events_occurred(
     )
 
     action_idx = ACTIONS.index(action)
-    self.logger.debug(action_idx)
+    self.logger.debug(f"Action index chosen: action_idx")
 
     self.rewards_of_episode += reward
     self.q_table[state, action_idx] = self.q_table[
