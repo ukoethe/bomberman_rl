@@ -30,6 +30,14 @@ def setup_training(self):
     # (s, a, r, s')
     self.transitions = deque(maxlen=TRANSITION_HISTORY_SIZE)
 
+    # How a game-state looks to adjust the model input accordingly
+    self.format = ...
+
+    # The 'model' in whatever form (NN, QT, MCT ...)
+    self.model = ...
+
+    
+
 
 def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
     """
