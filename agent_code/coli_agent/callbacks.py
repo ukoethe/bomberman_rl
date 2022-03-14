@@ -12,7 +12,7 @@ from settings import COLS, ROWS
 graph = nx.Graph
 action = str
 
-ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"]
+ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT"]  # , "BOMB"]
 
 
 def setup(self):
@@ -85,7 +85,7 @@ def _get_neighboring_tiles(own_coord, n) -> List[Tuple[int]]:
     return neighboring_coordinates
 
 
-def _get_graph(self, game_state) -> graph:
+def _get_graph(self, game_state, crates_as_obstacles=True) -> graph:
     """Calculates the adjacency matrix of the current game state.
     Every coordinate is a node.]
 
@@ -93,12 +93,17 @@ def _get_graph(self, game_state) -> graph:
 
     Considers walls, crates, active explosions and (maybe other players) as "walls", i.e. not connected"""
 
-    # walls and crates are obstacles
-    obstacles = [
-        index for index, field in np.ndenumerate(game_state["field"]) if field != 0
-    ]
+    if crates_as_obstacles:
+        # walls and crates are obstacles
+        obstacles = [
+            index for index, field in np.ndenumerate(game_state["field"]) if field != 0
+        ]
 
-    self.logger.debug(f"Walls and crates: {obstacles}")
+    else:
+        # only walls are obstacles
+        obstacles = [
+            index for index, field in np.ndenumerate(game_state["field"]) if field == -1
+        ]
 
     # TODO: Find out what works better - considering other players as obstacles (technically true) or not
     # for other_player in game_state["others"]:
@@ -137,15 +142,14 @@ def _find_shortest_path(graph, a, b) -> Tuple[graph, int]:
         print(graph.nodes)
         raise Exception
 
-    shortest_path_length = len(shortest_path)
+    shortest_path_length = (
+        len(shortest_path) - 1
+    )  # because path considers self as part of the path
     return shortest_path, shortest_path_length
 
 
 def _get_action(self_coord, shortest_path) -> action:
-    print(self_coord)
-    print(shortest_path[0])
-    print(shortest_path[1])
-    goal_coord = shortest_path[0]  # check if shortest_path[0] or shortest_path[1]
+    goal_coord = shortest_path[1]  # 0th element is self_coord
 
     # x-coord is the same
     if self_coord[0] == goal_coord[0]:
@@ -160,11 +164,33 @@ def _get_action(self_coord, shortest_path) -> action:
         if self_coord[0] + 1 == goal_coord[0]:
             return "RIGHT"
 
-        elif self_coord[0] - 1 == goal_coord[1]:
+        elif self_coord[0] - 1 == goal_coord[0]:
             return "LEFT"
 
 
 def _shortest_path_feature(self, game_state) -> action:
+    """
+    Computes the direction along the shortest path as follows:
+
+    If no coins and no crates exist --> random
+
+    If no coins but a crate exists --> towards nearest crate
+
+    If coins:
+
+        if no coin path possible:
+            towards nearest coin (thus towards first crate that's in the way)
+
+        elif exactly one coin path possible:
+            towards nearest coin # even though there might be a coin that's much closer but blocked or someone else is closer
+
+        elif more than one coin path possible:
+            try:
+                towards nearest coin that no one else is more near to
+
+            except there is no coin that our agent is nearest to:
+                towards nearest coin
+    """
     graph = _get_graph(self, game_state)
     self.logger.info(f"Current Graph nodes: {graph.nodes}")
 
@@ -191,66 +217,128 @@ def _shortest_path_feature(self, game_state) -> action:
         return np.random.choice(ACTIONS)
 
     elif not any(safe_coins):
-        return np.random.choice(ACTIONS)
+        graph = _get_graph(self, game_state, crates_as_obstacles=False)
+        best = (None, np.inf)
 
-    # TODO: no coins available (but crates exist) ==> calculate direction of path to nearest crate (not possible because graph doesn't contain crates)
-    # elif not any(safe_coins):
-    #     best = (None, np.inf)
+        crates_coordinates = [
+            index for index, field in np.ndenumerate(game_state["field"]) if field == 1
+        ]
+        for crate_coord in crates_coordinates:
+            current_path, current_path_length = _find_shortest_path(
+                graph, self_coord, crate_coord
+            )
 
-    #     crates_coordinates = [
-    #         index for index, field in np.ndenumerate(game_state["field"]) if field == 1
-    #     ]
-    #     for crate_coord in crates_coordinates:
-    #         current_path, current_path_length = _find_shortest_path(
-    #             graph, self_coord, crate_coord
-    #         )
+            # self.logger.debug(f"Current path: {current_path} with path length: {current_path_length} to crate at {crate_coord}")
 
-    #         # not gonna get better than 1, might save a bit of computation time
-    #         if current_path_length == 1:
-    #             return _get_action(self_coord, current_path)
+            # not gonna get better than 1, might save a bit of computation time
+            if current_path_length == 1:
+                self.logger.debug(f"Standing directly next to crate!")
+                return _get_action(self_coord, current_path)
 
-    #         elif current_path_length < best[1]:
-    #             best = (current_path, current_path_length)
+            elif current_path_length < best[1]:
+                best = (current_path, current_path_length)
 
-    #     return _get_action(self_coord, best[0])
+        self.logger.debug(f"BEST: {best}")
+        return _get_action(self_coord, best[0])
 
-    # calculate distance to nearest coin that no one else is closer to
+    # there is a coin
     else:
         self.logger.info("There is a safe coin and it is not *in* an explosion")
-        closest_paths_to_coins = []
+        shortest_paths_to_coins = []
 
         # find shortest paths to all coins by all agents
         for coin_coord in safe_coins:
             self.logger.info(f"Looking at coin at: {coin_coord}")
-            current_path, current_path_length = _find_shortest_path(
-                graph, self_coord, coin_coord
-            )
+
+            try:
+                current_path, current_path_length = _find_shortest_path(
+                    graph, self_coord, coin_coord
+                )
+                current_reachable = True
+
+            # coin path not existent
+            except nx.exception.NetworkXNoPath:
+                graph = _get_graph(self, game_state, crates_as_obstacles=False)
+                current_path, current_path_length = _find_shortest_path(
+                    graph, self_coord, coin_coord
+                )
+                current_reachable = False
 
             for other_agent in game_state["others"]:
                 best_other_agent = (None, np.inf)
                 other_agent_coord = other_agent[3]
-                (
-                    current_path_other_agent,
-                    current_path_length_other_agent,
-                ) = _find_shortest_path(graph, other_agent_coord, coin_coord)
+                try:
+                    (
+                        current_path_other_agent,
+                        current_path_length_other_agent,
+                    ) = _find_shortest_path(graph, other_agent_coord, coin_coord)
+                    current_other_agent_reachable = True
+
+                except nx.exception.NetworkXNoPath:
+                    graph = _get_graph(self, game_state, crates_as_obstacles=False)
+                    (
+                        current_path_other_agent,
+                        current_path_length_other_agent,
+                    ) = _find_shortest_path(graph, other_agent_coord, coin_coord)
+                    current_other_agent_reachable = False
+
+                # penalize with heuristic of 7 more fields if unreachable
+                if not current_other_agent_reachable:
+                    current_path_length_other_agent += 7
 
                 if current_path_length_other_agent < best_other_agent[1]:
                     best_other_agent = (
                         current_path_other_agent,
                         current_path_length_other_agent,
+                        current_other_agent_reachable,
                     )
 
-            closest_paths_to_coins.append(
-                ((current_path, current_path_length), best_other_agent)
+            shortest_paths_to_coins.append(
+                (
+                    (current_path, current_path_length, current_reachable),
+                    best_other_agent,
+                )
             )
 
-        # sort ascending by shortest length of our
-        for closest_path_to_coin in closest_paths_to_coins.sort(key=lambda x: x[0][1]):
-            if closest_path_to_coin[0][1] <= closest_path_to_coin[1][1]:
-                return _get_action(self_coord, closest_path_to_coin[0][0])
+        # sort our [0] paths ascending by length [1]
+        shortest_paths_to_coins.sort(key=lambda x: x[0][1])
 
-        # if we are not closest to any coin return action that leads us to the coin we are nearest too anyway
-        return _get_action(closest_paths_to_coins[0][0][0])
+        shortest_paths_to_coins_reachable = [
+            shortest_path_to_coin[0][2]
+            for shortest_path_to_coin in shortest_paths_to_coins
+        ]
+
+        # if none of our [0] shortest paths are actually reachable [2] we just go towards the nearest one (i.e. to its nearest crate)
+        if not any(shortest_paths_to_coins_reachable):
+            self.logger.debug("No coin reachable ==> Going towards nearest one")
+            return _get_action(
+                self_coord, shortest_paths_to_coins[0][0][0]
+            )  # shortest [0] (because sorted) that is ours [0] and the actual path [0]
+
+        # if exactly one of our [0] shortest paths is reachable [2] we go towards that one
+        elif shortest_paths_to_coins_reachable.count(True) == 1:
+            self.logger.debug("Exactly one coin reachable ==> Going towards that one")
+            index_of_reachable_path = shortest_paths_to_coins_reachable.index(True)
+            return _get_action(
+                self_coord, shortest_paths_to_coins[index_of_reachable_path][0][0]
+            )
+
+        # if more than one shortest path is reachable we got towards the one that we are closest and reachable to and no one else being closer
+        for shortest_path_to_coin in shortest_paths_to_coins:
+
+            # we are able to reach it and we are closer
+            if (
+                shortest_path_to_coin[0][2] is True
+                and shortest_path_to_coin[0][1] <= shortest_path_to_coin[1][1]
+            ):
+                self.logger.debug(
+                    "We are able to reach a coin and we are closest to it"
+                )
+                return _get_action(self_coord, shortest_path_to_coin[0][0])
+
+        self.logger.debug("Fallback Action")
+        # unless we are not closest to any of our reachable coins then we return action that leads us to the coin we are nearest too anyway
+        return _get_action(self_coord, shortest_paths_to_coins[0][0][0])
 
 
 def state_to_features(self, game_state, history) -> np.array:

@@ -79,7 +79,7 @@ def game_events_occurred(
         f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}'
     )
 
-    # skip first timestep
+    # skip first timestep (STEP 1)
     if old_game_state is None:
         self.logger.debug(f"Decided for action: {self_action}")
         self.logger.debug("First game state is None - skipping...")
@@ -112,7 +112,7 @@ def game_events_occurred(
     )
 
     action_idx = ACTIONS.index(action)
-    self.logger.debug(f"Action index chosen: action_idx")
+    self.logger.debug(f"Action index chosen: {action_idx}")
 
     self.rewards_of_episode += reward
     self.q_table[state, action_idx] = self.q_table[
