@@ -8,7 +8,7 @@ from inspect import signature
 from io import BytesIO
 from time import time
 from types import SimpleNamespace
-from typing import Tuple, Any
+from typing import Any, Tuple
 
 import events as e
 import settings as s
@@ -21,23 +21,34 @@ AGENT_API = {
     },
     "train": {
         "setup_training": ["self"],
-        "game_events_occurred": ["self", "old_game_state: dict", "self_action: str", "new_game_state: dict", "events: List[str]"],
+        "game_events_occurred": [
+            "self",
+            "old_game_state: dict",
+            "self_action: str",
+            "new_game_state: dict",
+            "events: List[str]",
+        ],
         # "enemy_game_events_occurred": ["self", "enemy_name: str", "old_enemy_game_state: dict", "enemy_action: str", "enemy_game_state: dict", "enemy_events: List[str]"],
-        "end_of_round": ["self", "last_game_state: dict", "last_action: str", "events: List[str]"]
-    }
+        "end_of_round": [
+            "self",
+            "last_game_state: dict",
+            "last_action: str",
+            "events: List[str]",
+        ],
+    },
 }
 
 EVENT_STAT_MAP = {
-    e.KILLED_OPPONENT: 'kills',
-    e.KILLED_SELF: 'suicides',
-    e.COIN_COLLECTED: 'coins',
-    e.CRATE_DESTROYED: 'crates',
-    e.BOMB_DROPPED: 'bombs',
-    e.MOVED_LEFT: 'moves',
-    e.MOVED_RIGHT: 'moves',
-    e.MOVED_UP: 'moves',
-    e.MOVED_DOWN: 'moves',
-    e.INVALID_ACTION: 'invalid'
+    e.KILLED_OPPONENT: "kills",
+    e.KILLED_SELF: "suicides",
+    e.COIN_COLLECTED: "coins",
+    e.CRATE_DESTROYED: "crates",
+    e.BOMB_DROPPED: "bombs",
+    e.MOVED_LEFT: "moves",
+    e.MOVED_RIGHT: "moves",
+    e.MOVED_UP: "moves",
+    e.MOVED_DOWN: "moves",
+    e.INVALID_ACTION: "invalid",
 }
 
 
@@ -53,7 +64,17 @@ class Agent:
     calling events on its AgentBackend.
     """
 
-    def __init__(self, agent_name, code_name, display_name, train: bool, backend: "AgentBackend", avatar_sprite_desc, bomb_sprite_desc):
+    def __init__(
+        self,
+        agent_name,
+        code_name,
+        display_name,
+        train: bool,
+        continue_training: bool,
+        backend: "AgentBackend",
+        avatar_sprite_desc,
+        bomb_sprite_desc,
+    ):
         self.backend = backend
 
         # Load custom avatar or standard robot avatar of assigned color
@@ -61,19 +82,23 @@ class Agent:
             if isinstance(avatar_sprite_desc, bytes):
                 self.avatar = pygame.image.load(BytesIO(avatar_sprite_desc))
             else:
-                self.avatar = pygame.image.load(f'agent_code/{code_name}/avatar.png')
+                self.avatar = pygame.image.load(f"agent_code/{code_name}/avatar.png")
             assert self.avatar.get_size() == (30, 30)
         except Exception as e:
-            self.avatar = pygame.image.load(s.ASSET_DIR / f'robot_{avatar_sprite_desc}.png')
+            self.avatar = pygame.image.load(
+                s.ASSET_DIR / f"robot_{avatar_sprite_desc}.png"
+            )
         # Load custom bomb sprite
         try:
             if isinstance(avatar_sprite_desc, bytes):
                 self.bomb_sprite = pygame.image.load(BytesIO(bomb_sprite_desc))
             else:
-                self.bomb_sprite = pygame.image.load(f'agent_code/{code_name}/bomb.png')
+                self.bomb_sprite = pygame.image.load(f"agent_code/{code_name}/bomb.png")
             assert self.bomb_sprite.get_size() == (30, 30)
         except Exception as e:
-            self.bomb_sprite = pygame.image.load(s.ASSET_DIR / f'bomb_{bomb_sprite_desc}.png')
+            self.bomb_sprite = pygame.image.load(
+                s.ASSET_DIR / f"bomb_{bomb_sprite_desc}.png"
+            )
         # Prepare overlay that will indicate dead agent on the scoreboard
         self.shade = pygame.Surface((30, 30), pygame.SRCALPHA)
         self.shade.fill((0, 0, 0, 208))
@@ -82,6 +107,7 @@ class Agent:
         self.code_name = code_name
         self.display_name = display_name
         self.train = train
+        self.continue_training = continue_training
 
         self.total_score = 0
 
@@ -153,16 +179,22 @@ class Agent:
         self.total_score += delta
 
     def process_game_events(self, game_state):
-        self.backend.send_event("game_events_occurred", self.last_game_state, self.last_action, game_state, self.events)
+        self.backend.send_event(
+            "game_events_occurred",
+            self.last_game_state,
+            self.last_action,
+            game_state,
+            self.events,
+        )
 
     def wait_for_game_event_processing(self):
         self.backend.get("game_events_occurred")
 
-#    def process_enemy_game_events(self, enemy_game_state, enemy: "Agent"):
-#        self.backend.send_event("enemy_game_events_occurred", enemy.name, enemy.last_game_state, enemy.last_action, enemy_game_state, enemy.events)
-#
-#    def wait_for_enemy_game_event_processing(self):
-#        self.backend.get("enemy_game_events_occurred")
+    #    def process_enemy_game_events(self, enemy_game_state, enemy: "Agent"):
+    #        self.backend.send_event("enemy_game_events_occurred", enemy.name, enemy.last_game_state, enemy.last_action, enemy_game_state, enemy.events)
+    #
+    #    def wait_for_enemy_game_event_processing(self):
+    #        self.backend.get("enemy_game_events_occurred")
 
     def store_game_state(self, game_state):
         self.last_game_state = game_state
@@ -181,7 +213,9 @@ class Agent:
         return action, think_time
 
     def round_ended(self):
-        self.backend.send_event("end_of_round", self.last_game_state, self.last_action, self.events)
+        self.backend.send_event(
+            "end_of_round", self.last_game_state, self.last_action, self.events
+        )
         self.backend.get("end_of_round")
 
     def render(self, screen, x, y):
@@ -196,38 +230,52 @@ class AgentRunner:
     Agent callback runner (called by backend).
     """
 
-    def __init__(self, train, agent_name, code_name, result_queue):
+    def __init__(self, train, continue_training, agent_name, code_name, result_queue):
         self.agent_name = agent_name
         self.code_name = code_name
         self.result_queue = result_queue
 
-        self.callbacks = importlib.import_module('agent_code.' + self.code_name + '.callbacks')
+        self.callbacks = importlib.import_module(
+            "agent_code." + self.code_name + ".callbacks"
+        )
         if train:
-            self.train = importlib.import_module('agent_code.' + self.code_name + '.train')
+            self.train = importlib.import_module(
+                "agent_code." + self.code_name + ".train"
+            )
         for module_name in ["callbacks"] + (["train"] if train else []):
             module = getattr(self, module_name)
             for event_name, event_args in AGENT_API[module_name].items():
                 proper_signature = f"def {event_name}({', '.join(event_args)}):\n\tpass"
 
                 if not hasattr(module, event_name):
-                    raise NotImplementedError(f"Agent code {self.code_name} does not provide callback for {event_name}.\nAdd this function to your code in {module_name}.py:\n\n{proper_signature}")
-                actual_arg_count = len(signature(getattr(module, event_name)).parameters)
+                    raise NotImplementedError(
+                        f"Agent code {self.code_name} does not provide callback for {event_name}.\nAdd this function to your code in {module_name}.py:\n\n{proper_signature}"
+                    )
+                actual_arg_count = len(
+                    signature(getattr(module, event_name)).parameters
+                )
                 event_arg_count = len(event_args)
                 if actual_arg_count != event_arg_count:
-                    raise TypeError(f"Agent code {self.code_name}'s {event_name!r} has {actual_arg_count} arguments, but {event_arg_count} are required.\nChange your function's signature to the following:\n\n{proper_signature}")
+                    raise TypeError(
+                        f"Agent code {self.code_name}'s {event_name!r} has {actual_arg_count} arguments, but {event_arg_count} are required.\nChange your function's signature to the following:\n\n{proper_signature}"
+                    )
 
         self.fake_self = SimpleNamespace()
         self.fake_self.train = train
+        self.fake_self.continue_training = continue_training
 
-        self.wlogger = logging.getLogger(self.agent_name + '_wrapper')
+        self.wlogger = logging.getLogger(self.agent_name + "_wrapper")
         self.wlogger.setLevel(s.LOG_AGENT_WRAPPER)
-        self.fake_self.logger = logging.getLogger(self.agent_name + '_code')
+        self.fake_self.logger = logging.getLogger(self.agent_name + "_code")
         self.fake_self.logger.setLevel(s.LOG_AGENT_CODE)
-        log_dir = f'agent_code/{self.code_name}/logs/'
-        if not os.path.exists(log_dir): os.makedirs(log_dir)
-        handler = logging.FileHandler(f'{log_dir}{self.agent_name}.log', mode="w")
+        log_dir = f"agent_code/{self.code_name}/logs/"
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+        handler = logging.FileHandler(f"{log_dir}{self.agent_name}.log", mode="w")
         handler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s [%(name)s] %(levelname)s: %(message)s')
+        formatter = logging.Formatter(
+            "%(asctime)s %(levelname)-8s %(name)s:%(lineno)-3s - %(funcName)s()   %(message)s"
+        )
         handler.setFormatter(formatter)
         self.wlogger.addHandler(handler)
         self.fake_self.logger.addHandler(handler)
@@ -247,7 +295,9 @@ class AgentRunner:
             start_time = time()
             event_result = getattr(module, event_name)(self.fake_self, *event_args)
             duration = time() - start_time
-            self.wlogger.debug(f"Got result from callback#{event_name} in {duration:.3f}s.")
+            self.wlogger.debug(
+                f"Got result from callback#{event_name} in {duration:.3f}s."
+            )
 
             self.result_queue.put((event_name, duration, event_result))
         except BaseException as e:
@@ -260,8 +310,9 @@ class AgentBackend:
     Base class connecting the agent to a callback implementation.
     """
 
-    def __init__(self, train, agent_name, code_name, result_queue):
+    def __init__(self, train, continue_training, agent_name, code_name, result_queue):
         self.train = train
+        self.continue_training = continue_training
         self.code_name = code_name
         self.agent_name = agent_name
 
@@ -276,11 +327,15 @@ class AgentBackend:
     def get(self, expect_name: str, block=True, timeout=None):
         return self.get_with_time(expect_name, block, timeout)[0]
 
-    def get_with_time(self, expect_name: str, block=True, timeout=None) -> Tuple[Any, float]:
+    def get_with_time(
+        self, expect_name: str, block=True, timeout=None
+    ) -> Tuple[Any, float]:
         try:
             event_name, compute_time, result = self.result_queue.get(block, timeout)
             if event_name != expect_name:
-                raise ValueError(f"Logic error: Expected result from event {expect_name}, but found {event_name}")
+                raise ValueError(
+                    f"Logic error: Expected result from event {expect_name}, but found {event_name}"
+                )
             if isinstance(result, BaseException):
                 raise result
             return result, compute_time
@@ -293,16 +348,22 @@ class SequentialAgentBackend(AgentBackend):
     AgentConnector realised in main thread (easy debugging).
     """
 
-    def __init__(self, train, agent_name, code_name):
-        super().__init__(train, agent_name, code_name, queue.Queue())
+    def __init__(self, train, continue_training, agent_name, code_name):
+        super().__init__(train, continue_training, agent_name, code_name, queue.Queue())
         self.runner = None
 
     def start(self):
-        self.runner = AgentRunner(self.train, self.agent_name, self.code_name, self.result_queue)
+        self.runner = AgentRunner(
+            self.train,
+            self.continue_training,
+            self.agent_name,
+            self.code_name,
+            self.result_queue,
+        )
 
     def send_event(self, event_name, *event_args):
         prev_cwd = os.getcwd()
-        os.chdir(os.path.dirname(__file__) + f'/agent_code/{self.code_name}/')
+        os.chdir(os.path.dirname(__file__) + f"/agent_code/{self.code_name}/")
         try:
             self.runner.process_event(event_name, *event_args)
         finally:
@@ -312,8 +373,15 @@ class SequentialAgentBackend(AgentBackend):
 QUIT = "quit"
 
 
-def run_in_agent_runner(train: bool, agent_name: str, code_name: str, wta_queue: mp.Queue, atw_queue: mp.Queue):
-    runner = AgentRunner(train, agent_name, code_name, atw_queue)
+def run_in_agent_runner(
+    train: bool,
+    continue_training: bool,
+    agent_name: str,
+    code_name: str,
+    wta_queue: mp.Queue,
+    atw_queue: mp.Queue,
+):
+    runner = AgentRunner(train, continue_training, agent_name, code_name, atw_queue)
     while True:
         event_name, event_args = wta_queue.get()
         if event_name == QUIT:
@@ -326,12 +394,22 @@ class ProcessAgentBackend(AgentBackend):
     AgentConnector realised by a separate process (fast and safe mode).
     """
 
-    def __init__(self, train, agent_name, code_name):
-        super().__init__(train, agent_name, code_name, mp.Queue())
+    def __init__(self, train, continue_training, agent_name, code_name):
+        super().__init__(train, continue_training, agent_name, code_name, mp.Queue())
 
         self.wta_queue = mp.Queue()
 
-        self.process = mp.Process(target=run_in_agent_runner, args=(self.train, self.agent_name, self.code_name, self.wta_queue, self.result_queue))
+        self.process = mp.Process(
+            target=run_in_agent_runner,
+            args=(
+                self.train,
+                self.continue_training,
+                self.agent_name,
+                self.code_name,
+                self.wta_queue,
+                self.result_queue,
+            ),
+        )
 
     def start(self):
         self.process.start()
