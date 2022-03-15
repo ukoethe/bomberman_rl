@@ -1,5 +1,6 @@
 import glob
 import os
+from collections import deque
 from copy import deepcopy
 from datetime import datetime
 from typing import List, Tuple
@@ -8,6 +9,8 @@ import networkx as nx
 import numpy as np
 
 from settings import COLS, ROWS
+
+Coordinate = Tuple[int]
 
 graph = nx.Graph
 action = str
@@ -19,7 +22,7 @@ def setup(self):
     """Sets up everything. (First call)"""
 
     # Where to put?
-    self.history = [0, None]  # [num_of_coins_collected, tiles_visited]]
+    self.history = [0, deque(maxlen=5)]  # [num_of_coins_collected, tiles_visited]
 
     # find latest q_table
     list_of_q_tables = glob.glob(
@@ -35,7 +38,7 @@ def setup(self):
 
         self.logger.info("Setting up Q-Learning algorithm")
         self.timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        self.number_of_states = 4  # TODO: make this dynamic
+        self.number_of_states = 1536  # TODO: make this dynamic
 
         self.exploration_rate_initial = 0.5
         self.exploration_rate_end = 0.05  # at end of all episodes
@@ -58,17 +61,11 @@ def setup(self):
         self.q_table = self.latest_q_table
 
 
+
 def act(self, game_state: dict) -> str:
     """Takes in the current game state and returns the chosen action in form of a string."""
     state = state_to_features(self, game_state, self.history)
-
-    active_explosions = [
-        index
-        for index, field in np.ndenumerate(game_state["explosion_map"])
-        if field != 0
-    ]
-    # self.logger.info(f"Active explosions: {active_explosions}")
-    self.logger.info(f"Bombs: {game_state['bombs']}")
+    self.old_state = state
 
     if self.train and np.random.random() < self.exploration_rate:
         self.logger.debug("Exploring")
@@ -80,12 +77,13 @@ def act(self, game_state: dict) -> str:
     # TODO: Do we want to go 100% exploitation once we have learnt the q-table?
     # Alternative is to sample from the learnt q_table distribution.
     # print(state)
+    self.logger.debug(f"State: {state}")
     action = ACTIONS[np.argmax(self.q_table[state])]
     self.logger.debug(f"Action chosen: {action}")
     return action
 
 
-def _get_neighboring_tiles(own_coord, n) -> List[Tuple[int]]:
+def _get_neighboring_tiles(own_coord, n) -> List[Coordinate]:
     own_coord_x = own_coord[0]
     own_coord_y = own_coord[1]
     neighboring_coordinates = []
@@ -104,6 +102,55 @@ def _get_neighboring_tiles(own_coord, n) -> List[Tuple[int]]:
         )  # left in the matrix
     return neighboring_coordinates
 
+
+def get_neighboring_tiles_until_wall(own_coord, n, game_state) -> List[Coordinate]:
+    directions = ["N", "E", "S", "W"]
+    own_coord_x, own_coord_y = own_coord[0], own_coord[1]
+    all_good_fields = []
+
+    for d, _ in enumerate(directions):
+        good_fields = []
+        for i in range(1, n + 1):
+            try:
+                if directions[d] == "N":
+                    if (
+                        game_state["field"][own_coord_x][own_coord_y + i] == 0
+                        or game_state["field"][own_coord_x][own_coord_y + i] == 1
+                    ):
+                        good_fields += [(own_coord_x, own_coord_y + i)]
+                    else:
+                        break
+                elif directions[d] == "E":
+                    if (
+                        game_state["field"][own_coord_x + i][own_coord_y] == 0
+                        or game_state["field"][own_coord_x + i][own_coord_y] == 1
+                    ):
+                        good_fields += [(own_coord_x + i, own_coord_y)]
+                    else:
+                        break
+                elif directions[d] == "S":
+                    if (
+                        game_state["field"][own_coord_x][own_coord_y - i] == 0
+                        or game_state["field"][own_coord_x][own_coord_y - i] == 1
+                    ):
+                        good_fields += [(own_coord_x, own_coord_y - i)]
+                    else:
+                        break
+                elif directions[d] == "W":
+                    if (
+                        game_state["field"][own_coord_x - i][own_coord_y] == 0
+                        or game_state["field"][own_coord_x - i][own_coord_y] == 1
+                    ):
+                        good_fields += [(own_coord_x - i, own_coord_y)]
+                    else:
+                        break
+            except IndexError:
+                # print("Border")
+                break
+
+        all_good_fields += good_fields
+
+    return all_good_fields
 
 def _get_graph(self, game_state, crates_as_obstacles=True) -> graph:
     """Calculates the adjacency matrix of the current game state.
@@ -365,73 +412,126 @@ def state_to_features(self, game_state, history) -> np.array:
     # TODO: vectorize?
     # TODO: combine different for loops (!)
     """Parses game state to features"""
-    features = np.zeros(2)
+    features = np.zeros(8, dtype=np.int8)
 
     try:
         own_position = game_state["self"][-1]
+        enemy_positions = [enemy[-1] for enemy in game_state["others"]]
     except TypeError:
         print("First game state is none")
         return
 
-    # How many walls
-    wall_counter = 0
-    neighboring_coordinates = _get_neighboring_tiles(own_position, 1)
-    for coord in neighboring_coordinates:
-        try:
-            if game_state["field"][coord] == -1:  # geht das? wer weiß
-                wall_counter += 1
-        except IndexError:
-            print(
-                "tried to access tile out of bounds (walls)"
-            )  # TODO remove, just for "debugging"
-    features[0] = wall_counter > 2
+    # Feature 1: if on hot field or not
+    all_hot_fields, if_dangerous = [], []
+    if len(game_state["bombs"]) > 0:
+        for bomb in game_state["bombs"]:
+            bomb_pos = bomb[0]  # coordinates of bomb as type tuple
+            neighbours_until_wall = get_neighboring_tiles_until_wall(
+                bomb_pos, 3, game_state=game_state
+            )
+            if neighbours_until_wall:
+                all_hot_fields += neighbours_until_wall
 
-    # Within bomb explosion zone
-    # TODO shoul we have feature "bomb distance" (instead or additionally)? should that be nearest or all bombs (like enemies?)?
-    # TODO take countdown into consideration?
-    range_3_coordinates = _get_neighboring_tiles(own_position, 3)
-    for coord in range_3_coordinates:
-        try:
-            bomb_present = any(
-                [
-                    bomb
-                    for bomb in game_state["bombs"]
-                    if bomb[0] in range_3_coordinates and bomb[1] != 0
-                ]
-            )  # access to bombs might be wrong
-            features[1] = bomb_present
-        except IndexError:
-            print("tried to access tile out of bounds (bomb)")  # TODO remove
+        if len(all_hot_fields) > 0:
+            for lava in all_hot_fields:
+                in_danger = own_position == lava
+                if_dangerous.append(in_danger)
 
-    # Position
-    # maybe take out? not sure if necessary
-    # features[2] = own_position[0]
-    # features[3] = own_position[1]
+            features[0] = int(any(if_dangerous))
+    else:
+        features[0] = 0
 
-    # Agent-Coin ratio
-    # num_of_agents_left = len(game_state["others"])
-    # we need to access past
-    # features[4] = num_of_agents_left/num_of_coins_left
+    # Feature 2-5 ("Blockages")
+    for i, neighboring_coord in enumerate(_get_neighboring_tiles(own_position, 1)):
+        neighboring_x, neighboring_y = neighboring_coord
+        neighboring_content = game_state["field"][neighboring_x][
+            neighboring_y
+        ]  # content of tile, e.g. crate=1
+        explosion = (
+            True
+            if game_state["explosion_map"][neighboring_x][neighboring_y] != 0
+            else False
+        )
+        ripe_bomb = False  # "ripe" = about to explode
+        if (neighboring_coord, 0) in game_state["bombs"] or (
+            neighboring_coord,
+            1,
+        ) in game_state["bombs"]:
+            ripe_bomb = True
+        if (
+            neighboring_content != 0
+            or neighboring_coord in enemy_positions
+            or explosion
+            or ripe_bomb
+        ):
+            features[1 + i] = 1
+        else:
+            features[1 + i] = 0
 
+    # Feature 6 ("Going to new tiles")
+    num_visited_tiles = len(
+        history[1]
+    )  # history[2] contains agent coords of last 5 turns
+    if num_visited_tiles > 1:  # otherwise the feature is and is supposed to be 0 anyway
+        num_unique_visited_tiles = len(set(history[1]))
+        # of 5 tiles, 3 should be new -> 60%. for start of the episode: 2 out of 2, 2 out of 3, 3 out of 4
+        features[5] = 1 if (num_unique_visited_tiles / num_visited_tiles) >= 0.6 else 0
+
+    # Feature 7/9: amount of possibly destroyed crates: small: 0, medium: 1<4, high: >= 4
+    neighbours = get_neighboring_tiles_until_wall(
+        own_position, 3, game_state=game_state
+    )
+    crate_coordinates = []
+
+    if neighbours:
+        for coord in neighbours:
+            if game_state["field"][coord[0]][coord[1]] == 1:
+                crate_coordinates += [coord]
+
+        if len(crate_coordinates) == 0:
+            features[6] = 0
+        elif 1 <= len(crate_coordinates) < 4:
+            features[6] = 1
+        elif len(crate_coordinates) >= 4:
+            features[6] = 2
+
+    else:
+        features[6] = 0
+
+    # Feature 8/10: if in opponents area
+    all_enemy_fields = []
+    for enemy in game_state["others"]:
+        neighbours_until_wall = get_neighboring_tiles_until_wall(
+            enemy[-1], 3, game_state=game_state
+        )
+        if neighbours_until_wall:
+            all_enemy_fields += neighbours_until_wall
+
+    if len(all_enemy_fields) > 0:
+        for bad_field in all_enemy_fields:
+            in_danger = own_position == bad_field
+            if_dangerous.append(in_danger)
+
+        features[7] = int(any(if_dangerous))
+    else:
+        features[7] = 0
+
+    self.logger.debug(f"Feature vector: {features}")
     self.logger.debug(
         f"Shortest path feature says: {_shortest_path_feature(self, game_state)}"
     )
 
-    if np.array_equal(features, np.array([0, 0])):
-        return 0
-
-    elif np.array_equal(features, np.array([0, 1])):
-        return 1
-
-    elif np.array_equal(features, np.array([1, 0])):
-        return 2
-
-    elif np.array_equal(features, np.array([1, 1])):
-        return 3
-
-    # return features
+    return features_to_state(self, features)
 
 
+def features_to_state(self, feature_vector: np.array) -> int:
+    # TODO: handle case that file can't be opened, read or that feature vector can't be found (currently: returns None)
+    with open("indexed_state_list.csv", encoding="utf-8", mode="r") as f:
+        for i, state in enumerate(f.readlines()):
+            if state.strip() == str(feature_vector):
+                return i
+
+    
 # Only to demonstrate test
 class DecisionTransformer:
     def __init__(self):
