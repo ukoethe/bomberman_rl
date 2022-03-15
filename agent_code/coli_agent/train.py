@@ -150,7 +150,7 @@ def game_events_occurred(
         shortest_old_distance = 1000
         for bp in bomb_positions:
             distance = abs(
-                sum(np.array(old_game_state["self"][-1])) - np.array(bp)
+                sum(np.array(old_game_state["self"][-1]) - np.array(bp))
             )  # e.g.: [13,8] - [13,10] = [0,-2] -> |-2|
             if distance < shortest_old_distance:
                 shortest_old_distance = distance
