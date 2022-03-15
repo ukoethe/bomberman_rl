@@ -37,6 +37,7 @@ def setup(self):
 def act(self, game_state: dict) -> str:
     """Takes in the current game state and returns the chosen action in form of a string."""
     state = state_to_features(self, game_state, self.history)
+    self.old_state = state
 
     if self.train and np.random.random() < self.exploration_rate:
         self.logger.debug("Exploring")

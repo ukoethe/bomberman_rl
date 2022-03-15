@@ -85,7 +85,7 @@ def game_events_occurred(
     if old_game_state is None:
         return
 
-    old_state = state_to_features(self, old_game_state, self.history)
+    old_state = self.old_state
     new_state = state_to_features(self, new_game_state, self.history)
 
     with open("indexed_state_list.csv", encoding="utf-8", mode="r") as f:
