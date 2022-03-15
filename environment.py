@@ -128,17 +128,19 @@ class GenericWorld:
     def build_arena(self) -> Tuple[np.array, List[Coin], List[Agent]]:
         raise NotImplementedError()
 
-    def add_agent(self, agent_dir, name, train=False):
+    def add_agent(self, agent_dir, name, continue_training, train=False):
         assert len(self.agents) < s.MAX_AGENTS
 
         # if self.args.single_process:
-        backend = SequentialAgentBackend(train, name, agent_dir)
+        backend = SequentialAgentBackend(train, continue_training, name, agent_dir)
         # else:
         # backend = ProcessAgentBackend(train, name, agent_dir)
         backend.start()
 
         color = self.colors.pop()
-        agent = Agent(name, agent_dir, name, train, backend, color, color)
+        agent = Agent(
+            name, agent_dir, name, train, continue_training, backend, color, color
+        )
         self.agents.append(agent)
 
     def tile_is_free(self, x, y):
@@ -398,8 +400,8 @@ class BombeRLeWorld(GenericWorld):
     def setup_agents(self, agents):
         # Add specified agents and start their subprocesses
         self.agents = []
-        for agent_dir, train in agents:
-            if list([d for d, t in agents]).count(agent_dir) > 1:
+        for agent_dir, train, continue_training in agents:
+            if list([d for d, _, _ in agents]).count(agent_dir) > 1:
                 name = (
                     agent_dir
                     + "_"
@@ -407,7 +409,7 @@ class BombeRLeWorld(GenericWorld):
                 )
             else:
                 name = agent_dir
-            self.add_agent(agent_dir, name, train=train)
+            self.add_agent(agent_dir, name, continue_training, train=train)
 
     def build_arena(self):
         WALL = -1

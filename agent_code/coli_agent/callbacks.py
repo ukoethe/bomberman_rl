@@ -5,7 +5,6 @@ from typing import List, Tuple
 
 import networkx as nx
 import numpy as np
-from scipy.sparse import csr_matrix
 
 from settings import COLS, ROWS
 
@@ -19,9 +18,13 @@ def setup(self):
     """Sets up everything. (First call)"""
 
     # Where to put?
-    self.history = [0, None]  # [num_of_coins_collected, tiles_visited]
+    self.history = [0, None]  # [num_of_coins_collected, tiles_visited]]
+
+    if self.continue_training:
+        print("Wow")
 
     if self.train or not os.path.isfile("q_table.npy"):
+
         self.logger.info("Setting up Q-Learning algorithm")
         self.timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self.number_of_states = 4  # TODO: make this dynamic
