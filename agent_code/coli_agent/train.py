@@ -135,7 +135,7 @@ def game_events_occurred(
     for tile in new_neighbors:
         if new_game_state["field"][tile[0]][tile[1]] == 1:
             crate_counter[1] += 1
-    if crate_counter[0] <= crate_counter[1]:
+    if crate_counter[0] < crate_counter[1]:
         events.append(INCREASED_SURROUNDING_CRATES)
     elif crate_counter[0] > crate_counter[1]:
         events.append(DECREASED_SURROUNDING_CRATES)
@@ -148,7 +148,7 @@ def game_events_occurred(
         shortest_old_distance = 1000
         for bp in bomb_positions:
             distance = abs(
-                sum(np.array(old_game_state["self"][-1]) - np.array(bp))
+                sum(np.array(old_game_state["self"][-1])) - np.array(bp)
             )  # e.g.: [13,8] - [13,10] = [0,-2] -> |-2|
             if distance < shortest_old_distance:
                 shortest_old_distance = distance
@@ -170,9 +170,9 @@ def game_events_occurred(
     # elif self.previous_coin_distance > self.current_coin_distance:
     #     events.append(INCREASED_COIN_DISTANCE)
 
-    # if self.previous_coin_distance <= self.current_coin_distance:
+    # if self.previous_crate_distance <= self.current_crate_distance:
     #     events.append(DECREASED_CRATE_DISTANCE)
-    # elif self.previous_coin_distance > self.current_coin_distance:
+    # elif self.previous_crate_distance > self.current_crate_distance:
     #     events.append(INCREASED_CRATE_DISTANCE)
 
     # if old_feature_vector[6] == self_action:
@@ -248,7 +248,7 @@ def reward_from_events(self, events: List[str]) -> int:
     """
 
     game_rewards = {
-        e.BOMB_DROPPED: 5,  # adjust aggressiveness
+        e.BOMB_DROPPED: 10,  # adjust aggressiveness
         # e.BOMB_EXPLODED: 0,
         e.COIN_COLLECTED: 50,
         # e.COIN_FOUND: 5,  # direct consequence from crate destroyed, redundant reward?
@@ -273,7 +273,7 @@ def reward_from_events(self, events: List[str]) -> int:
         DECREASED_SURROUNDING_CRATES: -1.6,
         INCREASED_BOMB_DISTANCE: 5,
         DECREASED_BOMB_DISTANCE: -5.1,
-        FOLLOWED_DIRECTION: 1,
+        FOLLOWED_DIRECTION: 3,  # possibly create penalty
     }
 
     reward_sum = 0
