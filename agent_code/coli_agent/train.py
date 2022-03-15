@@ -32,7 +32,10 @@ DECREASED_COIN_DISTANCE = "DECREASED_COIN_DISTANCE"  # decreased length of short
 INCREASED_COIN_DISTANCE = "INCREASED_COIN_DISTANCE"  # increased length of shortest path to nearest coin BY ONE
 DECREASED_CRATE_DISTANCE = "DECREASED_CRATE_DISTANCE"  # decreased length of shortest path to nearest crate BY ONE
 INCREASED_CRATE_DISTANCE = "INCREASED_CRATE_DISTANCE"  # increased length of shortest path to nearest crate BY ONE
-# maybe only reward if distance was decreased by following instruction of coin feature?
+
+FOLLOWED_DIRECTION = (
+    "FOLLOWED_DIRECTION"  # went in direction indicated by coin/crate feature
+)
 
 INCREASED_SURROUNDING_CRATES = (
     "INCREASED_SURROUNDING_CRATES"  # increased or stayed the same; low reward
@@ -140,7 +143,7 @@ def game_events_occurred(
     if old_feature_vector[0] == 1:
         bomb_positions = []
         for tile in old_neighbors:
-            if [tile[0]][tile[1]] in [bomb[0] for bomb in old_game_state["bombs"]]:
+            if tile in [bomb[0] for bomb in old_game_state["bombs"]]:
                 bomb_positions.append(tile)
         shortest_old_distance = 1000
         for bp in bomb_positions:
@@ -150,7 +153,7 @@ def game_events_occurred(
             if distance < shortest_old_distance:
                 shortest_old_distance = distance
         for tile in new_neighbors:
-            if [tile[0]][tile[1]] in [bomb[0] for bomb in new_game_state["bombs"]]:
+            if tile in [bomb[0] for bomb in new_game_state["bombs"]]:
                 bomb_positions.append(tile)
         shortest_new_distance = 1000
         for bp in bomb_positions:
@@ -161,6 +164,19 @@ def game_events_occurred(
             events.append(DECREASED_BOMB_DISTANCE)
         elif shortest_new_distance >= shortest_old_distance:
             events.append(INCREASED_BOMB_DISTANCE)
+
+    # if self.previous_coin_distance <= self.current_coin_distance:
+    #     events.append(DECREASED_COIN_DISTANCE)
+    # elif self.previous_coin_distance > self.current_coin_distance:
+    #     events.append(INCREASED_COIN_DISTANCE)
+
+    # if self.previous_coin_distance <= self.current_coin_distance:
+    #     events.append(DECREASED_CRATE_DISTANCE)
+    # elif self.previous_coin_distance > self.current_coin_distance:
+    #     events.append(INCREASED_CRATE_DISTANCE)
+
+    # if old_feature_vector[6] == self_action:
+    #     events.append(FOLLOWED_DIRECTION)
 
     # state_to_features is defined in callbacks.py
     self.transitions.append(
@@ -251,15 +267,13 @@ def reward_from_events(self, events: List[str]) -> int:
         SUICIDAL: -15,
         DECREASED_COIN_DISTANCE: 8,
         INCREASED_COIN_DISTANCE: -8.1,  # higher? lower? idk
-        # DECREASED_CRATE_DISTANCE: 1,
-        # INCREASED_CRATE_DISTANCE: -1.1,
+        DECREASED_CRATE_DISTANCE: 1,
+        INCREASED_CRATE_DISTANCE: -1.1,
         INCREASED_SURROUNDING_CRATES: 1.5,
         DECREASED_SURROUNDING_CRATES: -1.6,
-        # EXLPORE: 2,
-        DECREASED_NEIGHBORING_WALLS: 1,
-        INCREASED_NEIGHBORING_WALLS: -1.1,
-        # INCREASED_BOMB_DISTANCE: 5,
-        # DECREASED_BOMB_DISTANCE: -5.1
+        INCREASED_BOMB_DISTANCE: 5,
+        DECREASED_BOMB_DISTANCE: -5.1,
+        FOLLOWED_DIRECTION: 1,
     }
 
     reward_sum = 0
