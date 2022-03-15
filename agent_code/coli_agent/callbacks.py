@@ -1,3 +1,4 @@
+import glob
 import os
 from copy import deepcopy
 from datetime import datetime
@@ -20,25 +21,41 @@ def setup(self):
     # Where to put?
     self.history = [0, None]  # [num_of_coins_collected, tiles_visited]]
 
-    if self.continue_training:
-        print("Wow")
+    # find latest q_table
+    list_of_q_tables = glob.glob(
+        "*.npy"
+    )  # * means all if need specific format then *.csv
+    print(list_of_q_tables)
+    print(max(list_of_q_tables, key=os.path.getctime))
+    self.latest_q_table = np.load(max(list_of_q_tables, key=os.path.getctime))
+    print(self.latest_q_table)
 
-    if self.train or not os.path.isfile("q_table.npy"):
+    # train if flag is present or if there is no q_table present
+    if self.train or not os.path.isfile(self.latest_q_table):
 
         self.logger.info("Setting up Q-Learning algorithm")
         self.timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self.number_of_states = 4  # TODO: make this dynamic
-        self.q_table = np.zeros(shape=(self.number_of_states, len(ACTIONS)))
+
         self.exploration_rate_initial = 0.5
         self.exploration_rate_end = 0.05  # at end of all episodes
         self.exploration_decay_rate = 0.01  # 0.1 will reach min after ~ 100 episodes
 
         self.lattice_graph = nx.grid_2d_graph(m=COLS, n=ROWS)
+
+        if self.continue_training:
+            self.logger.info("Continuing training on latest q_table")
+            self.q_table = self.latest_q_table
+
+        else:
+            self.logger.info("Starting training from scratch")
+            self.q_table = np.zeros(shape=(self.number_of_states, len(ACTIONS)))
+
         # Finally this will call setup_training in train.py
 
     else:
-        self.logger.info("Loading learnt Q-Table")
-        self.q_table = np.load("q_table.npy")
+        self.logger.info("Using latest Q-Table for testing")
+        self.q_table = self.latest_q_table
 
 
 def act(self, game_state: dict) -> str:

@@ -142,7 +142,7 @@ def end_of_round(self, last_game_state, last_action, events):
     )
     self.rewards_of_episode = 0
 
-    if self.episode % 250 == 0:
+    if self.episode % 250 == 0 and self.episode != 0:
         np.save(f"q_table-{self.timestamp}", self.q_table)
 
     self.episode += 1
