@@ -4,14 +4,17 @@ from typing import List
 import numpy as np
 
 import events as e
-from agent_code.coli_agent.callbacks import ACTIONS, state_to_features
+from agent_code.coli_agent.callbacks import (
+    ACTIONS,
+    get_neighboring_tiles_until_wall,
+    state_to_features,
+)
 
 Transition = namedtuple("Transition", ("state", "action", "next_state", "reward"))
 
 TRANSITION_HISTORY_SIZE = 3  # keep only ... last transitions
 
 # --- Custom Events ---
-# TODO: actually implement these
 
 # - Events with direct state feature correspondence -
 
@@ -25,18 +28,15 @@ PROGRESSED = "PROGRESSED"  # in last 5 turns, agent visited at least 3 unique ti
 FLED = "FLED"  # was in "danger zone" of a bomb and moved out of it (reward)
 SUICIDAL = "SUICIDAL"  # moved from safe field into "danger" zone of bomb (penalty, higher than reward)
 
-# USED_SHORTEST_COIN_PATH = "USED_SHORTEST_COIN_PATH"  # moved along the shortest distance path to nearest coin (used the feature)
-# coin distance is calculated using graph pathfinding, takes into consideration walls, crates, explosions + whether another agent is nearer
-# penalty for moving towards bomb should be higher than reward for moving towards coin
-# if there are no more collectible coins, the coin feature automatically switches to indicating the nearest crate:
-# USED_SHORTEST_CRATE_PATH = "USED_SHORTEST_CRATE_PATH"
-
 DECREASED_COIN_DISTANCE = "DECREASED_COIN_DISTANCE"  # decreased length of shortest path to nearest coin BY ONE
 INCREASED_COIN_DISTANCE = "INCREASED_COIN_DISTANCE"  # increased length of shortest path to nearest coin BY ONE
 DECREASED_CRATE_DISTANCE = "DECREASED_CRATE_DISTANCE"  # decreased length of shortest path to nearest crate BY ONE
 INCREASED_CRATE_DISTANCE = "INCREASED_CRATE_DISTANCE"  # increased length of shortest path to nearest crate BY ONE
+# maybe only reward if distance was decreased by following instruction of coin feature?
 
-INCREASED_SURROUNDING_CRATES = "INCREASED_SURROUNDING_CRATES"  # low reward
+INCREASED_SURROUNDING_CRATES = (
+    "INCREASED_SURROUNDING_CRATES"  # increased or stayed the same; low reward
+)
 DECREASED_SURROUNDING_CRATES = (
     "DECREASED_SURROUNDING_CRATES"  # equal or slightly higher penalty for balance
 )
@@ -46,15 +46,8 @@ DECREASED_SURROUNDING_CRATES = (
 # idea: Agent-Coin ratio: reward going after crates when there's many coins left (max: 9) and reward going after agents when there aren't
 # idea: reward caging enemies
 
-EXLPORE = "EXLPORE"  # slightly reward moving into a new quadrant
-
-DECREASED_NEIGHBORING_WALLS = "DECREASED_NEIGHBORING_WALLS"  # low reward
-INCREASED_NEIGHBORING_WALLS = (
-    "INCREASED_NEIGHBORING_WALLS"  # low, penalty, penalty higher than reward
-)
-
-# more fine-grained bomb area movements
-INCREASED_BOMB_DISTANCE = "INCREASED_BOMB_DISTANCE"
+# more fine-grained bomb area movements: reward/penalize moving one step away from/towards bomb, when agent is already in "danger zone"
+INCREASED_BOMB_DISTANCE = "INCREASED_BOMB_DISTANCE"  # increased or stayed the same
 DECREASED_BOMB_DISTANCE = "DECREASED_BOMB_DISTANCE"
 
 
@@ -83,6 +76,8 @@ def game_events_occurred(
     just using game state in general. Leveraging of features more just to avoid code duplication.
     """
 
+    self.history[1].append(new_game_state["self"][-1])
+
     # skip first timestep
     if old_game_state is None:
         return
@@ -100,8 +95,6 @@ def game_events_occurred(
     old_feature_vector = feature_vectors[old_state]
     new_feature_vector = feature_vectors[new_state]
 
-    self.history[1].append(new_game_state["self"][-1])
-
     # Custom events and stuff
 
     if old_feature_vector[0] == 1 and new_feature_vector[0] == 0:
@@ -110,23 +103,64 @@ def game_events_occurred(
         events.append(SUICIDAL)
     # possibly add the case when both is 1 (add new event for this so the penalty can be different)
 
-    if new_feature_vector[5] == 1:
+    if new_feature_vector[5] == 1 and not e.INVALID_ACTION in events:
         events.append(PROGRESSED)
 
     if new_game_state["self"][-1] != old_game_state["self"][-1]:
         events.append(MOVED)
 
-    # if we want to have a wall counting reward, use this to add the event
-    # wall_counter = 0
-    # neighboring_coordinates = _get_neighboring_tiles(own_position, 1)
-    # for coord in neighboring_coordinates:
-    #     try:
-    #         if game_state["field"][coord] == -1:  # geht das? wer weiß
-    #             wall_counter += 1
-    #     except IndexError:
-    #         print(
-    #             "tried to access tile out of bounds (walls)"
-    #         )  # TODO remove, just for "debugging"
+    if old_feature_vector[1] == 1 and self_action == "DOWN":
+        events.append(WAS_BLOCKED)
+    elif old_feature_vector[2] == 1 and self_action == "UP":
+        events.append(WAS_BLOCKED)
+    elif old_feature_vector[3] == 1 and self_action == "RIGHT":
+        events.append(WAS_BLOCKED)
+    elif old_feature_vector[4] == 1 and self_action == "LEFT":
+        events.append(WAS_BLOCKED)
+
+    old_neighbors = get_neighboring_tiles_until_wall(
+        old_game_state["self"][-1], 3, game_state=old_game_state
+    )
+    new_neighbors = get_neighboring_tiles_until_wall(
+        new_game_state["self"][-1], 3, game_state=new_game_state
+    )
+
+    crate_counter = [0, 0]  # [old, new]
+    for tile in old_neighbors:
+        if old_game_state["field"][tile[0]][tile[1]] == 1:
+            crate_counter[0] += 1
+    for tile in new_neighbors:
+        if new_game_state["field"][tile[0]][tile[1]] == 1:
+            crate_counter[1] += 1
+    if crate_counter[0] <= crate_counter[1]:
+        events.append(INCREASED_SURROUNDING_CRATES)
+    elif crate_counter[0] > crate_counter[1]:
+        events.append(DECREASED_SURROUNDING_CRATES)
+
+    if old_feature_vector[0] == 1:
+        bomb_positions = []
+        for tile in old_neighbors:
+            if [tile[0]][tile[1]] in [bomb[0] for bomb in old_game_state["bombs"]]:
+                bomb_positions.append(tile)
+        shortest_old_distance = 1000
+        for bp in bomb_positions:
+            distance = abs(
+                sum(np.array(old_game_state["self"][-1]) - np.array(bp))
+            )  # e.g.: [13,8] - [13,10] = [0,-2] -> |-2|
+            if distance < shortest_old_distance:
+                shortest_old_distance = distance
+        for tile in new_neighbors:
+            if [tile[0]][tile[1]] in [bomb[0] for bomb in new_game_state["bombs"]]:
+                bomb_positions.append(tile)
+        shortest_new_distance = 1000
+        for bp in bomb_positions:
+            distance = abs(sum(np.array(new_game_state["self"][-1]) - np.array(bp)))
+            if distance < shortest_new_distance:
+                shortest_new_distance = distance
+        if shortest_new_distance < shortest_old_distance:
+            events.append(DECREASED_BOMB_DISTANCE)
+        elif shortest_new_distance >= shortest_old_distance:
+            events.append(INCREASED_BOMB_DISTANCE)
 
     # state_to_features is defined in callbacks.py
     self.transitions.append(
@@ -211,20 +245,21 @@ def reward_from_events(self, events: List[str]) -> int:
         # e.SURVIVED_ROUND: 0,  # could possibly lead to not being active - actually penalize if agent too passive?
         e.INVALID_ACTION: -10,  # necessary? (maybe for penalizing trying to move through walls/crates) - yes, seems to be necessary to learn that one cannot place a bomb after another placed bomb is still not exploded
         WAS_BLOCKED: -20,
-        MOVED: 0.5,
-        PROGRESSED: 2,  # higher?
+        MOVED: 0,
+        PROGRESSED: 5,  # higher?
         FLED: 15,
         SUICIDAL: -15,
         DECREASED_COIN_DISTANCE: 8,
-        INCREASED_COIN_DISTANCE: -8,  # higher? lower? idk
-        DECREASED_CRATE_DISTANCE: 1,
-        INCREASED_CRATE_DISTANCE: -1,
+        INCREASED_COIN_DISTANCE: -8.1,  # higher? lower? idk
+        # DECREASED_CRATE_DISTANCE: 1,
+        # INCREASED_CRATE_DISTANCE: -1.1,
         INCREASED_SURROUNDING_CRATES: 1.5,
+        DECREASED_SURROUNDING_CRATES: -1.6,
         # EXLPORE: 2,
         DECREASED_NEIGHBORING_WALLS: 1,
-        INCREASED_NEIGHBORING_WALLS: -1,
+        INCREASED_NEIGHBORING_WALLS: -1.1,
         # INCREASED_BOMB_DISTANCE: 5,
-        # DECREASED_BOMB_DISTANCE: -5
+        # DECREASED_BOMB_DISTANCE: -5.1
     }
 
     reward_sum = 0
