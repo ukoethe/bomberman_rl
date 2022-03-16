@@ -29,7 +29,7 @@ def setup(self):
         "*.npy"
     )  # * means all if need specific format then *.csv
     self.latest_q_table = np.load(max(list_of_q_tables, key=os.path.getctime))
-    print(self.latest_q_table)
+    self.logger.debug(f"Using q-table: {max(list_of_q_tables, key=os.path.getctime)}")
 
     # train if flag is present or if there is no q_table present
     if self.train or not os.path.isfile(self.latest_q_table):
@@ -320,6 +320,12 @@ def _shortest_path_feature(self, game_state) -> action:
                 best = (current_path, current_path_length)
 
         self.logger.debug(f"BEST: {best}")
+        if best == (None, np.inf):
+            self.logger.debug(
+                "There are no coins and no crate is reachable even if not considering crates as obstacles"
+            )
+            return np.random.choice(ACTIONS)
+
         return _get_action(self, self_coord, best[0])
 
     # there is a coin
@@ -349,6 +355,10 @@ def _shortest_path_feature(self, game_state) -> action:
                         "Crazy edge case (unreachable coin for us even though crates not considered as obstacles) occured!"
                     )
                     continue
+
+            # all other agents are dead
+            if not any(game_state["others"]):
+                continue
 
             for other_agent in game_state["others"]:
                 best_other_agent = (None, np.inf)
@@ -396,6 +406,10 @@ def _shortest_path_feature(self, game_state) -> action:
                     best_other_agent,
                 )
             )
+
+        # this happens if none of the coins are reachable by us even if considering crates as obstacles
+        if not any(shortest_paths_to_coins):
+            return np.random.choice(ACTIONS)
 
         # sort our [0] paths ascending by length [1]
         shortest_paths_to_coins.sort(key=lambda x: x[0][1])
