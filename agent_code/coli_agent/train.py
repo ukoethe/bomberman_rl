@@ -24,6 +24,7 @@ WAS_BLOCKED = (
 MOVED = "MOVED"  # moved somewhere (and wasn't blocked)
 
 PROGRESSED = "PROGRESSED"  # in last 5 turns, agent visited at least 3 unique tiles
+STAGNATED = "STAGNATED"  # opposite for stronger effect
 
 FLED = "FLED"  # was in "danger zone" of a bomb and moved out of it (reward)
 SUICIDAL = "SUICIDAL"  # moved from safe field into "danger" zone of bomb (penalty, higher than reward)
@@ -107,6 +108,8 @@ def game_events_occurred(
 
     if new_feature_vector[5] == 1 and not e.INVALID_ACTION in events:
         events.append(PROGRESSED)
+    if new_feature_vector[5] == 0:
+        events.append(STAGNATED)
 
     if new_game_state["self"][-1] != old_game_state["self"][-1]:
         events.append(MOVED)
@@ -243,9 +246,7 @@ def end_of_round(self, last_game_state, last_action, events):
 
 def reward_from_events(self, events: List[str]) -> int:
     """
-    Returns a summed up reward/penalty for a given list of events that happened
-
-    Not assigning reward/penalty to definitely(?) neutral actions MOVE LEFT/RIGHT/UP/DOWN or WAIT.
+    Returns a summed up reward/penalty for a given list of events that happened.
     """
 
     game_rewards = {
@@ -262,8 +263,9 @@ def reward_from_events(self, events: List[str]) -> int:
         # e.SURVIVED_ROUND: 0,  # could possibly lead to not being active - actually penalize if agent too passive?
         e.INVALID_ACTION: -10,  # necessary? (maybe for penalizing trying to move through walls/crates) - yes, seems to be necessary to learn that one cannot place a bomb after another placed bomb is still not exploded
         WAS_BLOCKED: -20,
-        MOVED: 0,
+        MOVED: -0.01,
         PROGRESSED: 5,  # higher?
+        STAGNATED: -3,  # higher? lower?
         FLED: 15,
         SUICIDAL: -15,
         DECREASED_DISTANCE: 8,
@@ -272,7 +274,7 @@ def reward_from_events(self, events: List[str]) -> int:
         DECREASED_SURROUNDING_CRATES: -1.6,
         INCREASED_BOMB_DISTANCE: 5,
         DECREASED_BOMB_DISTANCE: -5.1,
-        FOLLOWED_DIRECTION: 3,  # possibly create penalty
+        FOLLOWED_DIRECTION: 5,  # possibly create penalty
     }
 
     reward_sum = 0
