@@ -1,7 +1,6 @@
 import glob
 import os
 from collections import deque
-from copy import deepcopy
 from datetime import datetime
 from typing import List, Tuple
 
@@ -35,7 +34,6 @@ def setup(self):
 
     self.logger.debug(f"Using q-table: {self.latest_q_table_path}")
 
-    self.lattice_graph = nx.grid_2d_graph(m=COLS, n=ROWS)
     self.previous_distance = 0
     self.current_distance = 0
 
@@ -192,7 +190,7 @@ def _get_graph(self, game_state, crates_as_obstacles=True) -> graph:
 
     self.logger.info(f"Obstacles: {obstacles}")
 
-    graph = deepcopy(self.lattice_graph)
+    graph = nx.grid_2d_graph(m=COLS, n=ROWS)
 
     # inplace operation
     graph.remove_nodes_from(obstacles)  # removes nodes and all edges of that node
