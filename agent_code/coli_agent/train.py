@@ -183,33 +183,29 @@ def game_events_occurred(
     self.logger.debug(f'New coords: {new_game_state["self"][3]}')
     self.logger.debug(f"Action: {self_action}")
 
+    # collect reward
+    reward = reward_from_events(self, events)
+
     # state_to_features is defined in callbacks.py
     self.transitions.append(
         Transition(
             old_state,
             self_action,
             new_state,
-            reward_from_events(self, events),
+            reward,
         )
     )
 
-    state, action, next_state, reward = (
-        self.transitions[-1][0],
-        self.transitions[-1][1],
-        self.transitions[-1][2],
-        self.transitions[-1][3],
-    )
-
-    action_idx = ACTIONS.index(action)
+    action_idx = ACTIONS.index(self_action)
     self.logger.debug(f"Action index chosen: {action_idx}")
 
     self.rewards_of_episode += reward
-    self.q_table[state, action_idx] = self.q_table[
-        state, action_idx
+    self.q_table[old_state, action_idx] = self.q_table[
+        old_state, action_idx
     ] + self.learning_rate * (
         reward
-        + self.discount_rate * np.max(self.q_table[next_state])
-        - self.q_table[state, action_idx]
+        + self.discount_rate * np.max(self.q_table[new_state])
+        - self.q_table[old_state, action_idx]
     )
     self.logger.debug(f"Updated q-table: {self.q_table}")
 

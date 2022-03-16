@@ -29,7 +29,7 @@ def setup(self):
         "*.npy"
     )  # * means all if need specific format then *.csv
     self.latest_q_table = np.load(max(list_of_q_tables, key=os.path.getctime))
-    print(self.latest_q_table)
+    self.logger.debug(f"Using q-table: {max(list_of_q_tables, key=os.path.getctime)}")
 
     # train if flag is present or if there is no q_table present
     if self.train or not os.path.isfile(self.latest_q_table):
@@ -326,7 +326,7 @@ def _shortest_path_feature(self, game_state) -> action:
             )
             return np.random.choice(ACTIONS)
 
-        return _get_action(self_coord, best[0])
+        return _get_action(self, self_coord, best[0])
 
     # there is a coin
     else:
