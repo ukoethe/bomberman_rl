@@ -28,14 +28,18 @@ def setup(self):
     list_of_q_tables = glob.glob(
         "*.npy"
     )  # * means all if need specific format then *.csv
-    # self.latest_q_table = np.load(max(list_of_q_tables, key=os.path.getctime))
+    # self.latest_q_table_path = max(list_of_q_tables, key=os.path.getctime)
+    self.latest_q_table_path = "q_table-2022-03-14T162802-node45.npy"
+    self.latest_q_table = np.load(self.latest_q_table_path)
 
-    self.latest_q_table = np.load("q_table-2022-03-14T162802-node45.npy")
-    self.logger.debug(f"Using q-table: {max(list_of_q_tables, key=os.path.getctime)}")
+    self.logger.debug(f"Using q-table: {self.latest_q_table_path}")
+
+    self.lattice_graph = nx.grid_2d_graph(m=COLS, n=ROWS)
+    self.previous_distance = 0
+    self.current_distance = 0
 
     # train if flag is present or if there is no q_table present
-    if self.train or not os.path.isfile(self.latest_q_table):
-
+    if self.train or not os.path.isfile(self.latest_q_table_path):
         self.logger.info("Setting up Q-Learning algorithm")
         self.timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self.number_of_states = 1536  # TODO: make this dynamic
@@ -43,11 +47,6 @@ def setup(self):
         self.exploration_rate_initial = 0.5
         self.exploration_rate_end = 0.05  # at end of all episodes
         self.exploration_decay_rate = 0.01  # 0.1 will reach min after ~ 100 episodes
-
-        self.previous_distance = 0
-        self.current_distance = 0
-
-        self.lattice_graph = nx.grid_2d_graph(m=COLS, n=ROWS)
 
         if self.continue_training:
             self.logger.info("Continuing training on latest q_table")
