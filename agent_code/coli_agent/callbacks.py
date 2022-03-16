@@ -16,6 +16,7 @@ graph = nx.Graph
 action = str
 
 ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"]
+SHORTEST_PATH_ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT"]
 
 
 def setup(self):
@@ -44,9 +45,9 @@ def setup(self):
         self.timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self.number_of_states = 1536  # TODO: make this dynamic
 
-        self.exploration_rate_initial = 0.5
+        self.exploration_rate_initial = 1.0
         self.exploration_rate_end = 0.05  # at end of all episodes
-        self.exploration_decay_rate = 0.01  # 0.1 will reach min after ~ 100 episodes
+        self.exploration_decay_rate = 0.001  # 0.1 will reach min after ~ 100 episodes, 0.001 will reach min after ~10000 episodes
 
         if self.continue_training:
             self.logger.info("Continuing training on latest q_table")
@@ -288,7 +289,7 @@ def _shortest_path_feature(self, game_state) -> action:
     if not any(safe_coins) and not any(
         [index for index, field in np.ndenumerate(game_state["field"]) if field == 1]
     ):
-        return np.random.choice(ACTIONS)
+        return np.random.choice(SHORTEST_PATH_ACTIONS)
 
     elif not any(safe_coins):
         best = (None, np.inf)
@@ -325,7 +326,7 @@ def _shortest_path_feature(self, game_state) -> action:
             self.logger.debug(
                 "There are no coins and no crate is reachable even if not considering crates as obstacles"
             )
-            return np.random.choice(ACTIONS)
+            return np.random.choice(SHORTEST_PATH_ACTIONS)
 
         return _get_action(self, self_coord, best[0])
 
@@ -410,7 +411,7 @@ def _shortest_path_feature(self, game_state) -> action:
 
         # this happens if none of the coins are reachable by us even if considering crates as obstacles
         if not any(shortest_paths_to_coins):
-            return np.random.choice(ACTIONS)
+            return np.random.choice(SHORTEST_PATH_ACTIONS)
 
         # sort our [0] paths ascending by length [1]
         shortest_paths_to_coins.sort(key=lambda x: x[0][1])
@@ -457,7 +458,7 @@ def _shortest_path_feature(self, game_state) -> action:
 
         # it is theoretically possible that coins are not reachable by our agent even if we don't consider crates as obstacles where shortest_paths_to_coins will be empty
         except IndexError:
-            return np.random.choice(ACTIONS)
+            return np.random.choice(SHORTEST_PATH_ACTIONS)
 
 
 def state_to_features(self, game_state, history) -> np.array:
@@ -541,6 +542,7 @@ def state_to_features(self, game_state, history) -> np.array:
     elif direction == "LEFT":
         features[6] = 3
     else:
+        self.logger.debug(f"Returned invalid direction: {direction}")
         raise ValueError("Invalid directon to nearest coin/crate")
 
     # Feature 8: amount of possibly destroyed crates: small: 0, medium: 1<4, high: >= 4
