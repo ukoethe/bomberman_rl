@@ -1,5 +1,7 @@
 import glob
 import os
+import pickle
+from ast import Index
 from collections import deque
 from copy import deepcopy
 from datetime import datetime
@@ -28,8 +30,6 @@ def setup(self):
     list_of_q_tables = glob.glob(
         "*.npy"
     )  # * means all if need specific format then *.csv
-    print(list_of_q_tables)
-    print(max(list_of_q_tables, key=os.path.getctime))
     self.latest_q_table = np.load(max(list_of_q_tables, key=os.path.getctime))
     print(self.latest_q_table)
 
@@ -59,7 +59,6 @@ def setup(self):
     else:
         self.logger.info("Using latest Q-Table for testing")
         self.q_table = self.latest_q_table
-
 
 
 def act(self, game_state: dict) -> str:
@@ -152,6 +151,7 @@ def get_neighboring_tiles_until_wall(own_coord, n, game_state) -> List[Coordinat
 
     return all_good_fields
 
+
 def _get_graph(self, game_state, crates_as_obstacles=True) -> graph:
     """Calculates the adjacency matrix of the current game state.
     Every coordinate is a node.]
@@ -182,7 +182,7 @@ def _get_graph(self, game_state, crates_as_obstacles=True) -> graph:
         if field != 0
     ]
 
-    self.logger.debug(f"Active explosions: {active_explosions}")
+    # self.logger.debug(f"Active explosions: {active_explosions}")
     # print(f"Active explosion: {active_explosions}")
     # print(f"Bombs: {game_state['bombs']}")
     obstacles += active_explosions
@@ -259,10 +259,10 @@ def _shortest_path_feature(self, game_state) -> action:
                 towards nearest coin
     """
     graph = _get_graph(self, game_state)
+    graph_with_crates = _get_graph(self, game_state, crates_as_obstacles=False)
+
     self.logger.info(f"Current Graph nodes: {graph.nodes}")
-
     self_coord = game_state["self"][3]
-
     self.logger.info(f"Current self coord: {self_coord}")
 
     safe_coins = [
@@ -284,16 +284,24 @@ def _shortest_path_feature(self, game_state) -> action:
         return np.random.choice(ACTIONS)
 
     elif not any(safe_coins):
-        graph = _get_graph(self, game_state, crates_as_obstacles=False)
         best = (None, np.inf)
 
         crates_coordinates = [
             index for index, field in np.ndenumerate(game_state["field"]) if field == 1
         ]
+
+        # self.logger.debug(f"Crates coordinates: {crates_coordinates}")
+
         for crate_coord in crates_coordinates:
-            current_path, current_path_length = _find_shortest_path(
-                graph, self_coord, crate_coord
-            )
+            try:
+                current_path, current_path_length = _find_shortest_path(
+                    graph_with_crates, self_coord, crate_coord
+                )
+
+            # in some edge cases it can happen that a crate is unreachable b/c of explosion even though we don't consider crates themselves as obstacles
+            except nx.exception.NetworkXNoPath:
+                self.logger.debug("Crazy edge case (unreachable crate) occured!")
+                continue
 
             # self.logger.debug(f"Current path: {current_path} with path length: {current_path_length} to crate at {crate_coord}")
 
@@ -325,11 +333,16 @@ def _shortest_path_feature(self, game_state) -> action:
 
             # coin path not existent
             except nx.exception.NetworkXNoPath:
-                graph = _get_graph(self, game_state, crates_as_obstacles=False)
-                current_path, current_path_length = _find_shortest_path(
-                    graph, self_coord, coin_coord
-                )
-                current_reachable = False
+                try:
+                    current_path, current_path_length = _find_shortest_path(
+                        graph_with_crates, self_coord, coin_coord
+                    )
+                    current_reachable = False
+                except nx.exception.NetworkXNoPath:
+                    self.logger.debug(
+                        "Crazy edge case (unreachable coin for us even though crates not considered as obstacles) occured!"
+                    )
+                    continue
 
             for other_agent in game_state["others"]:
                 best_other_agent = (None, np.inf)
@@ -341,13 +354,24 @@ def _shortest_path_feature(self, game_state) -> action:
                     ) = _find_shortest_path(graph, other_agent_coord, coin_coord)
                     current_other_agent_reachable = True
 
+                # other agent can't reach coin
                 except nx.exception.NetworkXNoPath:
-                    graph = _get_graph(self, game_state, crates_as_obstacles=False)
-                    (
-                        current_path_other_agent,
-                        current_path_length_other_agent,
-                    ) = _find_shortest_path(graph, other_agent_coord, coin_coord)
-                    current_other_agent_reachable = False
+
+                    try:
+                        (
+                            current_path_other_agent,
+                            current_path_length_other_agent,
+                        ) = _find_shortest_path(
+                            graph_with_crates, other_agent_coord, coin_coord
+                        )
+                        current_other_agent_reachable = False
+
+                    except nx.exception.NetworkXNoPath:
+                        self.logger.debug(
+                            f"Crazy edge case (unreachable coin for other agent {other_agent} even though crates not considered as obstacles) occured!"
+                        )
+                        self.logger.debug(f"Graph with crates: {graph_with_crates}")
+                        continue
 
                 # penalize with heuristic of 7 more fields if unreachable
                 if not current_other_agent_reachable:
@@ -405,7 +429,12 @@ def _shortest_path_feature(self, game_state) -> action:
 
         self.logger.debug("Fallback Action")
         # unless we are not closest to any of our reachable coins then we return action that leads us to the coin we are nearest too anyway
-        return _get_action(self_coord, shortest_paths_to_coins[0][0][0])
+        try:
+            return _get_action(self_coord, shortest_paths_to_coins[0][0][0])
+
+        # it is theoretically possible that coins are not reachable by our agent even if we don't consider crates as obstacles where shortest_paths_to_coins will be empty
+        except IndexError:
+            return np.random.choice(ACTIONS)
 
 
 def state_to_features(self, game_state, history) -> np.array:
@@ -517,6 +546,7 @@ def state_to_features(self, game_state, history) -> np.array:
         features[7] = 0
 
     self.logger.debug(f"Feature vector: {features}")
+
     self.logger.debug(
         f"Shortest path feature says: {_shortest_path_feature(self, game_state)}"
     )
@@ -531,7 +561,7 @@ def features_to_state(self, feature_vector: np.array) -> int:
             if state.strip() == str(feature_vector):
                 return i
 
-    
+
 # Only to demonstrate test
 class DecisionTransformer:
     def __init__(self):
