@@ -1,5 +1,5 @@
 import pickle
-from typing import Tuple, List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -17,12 +17,12 @@ class ReplayWorld(GenericWorld):
         replay_file = args.replay
         self.logger.info(f'Loading replay file "{replay_file}"')
         self.replay_file = replay_file
-        with open(replay_file, 'rb') as f:
+        with open(replay_file, "rb") as f:
             self.loaded_replay = pickle.load(f)
-        if not 'n_steps' in self.loaded_replay:
-            self.loaded_replay['n_steps'] = s.MAX_STEPS
+        if not "n_steps" in self.loaded_replay:
+            self.loaded_replay["n_steps"] = s.MAX_STEPS
 
-        pygame.display.set_caption(f'{replay_file}')
+        pygame.display.set_caption(f"{replay_file}")
 
         # Recreate the agents
         agents = []
@@ -36,14 +36,16 @@ class ReplayWorld(GenericWorld):
                     bomb_sprite_desc = self.loaded_replay["bombs"][name]
             else:
                 display_name = name
-            agents.append(ReplayAgent(name, display_name, avatar_sprite_desc, bomb_sprite_desc))
+            agents.append(
+                ReplayAgent(name, display_name, avatar_sprite_desc, bomb_sprite_desc)
+            )
         self.agents = agents
 
     def build_arena(self) -> Tuple[np.array, List[Coin], List[Agent]]:
-        arena = np.array(self.loaded_replay['arena'])
+        arena = np.array(self.loaded_replay["arena"])
 
         coins = []
-        for xy in self.loaded_replay['coins']:
+        for xy in self.loaded_replay["coins"]:
             if arena[xy] == 0:
                 coins.append(Coin(xy, True))
             else:
@@ -52,26 +54,26 @@ class ReplayWorld(GenericWorld):
         agents = []
         for i, agent in enumerate(self.agents):
             agents.append(agent)
-            agent.x, agent.y = self.loaded_replay['agents'][i][-1]
+            agent.x, agent.y = self.loaded_replay["agents"][i][-1]
 
         return arena, coins, agents
 
     def poll_and_run_agents(self):
         # Perform recorded agent actions
-        perm = self.loaded_replay['permutations'][self.step - 1]
-        self.replay['permutations'].append(perm)
+        perm = self.loaded_replay["permutations"][self.step - 1]
+        self.replay["permutations"].append(perm)
         for i in perm:
             a = self.active_agents[i]
-            self.logger.debug(f'Repeating action from agent <{a.name}>')
-            action = self.loaded_replay['actions'][a.name][self.step - 1]
-            self.logger.info(f'Agent <{a.name}> chose action {action}.')
-            self.replay['actions'][a.name].append(action)
+            self.logger.debug(f"Repeating action from agent <{a.name}>")
+            action = self.loaded_replay["actions"][a.name][self.step - 1]
+            self.logger.info(f"Agent <{a.name}> chose action {action}.")
+            self.replay["actions"][a.name].append(action)
             self.perform_agent_action(a, action)
 
     def time_to_stop(self):
         time_to_stop = super().time_to_stop()
-        if self.step == self.loaded_replay['n_steps']:
-            self.logger.info('Replay ends here, wrap up round')
+        if self.step == self.loaded_replay["n_steps"]:
+            self.logger.info("Replay ends here, wrap up round")
             time_to_stop = True
         return time_to_stop
 
@@ -83,7 +85,16 @@ class ReplayAgent(Agent):
 
     def __init__(self, name, display_name, avatar_sprite_desc, bomb_sprite_desc):
         """Recreate the agent as it was at the beginning of the original game."""
-        super().__init__(name, None, display_name, False, None, avatar_sprite_desc, bomb_sprite_desc)
+        super().__init__(
+            name,
+            None,
+            display_name,
+            False,
+            False,
+            None,
+            avatar_sprite_desc,
+            bomb_sprite_desc,
+        )
 
     def setup(self):
         pass
