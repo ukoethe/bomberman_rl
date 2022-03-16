@@ -320,7 +320,13 @@ def _shortest_path_feature(self, game_state) -> action:
                 best = (current_path, current_path_length)
 
         self.logger.debug(f"BEST: {best}")
-        return _get_action(self, self_coord, best[0])
+        if best == (None, np.inf):
+            self.logger.debug(
+                "There are no coins and no crate is reachable even if not considering crates as obstacles"
+            )
+            return np.random.choice(ACTIONS)
+
+        return _get_action(self_coord, best[0])
 
     # there is a coin
     else:
@@ -349,6 +355,10 @@ def _shortest_path_feature(self, game_state) -> action:
                         "Crazy edge case (unreachable coin for us even though crates not considered as obstacles) occured!"
                     )
                     continue
+
+            # all other agents are dead
+            if not any(game_state["others"]):
+                continue
 
             for other_agent in game_state["others"]:
                 best_other_agent = (None, np.inf)
@@ -396,6 +406,10 @@ def _shortest_path_feature(self, game_state) -> action:
                     best_other_agent,
                 )
             )
+
+        # this happens if none of the coins are reachable by us even if considering crates as obstacles
+        if not any(shortest_paths_to_coins):
+            return np.random.choice(ACTIONS)
 
         # sort our [0] paths ascending by length [1]
         shortest_paths_to_coins.sort(key=lambda x: x[0][1])
