@@ -42,6 +42,9 @@ def setup(self):
         self.exploration_rate_end = 0.05  # at end of all episodes
         self.exploration_decay_rate = 0.01  # 0.1 will reach min after ~ 100 episodes
 
+        self.previous_distance = 0
+        self.current_distance = 0
+
         self.lattice_graph = nx.grid_2d_graph(m=COLS, n=ROWS)
 
         if self.continue_training:
@@ -213,8 +216,13 @@ def _find_shortest_path(graph, a, b) -> Tuple[graph, int]:
     return shortest_path, shortest_path_length
 
 
-def _get_action(self_coord, shortest_path) -> action:
+def _get_action(self, self_coord, shortest_path) -> action:
     goal_coord = shortest_path[1]  # 0th element is self_coord
+
+    self.previous_distance = self.current_distance
+    self.current_distance = len(shortest_path) - 1
+    self.logger.debug(f"self.previous_distance is {self.previous_distance}")
+    self.logger.debug(f"self.current_distance is {self.current_distance}")
 
     # x-coord is the same
     if self_coord[0] == goal_coord[0]:
@@ -306,13 +314,13 @@ def _shortest_path_feature(self, game_state) -> action:
             # not gonna get better than 1, might save a bit of computation time
             if current_path_length == 1:
                 self.logger.debug(f"Standing directly next to crate!")
-                return _get_action(self_coord, current_path)
+                return _get_action(self, self_coord, current_path)
 
             elif current_path_length < best[1]:
                 best = (current_path, current_path_length)
 
         self.logger.debug(f"BEST: {best}")
-        return _get_action(self_coord, best[0])
+        return _get_action(self, self_coord, best[0])
 
     # there is a coin
     else:
@@ -401,7 +409,7 @@ def _shortest_path_feature(self, game_state) -> action:
         if not any(shortest_paths_to_coins_reachable):
             self.logger.debug("No coin reachable ==> Going towards nearest one")
             return _get_action(
-                self_coord, shortest_paths_to_coins[0][0][0]
+                self, self_coord, shortest_paths_to_coins[0][0][0]
             )  # shortest [0] (because sorted) that is ours [0] and the actual path [0]
 
         # if exactly one of our [0] shortest paths is reachable [2] we go towards that one
@@ -409,7 +417,7 @@ def _shortest_path_feature(self, game_state) -> action:
             self.logger.debug("Exactly one coin reachable ==> Going towards that one")
             index_of_reachable_path = shortest_paths_to_coins_reachable.index(True)
             return _get_action(
-                self_coord, shortest_paths_to_coins[index_of_reachable_path][0][0]
+                self, self_coord, shortest_paths_to_coins[index_of_reachable_path][0][0]
             )
 
         # if more than one shortest path is reachable we got towards the one that we are closest and reachable to and no one else being closer
@@ -423,12 +431,12 @@ def _shortest_path_feature(self, game_state) -> action:
                 self.logger.debug(
                     "We are able to reach a coin and we are closest to it"
                 )
-                return _get_action(self_coord, shortest_path_to_coin[0][0])
+                return _get_action(self, self_coord, shortest_path_to_coin[0][0])
 
         self.logger.debug("Fallback Action")
         # unless we are not closest to any of our reachable coins then we return action that leads us to the coin we are nearest too anyway
         try:
-            return _get_action(self_coord, shortest_paths_to_coins[0][0][0])
+            return _get_action(self, self_coord, shortest_paths_to_coins[0][0][0])
 
         # it is theoretically possible that coins are not reachable by our agent even if we don't consider crates as obstacles where shortest_paths_to_coins will be empty
         except IndexError:

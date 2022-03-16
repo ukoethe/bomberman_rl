@@ -28,10 +28,8 @@ PROGRESSED = "PROGRESSED"  # in last 5 turns, agent visited at least 3 unique ti
 FLED = "FLED"  # was in "danger zone" of a bomb and moved out of it (reward)
 SUICIDAL = "SUICIDAL"  # moved from safe field into "danger" zone of bomb (penalty, higher than reward)
 
-DECREASED_COIN_DISTANCE = "DECREASED_COIN_DISTANCE"  # decreased length of shortest path to nearest coin BY ONE
-INCREASED_COIN_DISTANCE = "INCREASED_COIN_DISTANCE"  # increased length of shortest path to nearest coin BY ONE
-DECREASED_CRATE_DISTANCE = "DECREASED_CRATE_DISTANCE"  # decreased length of shortest path to nearest crate BY ONE
-INCREASED_CRATE_DISTANCE = "INCREASED_CRATE_DISTANCE"  # increased length of shortest path to nearest crate BY ONE
+DECREASED_DISTANCE = "DECREASED_DISTANCE"  # decreased length of shortest path to nearest coin or crate BY ONE
+INCREASED_DISTANCE = "INCREASED_DISTANCE"  # increased length of shortest path to nearest coin or crate BY ONE
 
 FOLLOWED_DIRECTION = (
     "FOLLOWED_DIRECTION"  # went in direction indicated by coin/crate feature
@@ -167,18 +165,13 @@ def game_events_occurred(
         elif shortest_new_distance >= shortest_old_distance:
             events.append(INCREASED_BOMB_DISTANCE)
 
-    # if self.previous_coin_distance <= self.current_coin_distance:
-    #     events.append(DECREASED_COIN_DISTANCE)
-    # elif self.previous_coin_distance > self.current_coin_distance:
-    #     events.append(INCREASED_COIN_DISTANCE)
+    if self.previous_distance < self.current_distance:
+        events.append(DECREASED_DISTANCE)
+    elif self.previous_distance > self.current_distance:
+        events.append(INCREASED_DISTANCE)
 
-    # if self.previous_crate_distance <= self.current_crate_distance:
-    #     events.append(DECREASED_CRATE_DISTANCE)
-    # elif self.previous_crate_distance > self.current_crate_distance:
-    #     events.append(INCREASED_CRATE_DISTANCE)
-
-    # if old_feature_vector[6] == self_action:
-    #     events.append(FOLLOWED_DIRECTION)
+    if old_feature_vector[6] == self_action:
+        events.append(FOLLOWED_DIRECTION)
 
     self.logger.debug(f'Old coords: {old_game_state["self"][3]}')
     self.logger.debug(f'New coords: {new_game_state["self"][3]}')
@@ -272,10 +265,8 @@ def reward_from_events(self, events: List[str]) -> int:
         PROGRESSED: 5,  # higher?
         FLED: 15,
         SUICIDAL: -15,
-        DECREASED_COIN_DISTANCE: 8,
-        INCREASED_COIN_DISTANCE: -8.1,  # higher? lower? idk
-        DECREASED_CRATE_DISTANCE: 1,
-        INCREASED_CRATE_DISTANCE: -1.1,
+        DECREASED_DISTANCE: 8,
+        INCREASED_DISTANCE: -8.1,  # higher? lower? idk
         INCREASED_SURROUNDING_CRATES: 1.5,
         DECREASED_SURROUNDING_CRATES: -1.6,
         INCREASED_BOMB_DISTANCE: 5,
