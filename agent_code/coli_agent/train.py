@@ -104,7 +104,6 @@ def game_events_occurred(
         events.append(FLED)
     elif old_feature_vector[0] == 0 and new_feature_vector[0] == 1:
         events.append(SUICIDAL)
-    # possibly add the case when both is 1 (add new event for this so the penalty can be different)
 
     if new_feature_vector[5] == 1 and not e.INVALID_ACTION in events:
         events.append(PROGRESSED)
