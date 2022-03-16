@@ -447,7 +447,7 @@ def state_to_features(self, game_state, history) -> np.array:
     # TODO: vectorize?
     # TODO: combine different for loops (!)
     """Parses game state to features"""
-    features = np.zeros(8, dtype=np.int8)
+    features = np.zeros(9, dtype=np.int8)
 
     try:
         own_position = game_state["self"][-1]
@@ -512,7 +512,21 @@ def state_to_features(self, game_state, history) -> np.array:
         # of 5 tiles, 3 should be new -> 60%. for start of the episode: 2 out of 2, 2 out of 3, 3 out of 4
         features[5] = 1 if (num_unique_visited_tiles / num_visited_tiles) >= 0.6 else 0
 
-    # Feature 7/9: amount of possibly destroyed crates: small: 0, medium: 1<4, high: >= 4
+    # Feature 7: Next direction in shortest path to coin or crate
+    direction = _shortest_path_feature(self, game_state)
+    # same order as features 2-5
+    if direction == "DOWN":
+        features[6] = 0
+    elif direction == "UP":
+        features[6] = 1
+    elif direction == "RIGHT":
+        features[6] = 2
+    elif direction == "LEFT":
+        features[6] = 3
+    else:
+        raise ValueError("Invalid directon to nearest coin/crate")
+
+    # Feature 8: amount of possibly destroyed crates: small: 0, medium: 1<4, high: >= 4
     neighbours = get_neighboring_tiles_until_wall(
         own_position, 3, game_state=game_state
     )
@@ -524,16 +538,16 @@ def state_to_features(self, game_state, history) -> np.array:
                 crate_coordinates += [coord]
 
         if len(crate_coordinates) == 0:
-            features[6] = 0
+            features[7] = 0
         elif 1 <= len(crate_coordinates) < 4:
-            features[6] = 1
+            features[7] = 1
         elif len(crate_coordinates) >= 4:
-            features[6] = 2
+            features[7] = 2
 
     else:
-        features[6] = 0
+        features[7] = 0
 
-    # Feature 8/10: if in opponents area
+    # Feature 9: if in opponents area
     all_enemy_fields = []
     for enemy in game_state["others"]:
         neighbours_until_wall = get_neighboring_tiles_until_wall(
@@ -547,9 +561,9 @@ def state_to_features(self, game_state, history) -> np.array:
             in_danger = own_position == bad_field
             if_dangerous.append(in_danger)
 
-        features[7] = int(any(if_dangerous))
+        features[8] = int(any(if_dangerous))
     else:
-        features[7] = 0
+        features[8] = 0
 
     self.logger.debug(f"Feature vector: {features}")
 
@@ -562,7 +576,7 @@ def state_to_features(self, game_state, history) -> np.array:
 
 def features_to_state(self, feature_vector: np.array) -> int:
     # TODO: handle case that file can't be opened, read or that feature vector can't be found (currently: returns None)
-    with open("indexed_state_list.csv", encoding="utf-8", mode="r") as f:
+    with open("indexed_state_list.txt", encoding="utf-8", mode="r") as f:
         for i, state in enumerate(f.readlines()):
             if state.strip() == str(feature_vector):
                 return i

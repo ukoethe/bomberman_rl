@@ -88,7 +88,7 @@ def game_events_occurred(
     old_state = self.old_state
     new_state = state_to_features(self, new_game_state, self.history)
 
-    with open("indexed_state_list.csv", encoding="utf-8", mode="r") as f:
+    with open("indexed_state_list.txt", encoding="utf-8", mode="r") as f:
         state_list = f.readlines()
         feature_vectors = []
         for state in state_list:
@@ -170,7 +170,13 @@ def game_events_occurred(
     elif self.previous_distance > self.current_distance:
         events.append(INCREASED_DISTANCE)
 
-    if old_feature_vector[6] == self_action:
+    if old_feature_vector[6] == 0 and self_action == "DOWN":
+        events.append(FOLLOWED_DIRECTION)
+    elif old_feature_vector[6] == 1 and self_action == "UP":
+        events.append(FOLLOWED_DIRECTION)
+    elif old_feature_vector[6] == 2 and self_action == "RIGHT":
+        events.append(FOLLOWED_DIRECTION)
+    elif old_feature_vector[6] == 3 and self_action == "LEFT":
         events.append(FOLLOWED_DIRECTION)
 
     self.logger.debug(f'Old coords: {old_game_state["self"][3]}')
