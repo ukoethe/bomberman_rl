@@ -28,12 +28,18 @@ def setup(self):
     list_of_q_tables = glob.glob(
         "*.npy"
     )  # * means all if need specific format then *.csv
-    self.latest_q_table = np.load(max(list_of_q_tables, key=os.path.getctime))
-    print(self.latest_q_table)
+    self.latest_q_table_path = max(list_of_q_tables, key=os.path.getctime)
+    # self.latest_q_table_path = "q_table-2022-03-14T162802-node45.npy"
+    self.latest_q_table = np.load(self.latest_q_table_path)
+
+    self.logger.debug(f"Using q-table: {self.latest_q_table_path}")
+
+    self.lattice_graph = nx.grid_2d_graph(m=COLS, n=ROWS)
+    self.previous_distance = 0
+    self.current_distance = 0
 
     # train if flag is present or if there is no q_table present
-    if self.train or not os.path.isfile(self.latest_q_table):
-
+    if self.train or not os.path.isfile(self.latest_q_table_path):
         self.logger.info("Setting up Q-Learning algorithm")
         self.timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         self.number_of_states = 1536  # TODO: make this dynamic
@@ -41,8 +47,6 @@ def setup(self):
         self.exploration_rate_initial = 0.5
         self.exploration_rate_end = 0.05  # at end of all episodes
         self.exploration_decay_rate = 0.01  # 0.1 will reach min after ~ 100 episodes
-
-        self.lattice_graph = nx.grid_2d_graph(m=COLS, n=ROWS)
 
         if self.continue_training:
             self.logger.info("Continuing training on latest q_table")
@@ -213,8 +217,13 @@ def _find_shortest_path(graph, a, b) -> Tuple[graph, int]:
     return shortest_path, shortest_path_length
 
 
-def _get_action(self_coord, shortest_path) -> action:
+def _get_action(self, self_coord, shortest_path) -> action:
     goal_coord = shortest_path[1]  # 0th element is self_coord
+
+    self.previous_distance = self.current_distance
+    self.current_distance = len(shortest_path) - 1
+    self.logger.debug(f"self.previous_distance is {self.previous_distance}")
+    self.logger.debug(f"self.current_distance is {self.current_distance}")
 
     # x-coord is the same
     if self_coord[0] == goal_coord[0]:
@@ -306,7 +315,7 @@ def _shortest_path_feature(self, game_state) -> action:
             # not gonna get better than 1, might save a bit of computation time
             if current_path_length == 1:
                 self.logger.debug(f"Standing directly next to crate!")
-                return _get_action(self_coord, current_path)
+                return _get_action(self, self_coord, current_path)
 
             elif current_path_length < best[1]:
                 best = (current_path, current_path_length)
@@ -318,7 +327,7 @@ def _shortest_path_feature(self, game_state) -> action:
             )
             return np.random.choice(ACTIONS)
 
-        return _get_action(self_coord, best[0])
+        return _get_action(self, self_coord, best[0])
 
     # there is a coin
     else:
@@ -415,7 +424,7 @@ def _shortest_path_feature(self, game_state) -> action:
         if not any(shortest_paths_to_coins_reachable):
             self.logger.debug("No coin reachable ==> Going towards nearest one")
             return _get_action(
-                self_coord, shortest_paths_to_coins[0][0][0]
+                self, self_coord, shortest_paths_to_coins[0][0][0]
             )  # shortest [0] (because sorted) that is ours [0] and the actual path [0]
 
         # if exactly one of our [0] shortest paths is reachable [2] we go towards that one
@@ -423,7 +432,7 @@ def _shortest_path_feature(self, game_state) -> action:
             self.logger.debug("Exactly one coin reachable ==> Going towards that one")
             index_of_reachable_path = shortest_paths_to_coins_reachable.index(True)
             return _get_action(
-                self_coord, shortest_paths_to_coins[index_of_reachable_path][0][0]
+                self, self_coord, shortest_paths_to_coins[index_of_reachable_path][0][0]
             )
 
         # if more than one shortest path is reachable we got towards the one that we are closest and reachable to and no one else being closer
@@ -433,16 +442,18 @@ def _shortest_path_feature(self, game_state) -> action:
             if (
                 shortest_path_to_coin[0][2] is True
                 and shortest_path_to_coin[0][1] <= shortest_path_to_coin[1][1]
+                and shortest_path_to_coin[0][1]
+                != 0  # we are standing on a coin because we spawned on it --> correct would be to "WAIT" but we want to stick to "UP", "DOWN", "LEFT" and "RIGHT" hence we just return second closest coin
             ):
                 self.logger.debug(
-                    "We are able to reach a coin and we are closest to it"
+                    f"We are able to reach coin at {shortest_path_to_coin} and we are closest to it"
                 )
-                return _get_action(self_coord, shortest_path_to_coin[0][0])
+                return _get_action(self, self_coord, shortest_path_to_coin[0][0])
 
         self.logger.debug("Fallback Action")
         # unless we are not closest to any of our reachable coins then we return action that leads us to the coin we are nearest too anyway
         try:
-            return _get_action(self_coord, shortest_paths_to_coins[0][0][0])
+            return _get_action(self, self_coord, shortest_paths_to_coins[0][0][0])
 
         # it is theoretically possible that coins are not reachable by our agent even if we don't consider crates as obstacles where shortest_paths_to_coins will be empty
         except IndexError:
@@ -453,7 +464,7 @@ def state_to_features(self, game_state, history) -> np.array:
     # TODO: vectorize?
     # TODO: combine different for loops (!)
     """Parses game state to features"""
-    features = np.zeros(8, dtype=np.int8)
+    features = np.zeros(9, dtype=np.int8)
 
     try:
         own_position = game_state["self"][-1]
@@ -518,7 +529,21 @@ def state_to_features(self, game_state, history) -> np.array:
         # of 5 tiles, 3 should be new -> 60%. for start of the episode: 2 out of 2, 2 out of 3, 3 out of 4
         features[5] = 1 if (num_unique_visited_tiles / num_visited_tiles) >= 0.6 else 0
 
-    # Feature 7/9: amount of possibly destroyed crates: small: 0, medium: 1<4, high: >= 4
+    # Feature 7: Next direction in shortest path to coin or crate
+    direction = _shortest_path_feature(self, game_state)
+    # same order as features 2-5
+    if direction == "DOWN":
+        features[6] = 0
+    elif direction == "UP":
+        features[6] = 1
+    elif direction == "RIGHT":
+        features[6] = 2
+    elif direction == "LEFT":
+        features[6] = 3
+    else:
+        raise ValueError("Invalid directon to nearest coin/crate")
+
+    # Feature 8: amount of possibly destroyed crates: small: 0, medium: 1<4, high: >= 4
     neighbours = get_neighboring_tiles_until_wall(
         own_position, 3, game_state=game_state
     )
@@ -530,16 +555,16 @@ def state_to_features(self, game_state, history) -> np.array:
                 crate_coordinates += [coord]
 
         if len(crate_coordinates) == 0:
-            features[6] = 0
+            features[7] = 0
         elif 1 <= len(crate_coordinates) < 4:
-            features[6] = 1
+            features[7] = 1
         elif len(crate_coordinates) >= 4:
-            features[6] = 2
+            features[7] = 2
 
     else:
-        features[6] = 0
+        features[7] = 0
 
-    # Feature 8/10: if in opponents area
+    # Feature 9: if in opponents area
     all_enemy_fields = []
     for enemy in game_state["others"]:
         neighbours_until_wall = get_neighboring_tiles_until_wall(
@@ -553,9 +578,9 @@ def state_to_features(self, game_state, history) -> np.array:
             in_danger = own_position == bad_field
             if_dangerous.append(in_danger)
 
-        features[7] = int(any(if_dangerous))
+        features[8] = int(any(if_dangerous))
     else:
-        features[7] = 0
+        features[8] = 0
 
     self.logger.debug(f"Feature vector: {features}")
 
@@ -568,7 +593,7 @@ def state_to_features(self, game_state, history) -> np.array:
 
 def features_to_state(self, feature_vector: np.array) -> int:
     # TODO: handle case that file can't be opened, read or that feature vector can't be found (currently: returns None)
-    with open("indexed_state_list.csv", encoding="utf-8", mode="r") as f:
+    with open("indexed_state_list.txt", encoding="utf-8", mode="r") as f:
         for i, state in enumerate(f.readlines()):
             if state.strip() == str(feature_vector):
                 return i

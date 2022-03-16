@@ -24,14 +24,13 @@ WAS_BLOCKED = (
 MOVED = "MOVED"  # moved somewhere (and wasn't blocked)
 
 PROGRESSED = "PROGRESSED"  # in last 5 turns, agent visited at least 3 unique tiles
+STAGNATED = "STAGNATED"  # opposite for stronger effect
 
 FLED = "FLED"  # was in "danger zone" of a bomb and moved out of it (reward)
 SUICIDAL = "SUICIDAL"  # moved from safe field into "danger" zone of bomb (penalty, higher than reward)
 
-DECREASED_COIN_DISTANCE = "DECREASED_COIN_DISTANCE"  # decreased length of shortest path to nearest coin BY ONE
-INCREASED_COIN_DISTANCE = "INCREASED_COIN_DISTANCE"  # increased length of shortest path to nearest coin BY ONE
-DECREASED_CRATE_DISTANCE = "DECREASED_CRATE_DISTANCE"  # decreased length of shortest path to nearest crate BY ONE
-INCREASED_CRATE_DISTANCE = "INCREASED_CRATE_DISTANCE"  # increased length of shortest path to nearest crate BY ONE
+DECREASED_DISTANCE = "DECREASED_DISTANCE"  # decreased length of shortest path to nearest coin or crate BY ONE
+INCREASED_DISTANCE = "INCREASED_DISTANCE"  # increased length of shortest path to nearest coin or crate BY ONE
 
 FOLLOWED_DIRECTION = (
     "FOLLOWED_DIRECTION"  # went in direction indicated by coin/crate feature
@@ -90,7 +89,7 @@ def game_events_occurred(
     old_state = self.old_state
     new_state = state_to_features(self, new_game_state, self.history)
 
-    with open("indexed_state_list.csv", encoding="utf-8", mode="r") as f:
+    with open("indexed_state_list.txt", encoding="utf-8", mode="r") as f:
         state_list = f.readlines()
         feature_vectors = []
         for state in state_list:
@@ -106,10 +105,11 @@ def game_events_occurred(
         events.append(FLED)
     elif old_feature_vector[0] == 0 and new_feature_vector[0] == 1:
         events.append(SUICIDAL)
-    # possibly add the case when both is 1 (add new event for this so the penalty can be different)
 
     if new_feature_vector[5] == 1 and not e.INVALID_ACTION in events:
         events.append(PROGRESSED)
+    if new_feature_vector[5] == 0:
+        events.append(STAGNATED)
 
     if new_game_state["self"][-1] != old_game_state["self"][-1]:
         events.append(MOVED)
@@ -167,22 +167,26 @@ def game_events_occurred(
         elif shortest_new_distance >= shortest_old_distance:
             events.append(INCREASED_BOMB_DISTANCE)
 
-    # if self.previous_coin_distance <= self.current_coin_distance:
-    #     events.append(DECREASED_COIN_DISTANCE)
-    # elif self.previous_coin_distance > self.current_coin_distance:
-    #     events.append(INCREASED_COIN_DISTANCE)
+    if self.previous_distance < self.current_distance:
+        events.append(DECREASED_DISTANCE)
+    elif self.previous_distance > self.current_distance:
+        events.append(INCREASED_DISTANCE)
 
-    # if self.previous_crate_distance <= self.current_crate_distance:
-    #     events.append(DECREASED_CRATE_DISTANCE)
-    # elif self.previous_crate_distance > self.current_crate_distance:
-    #     events.append(INCREASED_CRATE_DISTANCE)
-
-    # if old_feature_vector[6] == self_action:
-    #     events.append(FOLLOWED_DIRECTION)
+    if old_feature_vector[6] == 0 and self_action == "DOWN":
+        events.append(FOLLOWED_DIRECTION)
+    elif old_feature_vector[6] == 1 and self_action == "UP":
+        events.append(FOLLOWED_DIRECTION)
+    elif old_feature_vector[6] == 2 and self_action == "RIGHT":
+        events.append(FOLLOWED_DIRECTION)
+    elif old_feature_vector[6] == 3 and self_action == "LEFT":
+        events.append(FOLLOWED_DIRECTION)
 
     self.logger.debug(f'Old coords: {old_game_state["self"][3]}')
     self.logger.debug(f'New coords: {new_game_state["self"][3]}')
     self.logger.debug(f"Action: {self_action}")
+
+    # collect reward
+    reward = reward_from_events(self, events)
 
     # state_to_features is defined in callbacks.py
     self.transitions.append(
@@ -190,27 +194,20 @@ def game_events_occurred(
             old_state,
             self_action,
             new_state,
-            reward_from_events(self, events),
+            reward,
         )
     )
 
-    state, action, next_state, reward = (
-        self.transitions[-1][0],
-        self.transitions[-1][1],
-        self.transitions[-1][2],
-        self.transitions[-1][3],
-    )
-
-    action_idx = ACTIONS.index(action)
+    action_idx = ACTIONS.index(self_action)
     self.logger.debug(f"Action index chosen: {action_idx}")
 
     self.rewards_of_episode += reward
-    self.q_table[state, action_idx] = self.q_table[
-        state, action_idx
+    self.q_table[old_state, action_idx] = self.q_table[
+        old_state, action_idx
     ] + self.learning_rate * (
         reward
-        + self.discount_rate * np.max(self.q_table[next_state])
-        - self.q_table[state, action_idx]
+        + self.discount_rate * np.max(self.q_table[new_state])
+        - self.q_table[old_state, action_idx]
     )
     self.logger.debug(f"Updated q-table: {self.q_table}")
 
@@ -249,9 +246,7 @@ def end_of_round(self, last_game_state, last_action, events):
 
 def reward_from_events(self, events: List[str]) -> int:
     """
-    Returns a summed up reward/penalty for a given list of events that happened
-
-    Not assigning reward/penalty to definitely(?) neutral actions MOVE LEFT/RIGHT/UP/DOWN or WAIT.
+    Returns a summed up reward/penalty for a given list of events that happened.
     """
 
     game_rewards = {
@@ -268,19 +263,18 @@ def reward_from_events(self, events: List[str]) -> int:
         # e.SURVIVED_ROUND: 0,  # could possibly lead to not being active - actually penalize if agent too passive?
         e.INVALID_ACTION: -10,  # necessary? (maybe for penalizing trying to move through walls/crates) - yes, seems to be necessary to learn that one cannot place a bomb after another placed bomb is still not exploded
         WAS_BLOCKED: -20,
-        MOVED: 0,
+        MOVED: -0.01,
         PROGRESSED: 5,  # higher?
+        STAGNATED: -3,  # higher? lower?
         FLED: 15,
         SUICIDAL: -15,
-        DECREASED_COIN_DISTANCE: 8,
-        INCREASED_COIN_DISTANCE: -8.1,  # higher? lower? idk
-        DECREASED_CRATE_DISTANCE: 1,
-        INCREASED_CRATE_DISTANCE: -1.1,
+        DECREASED_DISTANCE: 8,
+        INCREASED_DISTANCE: -8.1,  # higher? lower? idk
         INCREASED_SURROUNDING_CRATES: 1.5,
         DECREASED_SURROUNDING_CRATES: -1.6,
         INCREASED_BOMB_DISTANCE: 5,
         DECREASED_BOMB_DISTANCE: -5.1,
-        FOLLOWED_DIRECTION: 3,  # possibly create penalty
+        FOLLOWED_DIRECTION: 5,  # possibly create penalty
     }
 
     reward_sum = 0
