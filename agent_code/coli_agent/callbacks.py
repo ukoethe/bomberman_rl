@@ -28,7 +28,9 @@ def setup(self):
     list_of_q_tables = glob.glob(
         "*.npy"
     )  # * means all if need specific format then *.csv
-    self.latest_q_table = np.load(max(list_of_q_tables, key=os.path.getctime))
+    # self.latest_q_table = np.load(max(list_of_q_tables, key=os.path.getctime))
+
+    self.latest_q_table = np.load("q_table-2022-03-14T162802-node45.npy")
     self.logger.debug(f"Using q-table: {max(list_of_q_tables, key=os.path.getctime)}")
 
     # train if flag is present or if there is no q_table present
@@ -441,9 +443,11 @@ def _shortest_path_feature(self, game_state) -> action:
             if (
                 shortest_path_to_coin[0][2] is True
                 and shortest_path_to_coin[0][1] <= shortest_path_to_coin[1][1]
+                and shortest_path_to_coin[0][1]
+                != 0  # we are standing on a coin because we spawned on it --> correct would be to "WAIT" but we want to stick to "UP", "DOWN", "LEFT" and "RIGHT" hence we just return second closest coin
             ):
                 self.logger.debug(
-                    "We are able to reach a coin and we are closest to it"
+                    f"We are able to reach coin at {shortest_path_to_coin} and we are closest to it"
                 )
                 return _get_action(self, self_coord, shortest_path_to_coin[0][0])
 
