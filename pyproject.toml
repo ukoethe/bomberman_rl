@@ -23,10 +23,10 @@ pylint = "^2.11.1"
 [tool.isort]
 profile = "black"
 multi_line_output = 3
-line_length = 88
+line_length = 100
 
 [tool.black]
-line-length = 88
+line-length = 100
 target-version = ['py39']
 
 [build-system]

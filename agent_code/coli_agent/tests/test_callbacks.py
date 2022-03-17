@@ -1,4 +1,4 @@
-from coli_agent.callbacks import DecisionTransformer, state_to_features
+from coli_agent.callbacks import DecisionTransformer
 
 # game_state_beginning = {
 #     # TODO
@@ -6,8 +6,8 @@ from coli_agent.callbacks import DecisionTransformer, state_to_features
 
 
 def test_adding_one():
-    dt = DecisionTransformer()
-    result = dt.adding_one(5)
+    decision_transformer = DecisionTransformer()
+    result = decision_transformer.adding_one(5)
     assert result == 6
 
 

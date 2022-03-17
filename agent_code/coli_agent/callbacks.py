@@ -12,8 +12,8 @@ from settings import COLS, ROWS
 
 Coordinate = Tuple[int]
 
-graph = nx.Graph
-action = str
+Graph = nx.Graph
+Action = str
 
 ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"]
 SHORTEST_PATH_ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT"]
@@ -26,9 +26,7 @@ def setup(self):
     self.history = [0, deque(maxlen=5)]  # [num_of_coins_collected, tiles_visited]
 
     # find latest q_table
-    list_of_q_tables = glob.glob(
-        "*.npy"
-    )  # * means all if need specific format then *.csv
+    list_of_q_tables = glob.glob("*.npy")  # * means all if need specific format then *.csv
     self.latest_q_table_path = max(list_of_q_tables, key=os.path.getctime)
     # self.latest_q_table_path = "q_table-2022-03-14T162802-node45.npy"
     self.latest_q_table = np.load(self.latest_q_table_path)
@@ -90,8 +88,7 @@ def _determine_exploration_decay_rate(self) -> float:
     x = symbols("x", real=True)
     expr = (
         self.exploration_rate_end
-        + (self.exploration_rate_initial - self.exploration_rate_end)
-        * exp(-x * self.n_rounds)
+        + (self.exploration_rate_initial - self.exploration_rate_end) * exp(-x * self.n_rounds)
     ) - (self.exploration_rate_end + 0.0001)
     solution = solve(expr, x)[0]
     self.logger.debug(f"Determined exploration decay rate: {solution}")
@@ -103,18 +100,10 @@ def _get_neighboring_tiles(own_coord, n) -> List[Coordinate]:
     own_coord_y = own_coord[1]
     neighboring_coordinates = []
     for i in range(1, n + 1):
-        neighboring_coordinates.append(
-            (own_coord_x, own_coord_y + i)
-        )  # down in the matrix
-        neighboring_coordinates.append(
-            (own_coord_x, own_coord_y - i)
-        )  # up in the matrix
-        neighboring_coordinates.append(
-            (own_coord_x + i, own_coord_y)
-        )  # right in the matrix
-        neighboring_coordinates.append(
-            (own_coord_x - i, own_coord_y)
-        )  # left in the matrix
+        neighboring_coordinates.append((own_coord_x, own_coord_y + i))  # down in the matrix
+        neighboring_coordinates.append((own_coord_x, own_coord_y - i))  # up in the matrix
+        neighboring_coordinates.append((own_coord_x + i, own_coord_y))  # right in the matrix
+        neighboring_coordinates.append((own_coord_x - i, own_coord_y))  # left in the matrix
     return neighboring_coordinates
 
 
@@ -168,7 +157,7 @@ def get_neighboring_tiles_until_wall(own_coord, n, game_state) -> List[Coordinat
     return all_good_fields
 
 
-def _get_graph(self, game_state, crates_as_obstacles=True) -> graph:
+def _get_graph(self, game_state, crates_as_obstacles=True) -> Graph:
     """Calculates the adjacency matrix of the current game state.
     Every coordinate is a node.]
 
@@ -178,24 +167,18 @@ def _get_graph(self, game_state, crates_as_obstacles=True) -> graph:
 
     if crates_as_obstacles:
         # walls and crates are obstacles
-        obstacles = [
-            index for index, field in np.ndenumerate(game_state["field"]) if field != 0
-        ]
+        obstacles = [index for index, field in np.ndenumerate(game_state["field"]) if field != 0]
 
     else:
         # only walls are obstacles
-        obstacles = [
-            index for index, field in np.ndenumerate(game_state["field"]) if field == -1
-        ]
+        obstacles = [index for index, field in np.ndenumerate(game_state["field"]) if field == -1]
 
     # TODO: Find out what works better - considering other players as obstacles (technically true) or not
     # for other_player in game_state["others"]:
     # obstacles.append(other_player[3])  # third element stores the coordinates
 
     active_explosions = [
-        index
-        for index, field in np.ndenumerate(game_state["explosion_map"])
-        if field != 0
+        index for index, field in np.ndenumerate(game_state["explosion_map"]) if field != 0
     ]
 
     # self.logger.debug(f"Active explosions: {active_explosions}")
@@ -212,26 +195,22 @@ def _get_graph(self, game_state, crates_as_obstacles=True) -> graph:
     return graph
 
 
-def _find_shortest_path(graph, a, b) -> Tuple[graph, int]:
+def _find_shortest_path(graph, a, b) -> Tuple[Graph, int]:
     """Calclulates length of shortest path at current time step (without looking ahead to the future)
     between points a and b."""
     shortest_path = None
     # use Djikstra to find shortest path
     try:
-        shortest_path = nx.shortest_path(
-            graph, source=a, target=b, weight=None, method="dijkstra"
-        )
-    except nx.exception.NodeNotFound:
+        shortest_path = nx.shortest_path(graph, source=a, target=b, weight=None, method="dijkstra")
+    except nx.exception.NodeNotFound as e:
         print(graph.nodes)
-        raise Exception
+        raise e
 
-    shortest_path_length = (
-        len(shortest_path) - 1
-    )  # because path considers self as part of the path
+    shortest_path_length = len(shortest_path) - 1  # because path considers self as part of the path
     return shortest_path, shortest_path_length
 
 
-def _get_action(self, self_coord, shortest_path) -> action:
+def _get_action(self, self_coord, shortest_path) -> Action:
     goal_coord = shortest_path[1]  # 0th element is self_coord
 
     self.previous_distance = self.current_distance
@@ -256,7 +235,7 @@ def _get_action(self, self_coord, shortest_path) -> action:
             return "LEFT"
 
 
-def _shortest_path_feature(self, game_state) -> action:
+def _shortest_path_feature(self, game_state) -> Action:
     """
     Computes the direction along the shortest path as follows:
 
@@ -290,11 +269,7 @@ def _shortest_path_feature(self, game_state) -> action:
         coin
         for coin in game_state["coins"]
         if coin
-        not in [
-            index
-            for index, field in np.ndenumerate(game_state["explosion_map"])
-            if field != 0
-        ]
+        not in [index for index, field in np.ndenumerate(game_state["explosion_map"]) if field != 0]
     ]
     self.logger.info(f"Current safe coins: {safe_coins}")
 
@@ -392,9 +367,7 @@ def _shortest_path_feature(self, game_state) -> action:
                         (
                             current_path_other_agent,
                             current_path_length_other_agent,
-                        ) = _find_shortest_path(
-                            graph_with_crates, other_agent_coord, coin_coord
-                        )
+                        ) = _find_shortest_path(graph_with_crates, other_agent_coord, coin_coord)
                         current_other_agent_reachable = False
 
                     except nx.exception.NetworkXNoPath:
@@ -430,8 +403,7 @@ def _shortest_path_feature(self, game_state) -> action:
         shortest_paths_to_coins.sort(key=lambda x: x[0][1])
 
         shortest_paths_to_coins_reachable = [
-            shortest_path_to_coin[0][2]
-            for shortest_path_to_coin in shortest_paths_to_coins
+            shortest_path_to_coin[0][2] for shortest_path_to_coin in shortest_paths_to_coins
         ]
 
         # if none of our [0] shortest paths are actually reachable [2] we just go towards the nearest one (i.e. to its nearest crate)
@@ -514,9 +486,7 @@ def state_to_features(self, game_state, history) -> np.array:
             neighboring_y
         ]  # content of tile, e.g. crate=1
         explosion = (
-            True
-            if game_state["explosion_map"][neighboring_x][neighboring_y] != 0
-            else False
+            True if game_state["explosion_map"][neighboring_x][neighboring_y] != 0 else False
         )
         ripe_bomb = False  # "ripe" = about to explode
         if (neighboring_coord, 0) in game_state["bombs"] or (
@@ -535,9 +505,7 @@ def state_to_features(self, game_state, history) -> np.array:
             features[1 + i] = 0
 
     # Feature 6 ("Going to new tiles")
-    num_visited_tiles = len(
-        history[1]
-    )  # history[2] contains agent coords of last 5 turns
+    num_visited_tiles = len(history[1])  # history[2] contains agent coords of last 5 turns
     if num_visited_tiles > 1:  # otherwise the feature is and is supposed to be 0 anyway
         num_unique_visited_tiles = len(set(history[1]))
         # of 5 tiles, 3 should be new -> 60%. for start of the episode: 2 out of 2, 2 out of 3, 3 out of 4
@@ -559,9 +527,7 @@ def state_to_features(self, game_state, history) -> np.array:
         raise ValueError("Invalid directon to nearest coin/crate")
 
     # Feature 8: amount of possibly destroyed crates: small: 0, medium: 1<4, high: >= 4
-    neighbours = get_neighboring_tiles_until_wall(
-        own_position, 3, game_state=game_state
-    )
+    neighbours = get_neighboring_tiles_until_wall(own_position, 3, game_state=game_state)
     crate_coordinates = []
 
     if neighbours:
@@ -599,9 +565,7 @@ def state_to_features(self, game_state, history) -> np.array:
 
     self.logger.debug(f"Feature vector: {features}")
 
-    self.logger.debug(
-        f"Shortest path feature says: {_shortest_path_feature(self, game_state)}"
-    )
+    self.logger.debug(f"Shortest path feature says: {_shortest_path_feature(self, game_state)}")
 
     return features_to_state(self, features)
 
