@@ -263,7 +263,7 @@ def reward_from_events(self, events: List[str]) -> int:
         # e.SURVIVED_ROUND: 0,  # could possibly lead to not being active - actually penalize if agent too passive?
         e.INVALID_ACTION: -10,  # necessary? (maybe for penalizing trying to move through walls/crates) - yes, seems to be necessary to learn that one cannot place a bomb after another placed bomb is still not exploded
         WAS_BLOCKED: -20,
-        MOVED: -0.01,
+        MOVED: -0.1,
         PROGRESSED: 5,  # higher?
         STAGNATED: -3,  # higher? lower?
         FLED: 15,
