@@ -6,6 +6,7 @@ from typing import List, Tuple
 
 import networkx as nx
 import numpy as np
+from sympy import exp, solve, symbols
 
 from settings import COLS, ROWS
 
@@ -45,7 +46,8 @@ def setup(self):
 
         self.exploration_rate_initial = 1.0
         self.exploration_rate_end = 0.05  # at end of all episodes
-        self.exploration_decay_rate = 0.001  # 0.1 will reach min after ~ 100 episodes, 0.001 will reach min after ~10000 episodes
+
+        self.exploration_decay_rate = _determine_exploration_decay_rate(self)
 
         if self.continue_training:
             self.logger.info("Continuing training on latest q_table")
@@ -81,6 +83,19 @@ def act(self, game_state: dict) -> str:
     action = ACTIONS[np.argmax(self.q_table[state])]
     self.logger.debug(f"Action chosen: {action}")
     return action
+
+
+def _determine_exploration_decay_rate(self) -> float:
+    """Determines the appropriate decay rate s.t. self.exploration_rate_end (approximately) is reached after self.n_rounds."""
+    x = symbols("x", real=True)
+    expr = (
+        self.exploration_rate_end
+        + (self.exploration_rate_initial - self.exploration_rate_end)
+        * exp(-x * self.n_rounds)
+    ) - (self.exploration_rate_end + 0.0001)
+    solution = solve(expr, x)[0]
+    self.logger.debug(f"Determined exploration decay rate: {solution}")
+    return float(solution)
 
 
 def _get_neighboring_tiles(own_coord, n) -> List[Coordinate]:

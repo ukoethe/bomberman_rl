@@ -74,6 +74,7 @@ class Agent:
         backend: "AgentBackend",
         avatar_sprite_desc,
         bomb_sprite_desc,
+        n_rounds: int,
     ):
         self.backend = backend
 
@@ -108,6 +109,7 @@ class Agent:
         self.display_name = display_name
         self.train = train
         self.continue_training = continue_training
+        self.n_rounds = n_rounds
 
         self.total_score = 0
 
@@ -230,7 +232,9 @@ class AgentRunner:
     Agent callback runner (called by backend).
     """
 
-    def __init__(self, train, continue_training, agent_name, code_name, result_queue):
+    def __init__(
+        self, train, continue_training, agent_name, code_name, result_queue, n_rounds
+    ):
         self.agent_name = agent_name
         self.code_name = code_name
         self.result_queue = result_queue
@@ -263,6 +267,7 @@ class AgentRunner:
         self.fake_self = SimpleNamespace()
         self.fake_self.train = train
         self.fake_self.continue_training = continue_training
+        self.fake_self.n_rounds = n_rounds
 
         self.wlogger = logging.getLogger(self.agent_name + "_wrapper")
         self.wlogger.setLevel(s.LOG_AGENT_WRAPPER)
@@ -310,13 +315,17 @@ class AgentBackend:
     Base class connecting the agent to a callback implementation.
     """
 
-    def __init__(self, train, continue_training, agent_name, code_name, result_queue):
+    def __init__(
+        self, train, continue_training, agent_name, code_name, result_queue, n_rounds
+    ):
         self.train = train
         self.continue_training = continue_training
         self.code_name = code_name
         self.agent_name = agent_name
 
         self.result_queue = result_queue
+
+        self.n_rounds = n_rounds
 
     def start(self):
         raise NotImplementedError()
@@ -348,8 +357,10 @@ class SequentialAgentBackend(AgentBackend):
     AgentConnector realised in main thread (easy debugging).
     """
 
-    def __init__(self, train, continue_training, agent_name, code_name):
-        super().__init__(train, continue_training, agent_name, code_name, queue.Queue())
+    def __init__(self, train, continue_training, agent_name, code_name, n_rounds):
+        super().__init__(
+            train, continue_training, agent_name, code_name, queue.Queue(), n_rounds
+        )
         self.runner = None
 
     def start(self):
@@ -359,6 +370,7 @@ class SequentialAgentBackend(AgentBackend):
             self.agent_name,
             self.code_name,
             self.result_queue,
+            self.n_rounds,
         )
 
     def send_event(self, event_name, *event_args):
@@ -380,8 +392,11 @@ def run_in_agent_runner(
     code_name: str,
     wta_queue: mp.Queue,
     atw_queue: mp.Queue,
+    n_rounds: int,
 ):
-    runner = AgentRunner(train, continue_training, agent_name, code_name, atw_queue)
+    runner = AgentRunner(
+        train, continue_training, agent_name, code_name, atw_queue, n_rounds
+    )
     while True:
         event_name, event_args = wta_queue.get()
         if event_name == QUIT:
@@ -394,8 +409,10 @@ class ProcessAgentBackend(AgentBackend):
     AgentConnector realised by a separate process (fast and safe mode).
     """
 
-    def __init__(self, train, continue_training, agent_name, code_name):
-        super().__init__(train, continue_training, agent_name, code_name, mp.Queue())
+    def __init__(self, train, continue_training, agent_name, code_name, n_rounds):
+        super().__init__(
+            train, continue_training, agent_name, code_name, mp.Queue(), n_rounds
+        )
 
         self.wta_queue = mp.Queue()
 
@@ -408,6 +425,7 @@ class ProcessAgentBackend(AgentBackend):
                 self.code_name,
                 self.wta_queue,
                 self.result_queue,
+                self.n_rounds,
             ),
         )
 
