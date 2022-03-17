@@ -18,23 +18,25 @@ TRANSITION_HISTORY_SIZE = 3  # keep only ... last transitions
 
 # - Events with direct state feature correspondence -
 
-WAS_BLOCKED = (
-    "WAS_BLOCKED"  # tried to move into a wall/crate/enemy/explosion (strong penalty)
-)
+WAS_BLOCKED = "WAS_BLOCKED"  # tried to move into a wall/crate/enemy/explosion (strong penalty)
 MOVED = "MOVED"  # moved somewhere (and wasn't blocked)
 
 PROGRESSED = "PROGRESSED"  # in last 5 turns, agent visited at least 3 unique tiles
 STAGNATED = "STAGNATED"  # opposite for stronger effect
 
 FLED = "FLED"  # was in "danger zone" of a bomb and moved out of it (reward)
-SUICIDAL = "SUICIDAL"  # moved from safe field into "danger" zone of bomb (penalty, higher than reward)
-
-DECREASED_DISTANCE = "DECREASED_DISTANCE"  # decreased length of shortest path to nearest coin or crate BY ONE
-INCREASED_DISTANCE = "INCREASED_DISTANCE"  # increased length of shortest path to nearest coin or crate BY ONE
-
-FOLLOWED_DIRECTION = (
-    "FOLLOWED_DIRECTION"  # went in direction indicated by coin/crate feature
+SUICIDAL = (
+    "SUICIDAL"  # moved from safe field into "danger" zone of bomb (penalty, higher than reward)
 )
+
+DECREASED_DISTANCE = (
+    "DECREASED_DISTANCE"  # decreased length of shortest path to nearest coin or crate BY ONE
+)
+INCREASED_DISTANCE = (
+    "INCREASED_DISTANCE"  # increased length of shortest path to nearest coin or crate BY ONE
+)
+
+FOLLOWED_DIRECTION = "FOLLOWED_DIRECTION"  # went in direction indicated by coin/crate feature
 
 INCREASED_SURROUNDING_CRATES = (
     "INCREASED_SURROUNDING_CRATES"  # increased or stayed the same; low reward
@@ -45,10 +47,12 @@ DECREASED_SURROUNDING_CRATES = (
 
 # - Events without direct state feature correspondence -
 
-# idea: Agent-Coin ratio: reward going after crates when there's many coins left (max: 9) and reward going after agents when there aren't
+# idea: Agent-Coin ratio: reward going after crates when there's many coins left (max: 9) and
+# reward going after agents when there aren't
 # idea: reward caging enemies
 
-# more fine-grained bomb area movements: reward/penalize moving one step away from/towards bomb, when agent is already in "danger zone"
+# more fine-grained bomb area movements: reward/penalize moving one step away from/towards bomb,
+# when agent is already in "danger zone"
 INCREASED_BOMB_DISTANCE = "INCREASED_BOMB_DISTANCE"  # increased or stayed the same
 DECREASED_BOMB_DISTANCE = "DECREASED_BOMB_DISTANCE"
 
@@ -65,9 +69,7 @@ def setup_training(self):
     self.rewards_of_episode = 0
 
 
-def game_events_occurred(
-    self, old_game_state, self_action: str, new_game_state, events
-):
+def game_events_occurred(self, old_game_state, self_action: str, new_game_state, events):
     """Called once after each time step (after act()) except the last. Used to collect training
     data and filling the experience buffer.
 
@@ -228,9 +230,7 @@ def end_of_round(self, last_game_state, last_action, events):
     )
     self.rewards_of_episode += self.transitions[-1][3]
 
-    self.logger.info(
-        f"Total rewards in episode {self.episode}: {self.rewards_of_episode}"
-    )
+    self.logger.info(f"Total rewards in episode {self.episode}: {self.rewards_of_episode}")
     self.rewards_of_episode = 0
 
     if self.episode % 250 == 0 and self.episode != 0:
@@ -261,7 +261,9 @@ def reward_from_events(self, events: List[str]) -> int:
         e.KILLED_SELF: -10,  # you dummy --- this *also* triggers GOT_KILLED
         e.OPPONENT_ELIMINATED: 0.05,  # good because less danger or bad because other agent scored points?
         # e.SURVIVED_ROUND: 0,  # could possibly lead to not being active - actually penalize if agent too passive?
-        e.INVALID_ACTION: -10,  # necessary? (maybe for penalizing trying to move through walls/crates) - yes, seems to be necessary to learn that one cannot place a bomb after another placed bomb is still not exploded
+        # necessary? (maybe for penalizing trying to move through walls/crates) - yes, seems to be necessary to
+        # learn that one cannot place a bomb after another placed bomb is still not exploded
+        e.INVALID_ACTION: -10,
         WAS_BLOCKED: -20,
         MOVED: -0.1,
         PROGRESSED: 5,  # higher?
