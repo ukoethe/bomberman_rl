@@ -6,6 +6,7 @@ from typing import Dict, List, Tuple
 from unicodedata import category
 import agent_code.agent_info.train as train
 import numpy as np
+from random import shuffle
 
 
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
@@ -30,7 +31,9 @@ def setup(self):
         self.logger.info("Training model.")
 
         # Deactivate if u want to train a completly new agent
-        if os.path.isfile("q-table.npy") and True:
+        if os.path.isfile("q-table.npy"):
+            self.continue_train = True
+        else:
             self.continue_train = True
             
         self.action_space_size = len(ACTIONS)
@@ -38,9 +41,8 @@ def setup(self):
         
     else:
         self.logger.info("Loading model from saved state.")
-        with open("my-saved-model.pt", "rb") as file:
-            self.model = pickle.load(file)
-
+        q_table = np.load("q-table.npy")
+        self.model = q_table
 
 def act(self, game_state: dict) -> str:
     """
@@ -80,6 +82,7 @@ def act(self, game_state: dict) -> str:
         Deque with Action, Next State, Reward, State
     """
     state_to_features(game_state)
+
     # Add/Adjust game_state in q_table
 
     return np.random.choice(ACTIONS, p=self.model)
@@ -103,13 +106,74 @@ def state_to_features(game_state: dict) -> np.array:
     if game_state is None:
         return None
     
-    features = defaultdict
+    features = defaultdict()
 
-    walls, creates = awarness(game_state)
+    walls, crates = awarness(game_state)
+
+    features["walls"] = walls
+    features["crates"] = crates
+    features["target"] = closest_target(game_state)
+
+    
 
     return features
 
-    
+
+def closest_target(game_state):
+    _, _, _, start = game_state['self']
+
+    free_space = game_state['field'] == 0
+
+    targets = game_state['coins']
+
+    """Find direction of closest target that can be reached via free tiles.
+
+    Performs a breadth-first search of the reachable free tiles until a target is encountered.
+    If no target can be reached, the path that takes the agent closest to any target is chosen.
+
+    Args:
+        free_space: Boolean numpy array. True for free tiles and False for obstacles.
+        start: the coordinate from which to begin the search.
+        targets: list or array holding the coordinates of all target tiles.
+        logger: optional logger object for debugging.
+    Returns:
+        coordinate of first step towards closest target or towards tile closest to any target.
+    """
+    if len(targets) == 0: return None
+
+    frontier = [start]
+    parent_dict = {start: start}
+    dist_so_far = {start: 0}
+    best = start
+    best_dist = np.sum(np.abs(np.subtract(targets, start)), axis=1).min()
+
+    while len(frontier) > 0:
+        current = frontier.pop(0)
+        # Find distance from current position to all targets, track closest
+        d = np.sum(np.abs(np.subtract(targets, current)), axis=1).min()
+        if d + dist_so_far[current] <= best_dist:
+            best = current
+            best_dist = d + dist_so_far[current]
+        if d == 0:
+            # Found path to a target's exact position, mission accomplished!
+            best = current
+            break
+        # Add unexplored free neighboring tiles to the queue in a random order
+        x, y = current
+        neighbors = [(x, y) for (x, y) in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)] if free_space[x, y]]
+        shuffle(neighbors)
+        for neighbor in neighbors:
+            if neighbor not in parent_dict:
+                frontier.append(neighbor)
+                parent_dict[neighbor] = current
+                dist_so_far[neighbor] = dist_so_far[current] + 1
+        
+    # Determine the first step towards the best found target tile
+    current = best
+    while True:
+        if parent_dict[current] == start: return current
+        current = parent_dict[current]
+
 def relative_position(items:List[Tuple], agent:Tuple) -> List[Tuple]:
     """
     Takes the original coordinates and recalculates them relative to the agent position as 0,0

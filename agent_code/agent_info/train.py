@@ -12,7 +12,7 @@ Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
 # Hyper parameters -- DO modify
-TRANSITION_HISTORY_SIZE = 3  # keep only ... last transitions
+TRANSITION_HISTORY_SIZE = 5  # keep only ... last transitions
 RECORD_ENEMY_TRANSITIONS = 1.0  # record enemy transitions with probability ...
 
 # Events
@@ -39,6 +39,10 @@ def setup_training(self):
 
     rb_setup(self)
 
+    self.learning_rate = 0.1
+    self.gamma = 0.9
+    self.episodes = 10
+
 
 def act(self, gamestate):
     return rb_act(self, gamestate)
@@ -48,7 +52,7 @@ def q_table(self):
     # Enables us to continue training on an already started Q-Table
     # This is useful when base training it with replays from other agents and then just tuning it with the new one
     # or when just want to continue training the same agent with more episodes
-    self.continue_train = False
+
     if not self.continue_train:
         state_space_size = 10_000
 
