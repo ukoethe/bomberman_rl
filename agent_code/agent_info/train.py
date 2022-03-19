@@ -1,15 +1,19 @@
 from collections import namedtuple, deque
-
+from copy import copy, deepcopy
 import pickle
 import numpy as np
 from typing import List
 from agent_code.rule_based_agent.callbacks import act as rb_act, setup as rb_setup
 import events as e
+from .model import Q_Table
+from .utils import state_to_features
+import random
+import pickle
+
 # from .callbacks import state_to_features
 
 # This is only an example!
-Transition = namedtuple('Transition',
-                        ('state', 'action', 'next_state', 'reward'))
+Transition = namedtuple("Transition", ("state", "action", "next_state", "reward"))
 
 # Hyper parameters -- DO modify
 TRANSITION_HISTORY_SIZE = 5  # keep only ... last transitions
@@ -34,65 +38,35 @@ def setup_training(self):
     # How a game-state looks to adjust the model input accordingly
     self.format = ...
 
-    # The 'model' in whatever form (NN, QT, MCT ...) 
-    self.model = q_table(self)
+    # The 'model' in whatever form (NN, QT, MCT ...)
+    self.model = Q_Table(self)
 
+    with open("model.pt", "wb") as file:
+        pickle.dump(self.model, file)
     rb_setup(self)
 
-    self.learning_rate = 0.1
-    self.gamma = 0.9
-    self.episodes = 10
 
+def train_act(self, gamestate):
 
-def act(self, gamestate):
-    return rb_act(self, gamestate)
-
-def q_table(self):
-
-    # Enables us to continue training on an already started Q-Table
-    # This is useful when base training it with replays from other agents and then just tuning it with the new one
-    # or when just want to continue training the same agent with more episodes
-
-    if not self.continue_train:
-        state_space_size = 10_000
-
-        self.q_table = np.zeros([state_space_size, self.action_space_size])
-    
+    features = state_to_features(gamestate)
+    if random.uniform(0, 1) > self.epsilon:
+        # self.action is the unique action chosen by the agent
+        action = rb_act(self, gamestate)
     else:
-        self.q_table = np.load("q_table.npy")
+        action = self.model.choose_action(features)
 
-        assert np.size(self.q_table)[1] == self.action_space_size, "To continue training an old model you need to have the same action space"
+    self.logger.debug(f"Action taken:", action)
 
-def q_params(self):
-    # Medium implementing an iterable q-table
-    num_episodes = ...
-    max_steps_ep = ...
-
-    lr = ...
-    discount = ...
-
-    exploration = ...
-    max_exploration = ...
-    min_exploration = ...
-    exploration_decay = ...
-
-    """
-    # How a game works
-    for episode in range(num_episodes):
-        for step in range(max_steps):
-            # Exploit/Explore Trade-off
-            # Take new action
-            # Update Q
-            # set new state
-            # add new reward
-        
-        # Exploit Rate Decay
-        # Add reward to total reward list
-    """
-    
+    return action
 
 
-def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_state: dict, events: List[str]):
+def game_events_occurred(
+    self,
+    old_game_state: dict,
+    self_action: str,
+    new_game_state: dict,
+    events: List[str],
+):
     """
     Called once per step to allow intermediate rewards based on game events.
 
@@ -109,11 +83,16 @@ def game_events_occurred(self, old_game_state: dict, self_action: str, new_game_
     :param new_game_state: The state the agent is in now.
     :param events: The events that occurred when going from  `old_game_state` to `new_game_state`
     """
-    self.logger.debug(f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}')
+    self.logger.debug(
+        f'Encountered game event(s) {", ".join(map(repr, events))} in step {new_game_state["step"]}'
+    )
 
     # Idea: Add your own events to hand out rewards
     if ...:
         events.append(PLACEHOLDER_EVENT)
+    rewards = reward_from_events(self, events)
+
+    self.model.update_q(old_game_state, new_game_state, self_action, rewards)
 
     # state_to_features is defined in callbacks.py
     # self.transitions.append(Transition(state_to_features(old_game_state), self_action, state_to_features(new_game_state), reward_from_events(self, events)))
@@ -132,7 +111,9 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
 
     :param self: The same object that is passed to all of your callbacks.
     """
-    self.logger.debug(f'Encountered event(s) {", ".join(map(repr, events))} in final step')
+    self.logger.debug(
+        f'Encountered event(s) {", ".join(map(repr, events))} in final step'
+    )
     # self.transitions.append(Transition(state_to_features(last_game_state), last_action, None, reward_from_events(self, events)))
 
     # Store the model
@@ -150,7 +131,7 @@ def reward_from_events(self, events: List[str]) -> int:
     game_rewards = {
         e.COIN_COLLECTED: 1,
         e.KILLED_OPPONENT: 5,
-        PLACEHOLDER_EVENT: -.1  # idea: the custom event is bad
+        PLACEHOLDER_EVENT: -0.1,  # idea: the custom event is bad
     }
     reward_sum = 0
     for event in events:

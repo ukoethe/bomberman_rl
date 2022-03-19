@@ -8,28 +8,52 @@
             "name": "Rule-Based Replay",
             "type": "python",
             "request": "launch",
-            "program": "C:\\Users\\A707523\\Documents\\Uni\\FML\\bomberman_rl\\main.py",
+            "program": "${workspaceFolder}\\main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["play", "--train=0", "--agent","rule_based_agent", "rule_based_agent", "rule_based_agent", "rule_based_agent", "--save-replay", "--seed", "42", "--no-gui"]
+            "args": [
+                "play",
+                "--train=0",
+                "--agent",
+                "rule_based_agent",
+                "rule_based_agent",
+                "rule_based_agent",
+                "rule_based_agent",
+                "--save-replay",
+                "--seed",
+                "42",
+                "--no-gui"
+            ]
         },
         {
             "name": "Own Train CH",
             "type": "python",
             "request": "launch",
-            "program": "C:\\Users\\A707523\\Documents\\Uni\\FML\\bomberman_rl\\main.py",
+            "program": "${workspaceFolder}\\main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["play", "--train=1", "--agent","agent_info", "--seed", "42", "--scenario", "coin-heaven"]
+            "args": [
+                "play",
+                "--train=1",
+                "--agent",
+                "agent_info",
+                "--seed",
+                "42",
+                "--scenario",
+                "coin-heaven"
+            ]
         },
         {
             "name": "Replay",
             "type": "python",
             "request": "launch",
-            "program": "C:\\Users\\A707523\\Documents\\Uni\\FML\\bomberman_rl\\main.py",
+            "program": "${workspaceFolder}\\main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["replay", "\\replays\\Round 01 (2022-03-13 14-36-09).pt"]
+            "args": [
+                "replay",
+                "\\replays\\Round 01 (2022-03-13 14-36-09).pt"
+            ]
         }
     ]
 }
