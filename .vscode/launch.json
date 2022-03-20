@@ -1,0 +1,78 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Rule-Based Replay",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "play",
+                "--train=0",
+                "--agent",
+                "rule_based_agent",
+                "rule_based_agent",
+                "rule_based_agent",
+                "rule_based_agent",
+                "--save-replay",
+                "--seed",
+                "42",
+                "--no-gui"
+            ]
+        },
+        {
+            "name": "Baseline Train",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "play",
+                "--train=1",
+                "--agent",
+                "agent_info",
+                "--scenario",
+                "coin-heaven",
+                "--n-rounds",
+                "10_000",
+                "--no-gui"
+            ]
+        },
+        {
+            "name": "Baseline Play",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "play",
+                "--train=0",
+                "--agent",
+                "agent_info",
+                "--scenario",
+                "coin-heaven",
+                "--n-rounds",
+                "10",
+            ]
+        },
+        {
+            "name": "Replay",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "replay",
+                "\\replays\\Round 01 (2022-03-13 14-36-09).pt"
+            ]
+        }
+    ]
+}
