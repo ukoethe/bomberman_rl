@@ -60,10 +60,9 @@ def act(self, game_state: dict) -> str:
         action = train_act(self, game_state)
         return action
 
-    self.logger.debug("Querying model for action")
+    # self.logger.debug("Querying model for action")
     action = self.model.choose_action(features)
-    self.logger.debug("Model returnd action: ", action)
-
+    # self.logger.debug("Model returnd action: ", action)
 
     return action
 
