@@ -3,8 +3,13 @@ from collections import defaultdict
 from random import shuffle
 from typing import Dict, List, Tuple
 
+from math import cos, sin, pi
+
 # So we do not have to maintain this in multiple locations
 ACTIONS = np.array(["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"])
+rotation_param = 0
+matrix_rot_param = 0
+transformation_param = np.array([0, 0])
 
 
 def state_to_features(game_state: dict) -> np.array:
@@ -92,7 +97,7 @@ def closest_target(game_state):
     current = best
     while True:
         if parent_dict[current] == start:
-            return current
+            return rotate_and_transform(current)
         current = parent_dict[current]
 
 
@@ -124,28 +129,56 @@ def action_rotation(game_state: Dict):
     This lets every start always look similar and should result in more stable starting strategy
     """
     global ACTIONS
+    global rotation_param
+    global matrix_rot_param
+    global transformation_param
 
     if game_state["self"][3] == (1, 1):
-        # Ausgangspunkt
+        # Ausgangspunkt oben links
         ACTIONS = np.array(["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"])
+        rotation_param = 0
+        matrix_rot_param = 0
+        transformation_param[0] = 0
+        transformation_param[1] = 0
 
     if game_state["self"][3] == (15, 1):
-        # Rechtsrotation
+        # Rechtsrotation unten links
         ACTIONS = np.array(["LEFT", "UP", "RIGHT", "DOWN", "WAIT", "BOMB"])
+        rotation_param = pi / 180 * -90
+        matrix_rot_param = 3
+        transformation_param[0] = -15
+        transformation_param[1] = 0
 
     if game_state["self"][3] == (1, 15):
-        # Linksrotation
+        # Linksrotation oben rechts
         ACTIONS = np.array(["RIGHT", "DOWN", "LEFT", "UP", "WAIT", "BOMB"])
+        rotation_param = pi / 180 * 90
+        matrix_rot_param = 1
+        transformation_param[0] = 0
+        transformation_param[1] = -15
 
     if game_state["self"][3] == (15, 15):
-        # 180 Grad
+        # 180 Grad unten rechts
         ACTIONS = np.array(["DOWN", "LEFT", "UP", "RIGHT", "WAIT", "BOMB"])
+        rotation_param = pi / 180 * 180
+        matrix_rot_param = 2
+        transformation_param[0] = -15
+        transformation_param[1] = -15
+
+
+def rotate_and_transform(xy):
+    x, y = xy
+    x, y = x - transformation_param[0], y - transformation_param[1]
+    x = int(x * cos(rotation_param) - y * sin(rotation_param))
+    y = int(x * sin(rotation_param) + y * cos(rotation_param))
+
+    return x, y
 
 
 def vision_field(game_state: Dict):
-
     # Position of the agent
-    self_pos = game_state["self"][3]
+    field = np.rot90(game_state["field"], k=matrix_rot_param)
+    self_pos = rotate_and_transform(game_state["self"][3])
 
     # How far can you look
     vision = 1
@@ -157,7 +190,7 @@ def vision_field(game_state: Dict):
     down = self_pos[0] - vision
     top = self_pos[0] + vision + 1
 
-    return game_state["field"][left:right, down:top]
+    return field[left:right, down:top]
 
 
 def awarness(game_state: Dict):
@@ -170,7 +203,5 @@ def awarness(game_state: Dict):
 
 
 def danger(game_state: Dict):
-
     # implement danger posed by bombs that are about to set off
     ...
-
