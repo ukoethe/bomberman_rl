@@ -4,7 +4,7 @@ from random import shuffle
 from typing import Dict, List, Tuple
 
 # So we do not have to maintain this in multiple locations
-ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"]
+ACTIONS = np.array(["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"])
 
 
 def state_to_features(game_state: dict) -> np.array:
@@ -102,6 +102,7 @@ def relative_position(items: List[Tuple], agent: Tuple) -> List[Tuple]:
     This limits possible states without losing information
     """
     # TODO: Clean this up, the slight alteration item[0] is needed because bomb tuple is ((X,Y),Turns) and Coins just (X,Y)
+    # TODO: Only take in vision / target
     try:
         relative_position = [
             tuple(map(lambda i, j: i - j, item[0], agent)) for item in items
@@ -113,8 +114,9 @@ def relative_position(items: List[Tuple], agent: Tuple) -> List[Tuple]:
     return relative_position
 
 
-def rotation(game_state: Dict):
-
+def action_rotation(game_state: Dict):
+    # TODO: Figure out field rotation
+    # TODO: Or only rotate at start.
     """
     #IDEA not used for now
 
@@ -124,13 +126,20 @@ def rotation(game_state: Dict):
     global ACTIONS
 
     if game_state["self"][3] == (1, 1):
-        pass
+        # Ausgangspunkt
+        ACTIONS = np.array(["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"])
+
     if game_state["self"][3] == (15, 1):
-        pass
+        # Rechtsrotation
+        ACTIONS = np.array(["LEFT", "UP", "RIGHT", "DOWN", "WAIT", "BOMB"])
+
     if game_state["self"][3] == (1, 15):
-        pass
+        # Linksrotation
+        ACTIONS = np.array(["RIGHT", "DOWN", "LEFT", "UP", "WAIT", "BOMB"])
+
     if game_state["self"][3] == (15, 15):
-        pass
+        # 180 Grad
+        ACTIONS = np.array(["DOWN", "LEFT", "UP", "RIGHT", "WAIT", "BOMB"])
 
 
 def vision_field(game_state: Dict):

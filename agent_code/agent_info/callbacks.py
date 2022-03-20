@@ -25,6 +25,7 @@ def setup(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
+    # check if we are in training mode and if the model already exists
     if self.train or not os.path.isfile("model.pt"):
 
         self.logger.info("Training model.")
@@ -36,7 +37,6 @@ def setup(self):
             self.continue_train = False
 
         self.action_space_size = len(ACTIONS)
-        setup_training(self)
 
     else:
         self.logger.info("Loading model from saved state.")
@@ -54,18 +54,16 @@ def act(self, game_state: dict) -> str:
     :return: The action to take as a string.
     """
 
+    features = state_to_features(game_state)
+
     if self.train:
         action = train_act(self, game_state)
         return action
 
     self.logger.debug("Querying model for action")
-
-    features = state_to_features(game_state)
     action = self.model.choose_action(features)
-    np.where(ACTIONS == action)[0][0]
-    model_action = self.model.actions[action_index]
-    self.logger.debug("Model returnd action: ", model_action)
+    self.logger.debug("Model returnd action: ", action)
 
-    self.logger.debug("Querying model for action.")
-    return model_action
+
+    return action
 
