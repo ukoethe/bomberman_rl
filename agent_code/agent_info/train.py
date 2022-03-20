@@ -1,14 +1,13 @@
 from collections import namedtuple, deque
 from copy import copy, deepcopy
-import pickle
 import numpy as np
 from typing import List
 from agent_code.rule_based_agent.callbacks import act as rb_act, setup as rb_setup
 import events as e
 from .model import Q_Table
-from .utils import state_to_features
+from .utils import state_to_features, ACTIONS
 import random
-import pickle
+import dill as pickle
 
 # from .callbacks import state_to_features
 
@@ -35,11 +34,11 @@ def setup_training(self):
     # (s, a, r, s')
     self.transitions = deque(maxlen=TRANSITION_HISTORY_SIZE)
 
-    # How a game-state looks to adjust the model input accordingly
-    self.format = ...
+    # save-frequence , not used yet just saving at the end of each round
+    self.saves = ...
 
     # The 'model' in whatever form (NN, QT, MCT ...)
-    self.model = Q_Table(self)
+    self.model = Q_Table(self, ACTIONS)
 
     with open("model.pt", "wb") as file:
         pickle.dump(self.model, file)
@@ -49,7 +48,7 @@ def setup_training(self):
 def train_act(self, gamestate):
 
     features = state_to_features(gamestate)
-    if random.uniform(0, 1) > self.epsilon:
+    if random.uniform(0, 1) > self.model.epsilon:
         # self.action is the unique action chosen by the agent
         action = rb_act(self, gamestate)
     else:
@@ -117,7 +116,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     # self.transitions.append(Transition(state_to_features(last_game_state), last_action, None, reward_from_events(self, events)))
 
     # Store the model
-    with open("my-saved-model.pt", "wb") as file:
+    with open("model.pt", "wb") as file:
         pickle.dump(self.model, file)
 
 

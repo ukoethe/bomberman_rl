@@ -3,6 +3,9 @@ from collections import defaultdict
 from random import shuffle
 from typing import Dict, List, Tuple
 
+# So we do not have to maintain this in multiple locations
+ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"]
+
 
 def state_to_features(game_state: dict) -> np.array:
     """
@@ -22,15 +25,13 @@ def state_to_features(game_state: dict) -> np.array:
     if game_state is None:
         return None
 
-    features = defaultdict()
+    vision = list(awarness(game_state))
+    target = closest_target(game_state)
 
-    walls, crates = awarness(game_state)
+    if not target == None:
+        vision.extend(list(target))
 
-    features["walls"] = walls
-    features["crates"] = crates
-    features["target"] = closest_target(game_state)
-
-    return features
+    return tuple(vision)
 
 
 def closest_target(game_state):
@@ -144,29 +145,23 @@ def vision_field(game_state: Dict):
     left = self_pos[0] - vision
     right = self_pos[0] + vision + 1
 
-    top = self_pos[0] - vision
-    down = self_pos[0] + vision + 1
+    down = self_pos[0] - vision
+    top = self_pos[0] + vision + 1
 
     return game_state["field"][left:right, down:top]
 
 
-def awarness(self, game_state: Dict):
+def awarness(game_state: Dict):
     """
     With this their is no need to pass the 
     """
     vis_field = vision_field(game_state)
 
-    walls = np.where(vis_field == -1)
-    crates = np.where(vis_field == 1)
-
-    # Brings situational awerness feature vectors
-    walls = np.array([walls[0, 1], walls[1, 0], walls[2, 1], walls[1, 2]])
-    crates = np.array([crates[0, 1], crates[1, 0], crates[2, 1], crates[1, 2]])
-
-    return walls, crates
+    return vis_field.flatten()
 
 
 def danger(game_state: Dict):
 
     # implement danger posed by bombs that are about to set off
     ...
+

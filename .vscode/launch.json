@@ -26,7 +26,7 @@
             ]
         },
         {
-            "name": "Own Train CH",
+            "name": "Baseline Train",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}\\main.py",
@@ -37,10 +37,29 @@
                 "--train=1",
                 "--agent",
                 "agent_info",
-                "--seed",
-                "42",
                 "--scenario",
-                "coin-heaven"
+                "coin-heaven",
+                "--n-rounds",
+                "10_000",
+                "--no-gui"
+            ]
+        },
+        {
+            "name": "Baseline Play",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "play",
+                "--train=0",
+                "--agent",
+                "agent_info",
+                "--scenario",
+                "coin-heaven",
+                "--n-rounds",
+                "10",
             ]
         },
         {

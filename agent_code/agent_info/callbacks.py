@@ -1,17 +1,14 @@
 from collections import defaultdict
 import os
-import pickle
+import dill as pickle
 import random
 from typing import Dict, List, Tuple
 from unicodedata import category
 from .train import setup_training, train_act
-from .utils import state_to_features
+from .utils import state_to_features, ACTIONS
 from .model import Q_Table
 import numpy as np
 from random import shuffle
-
-
-ACTIONS = ["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"]
 
 
 def setup(self):
@@ -43,7 +40,8 @@ def setup(self):
 
     else:
         self.logger.info("Loading model from saved state.")
-        self.model = pickle.load("model.pt")
+        with open("model.pt", "rb") as file:
+            self.model = pickle.load(file)
 
 
 def act(self, game_state: dict) -> str:
@@ -62,7 +60,9 @@ def act(self, game_state: dict) -> str:
 
     self.logger.debug("Querying model for action")
 
-    action_index = self.model.chose_action(game_state)
+    features = state_to_features(game_state)
+    action = self.model.choose_action(features)
+    np.where(ACTIONS == action)[0][0]
     model_action = self.model.actions[action_index]
     self.logger.debug("Model returnd action: ", model_action)
 
