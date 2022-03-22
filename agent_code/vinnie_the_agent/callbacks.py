@@ -5,10 +5,11 @@ import random
 from typing import Dict, List, Tuple
 from unicodedata import category
 from .train import setup_training, train_act
-from .utils import state_to_features, ACTIONS
+from .utils import state_to_features, ACTIONS, action_rotation
 from .model import Q_Table
 import numpy as np
 from random import shuffle
+
 
 
 def setup(self):
@@ -25,12 +26,14 @@ def setup(self):
 
     :param self: This object is passed to all callbacks and you can set arbitrary values.
     """
+    self.currentRound = 0
+
     # check if we are in training mode and if the model already exists
     if self.train or not os.path.isfile("model.pt"):
 
         self.logger.info("Training model.")
 
-        # Deactivate if u want to train a completly new agent
+        # Deactivate if u want to train a completely new agent
         if os.path.isfile("model.pt"):
             self.continue_train = True
         else:
@@ -54,6 +57,10 @@ def act(self, game_state: dict) -> str:
     :return: The action to take as a string.
     """
 
+    if(self.currentRound < game_state["round"]):
+        action_rotation(game_state)
+        self.currentRound = game_state["round"]
+
     features = state_to_features(game_state)
 
     if self.train:
@@ -62,8 +69,7 @@ def act(self, game_state: dict) -> str:
 
     self.logger.debug("Querying model for action")
     action = self.model.choose_action(features)
-    self.logger.debug("Model returnd action: ", action)
-
+    self.logger.debug("Model returned action: ", action)
 
     return action
 
