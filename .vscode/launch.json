@@ -36,12 +36,30 @@
                 "play",
                 "--train=1",
                 "--agent",
-                "agent_info",
+                "vinnie_the_agent",
                 "--scenario",
                 "coin-heaven",
                 "--n-rounds",
                 "10_000",
                 "--no-gui"
+            ]
+        },
+        {
+            "name": "Forest Train",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "play",
+                "--train=1",
+                "--agent",
+                "vinnie_the_regressed_agent",
+                "--scenario",
+                "coin-heaven",
+                "--n-rounds",
+                "10_000",
             ]
         },
         {
