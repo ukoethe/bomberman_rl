@@ -41,11 +41,12 @@ def setup_training(self):
 
     # The 'model' in whatever form (NN, QT, MCT ...)
     if self.continue_train:
-        with open("model.pt", "rb") as file:
+        with open("model_yay.pt", "rb") as file:
+            p = pickle.Unpickler(file)
             self.model = pickle.load(file)
     else:
         self.model = Q_Table(self, ACTIONS)
-        with open("model.pt", "wb") as file:
+        with open("model_yay.pt", "wb") as file:
             pickle.dump(self.model, file)
 
     self.batch_size = 10
@@ -132,7 +133,7 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     # self.transitions.append(Transition(state_to_features(last_game_state), last_action, None, reward_from_events(self, events)))
 
     # Store the model
-    with open("model.pt", "wb") as file:
+    with open("model_yay.pt", "wb") as file:
         pickle.dump(self.model, file)
 
 
@@ -144,16 +145,22 @@ def reward_from_events(self, events: List[str]) -> int:
     certain behavior.
     """
     game_rewards = {
-        e.COIN_COLLECTED: 1,
-        e.KILLED_OPPONENT: 5,
-        e.WAITED: -1,
-        e.INVALID_ACTION: -10,
-        e.MOVED_LEFT: 0.1,
-        e.MOVED_RIGHT: 0.1,
-        e.MOVED_UP: 0.1,
-        e.MOVED_DOWN: 0.1,
-        REPETITION_EVENT: -2
-        # PLACEHOLDER_EVENT: -0.1,  # idea: the custom event is bad
+        e.COIN_COLLECTED: 10,#5
+        e.KILLED_OPPONENT: 20,#10
+        e.WAITED: -5,#
+        e.INVALID_ACTION: -20,
+        e.MOVED_LEFT: 1,
+        e.MOVED_RIGHT: 1,
+        e.MOVED_UP: 1,
+        e.MOVED_DOWN: 1,
+        REPETITION_EVENT: -5,
+        e.BOMB_DROPPED: 3,
+        e.BOMB_EXPLODED: 1,
+        e.CRATE_DESTROYED: 5,
+        e.COIN_FOUND: 7,
+        e.KILLED_SELF: -20,
+        e.GOT_KILLED: -10,
+        e.SURVIVED_ROUND: 20
     }
     reward_sum = 0
     for event in events:

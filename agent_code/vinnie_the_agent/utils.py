@@ -118,6 +118,9 @@ def closest_target(game_state):
 
 def target_others(myPoints: int, otherPoints: [], collectableCoins: int) -> bool:
     # cant win with only collecting coins or do not need to collect coins anymore
+
+    #collectableCoins = (myPoints + sum(otherPoints)) - 9 # 9 oder 50 bei Coin_heaven #ToDo target crates
+
     if not isinstance(otherPoints, np.ndarray):
         return False
 
@@ -129,8 +132,6 @@ def relative_position_coins(items: List[Tuple]) -> List[Tuple]:
     Takes the original coordinates and recalculates them relative to the start position defined in action_rotation
     This limits possible states without losing information
     """
-    # TODO: Clean this up, the slight alteration item[0] is needed because bomb tuple is ((X,Y),Turns) and Coins just (X,Y)
-    # TODO: Only take in vision / target
     return [rotate_and_transform(item) for item in items]
 
 
@@ -216,7 +217,7 @@ def vision_field(game_state: Dict) -> List[Tuple]:
 def danger(game_state: Dict):
     # implement danger posed by bombs that are about to set off
     if game_state["bombs"]:
-        bombs = np.array(game_state["bombs"])[:, 0]
+        bombs = np.array(game_state["bombs"], dtype=object)[:, 0]
         field = game_state["field"]
         dangerPosX = []
         dangerPosY = []
