@@ -33,7 +33,9 @@ def state_to_features(game_state: dict) -> np.array:
 
     vision = list(vision_field(game_state))
     target = closest_target(game_state)
+    ownPosition = rotate_and_transform(game_state["self"][3])
 
+    vision.extend(list(ownPosition))
     vision.extend(list(target))
 
     # active bomb
@@ -51,15 +53,18 @@ def closest_target(game_state):
     targeting_mode = 0  # 'friendly'
 
     # What should be prioritised
-    if target_others(game_state["self"][1], others[:, 1], len(game_state["coins"])) or not game_state["coins"]:
-        if not isinstance(others[:, 3], np.ndarray):
-            return (0, 0), 1  # if we do not have any others
-        else:
-            targets = others[:, 3]
-            targeting_mode = 1  # 'hostile'
-    else:
-        targets = game_state["coins"]
+    #if target_others(game_state["self"][1], others[:, 1], len(game_state["coins"])) or not game_state["coins"]:
+    #    if not isinstance(others[:, 3], np.ndarray):
+    #        return (0, 0), 1  # if we do not have any others
+    #    else:
+    #        targets = others[:, 3]
+    #        targeting_mode = 1  # 'hostile'
+    #else:
+    #    targets = game_state["coins"]
 
+    if not game_state["coins"]:
+        return(1, 1), 1  # if we do not have any coins
+    targets = game_state["coins"]
     """Find direction of closest target that can be reached via free tiles.
 
     Performs a breadth-first search of the reachable free tiles until a target is encountered.
@@ -116,10 +121,16 @@ def closest_target(game_state):
         current = parent_dict[current]
 
 
-def target_others(myPoints: int, otherPoints: [], collectableCoins: int) -> bool:
+def target_others(self, myPoints: int, otherPoints: [], collectableCoins: int) -> bool:
     # cant win with only collecting coins or do not need to collect coins anymore
 
-    #collectableCoins = (myPoints + sum(otherPoints)) - 9 # 9 oder 50 bei Coin_heaven #ToDo target crates
+    self.currentCoins = np.full(3, 0, dtype=int)
+
+
+    if len(otherPoints) == 3:
+        self.currentCoins = (myPoints + sum(otherPoints)) - 9 # 9 oder 50 bei Coin_heaven #ToDo target crates
+    else:
+        self.currentCoins = self.currentCoins
 
     if not isinstance(otherPoints, np.ndarray):
         return False

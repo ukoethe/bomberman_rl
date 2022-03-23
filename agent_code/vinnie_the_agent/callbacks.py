@@ -28,12 +28,12 @@ def setup(self):
     self.currentRound = 0
 
     # check if we are in training mode and if the model already exists
-    if self.train or not os.path.isfile("model_yay.pt"):
+    if self.train or not os.path.isfile("model.pt"):
 
         self.logger.info("Training model.")
 
         # Deactivate if u want to train a completely new agent
-        if os.path.isfile("model_yay.pt"):
+        if os.path.isfile("model.pt"):
             self.continue_train = True
         else:
             self.continue_train = False
@@ -42,7 +42,7 @@ def setup(self):
 
     else:
         self.logger.info("Loading model from saved state.")
-        with open("model_yay.pt", "rb") as file:
+        with open("model.pt", "rb") as file:
             self.model = pickle.load(file)
 
 
