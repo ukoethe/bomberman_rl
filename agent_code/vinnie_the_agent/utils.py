@@ -3,8 +3,8 @@ from collections import defaultdict
 from random import shuffle
 from typing import Dict, List, Tuple
 from settings import BOMB_POWER, SCENARIOS
-
 from math import cos, sin, pi
+
 
 # So we do not have to maintain this in multiple locations
 ACTIONS = np.array(["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"])
@@ -51,7 +51,12 @@ def closest_target(game_state):
     targeting_mode = 0  # 'friendly'
 
     # What should be prioritised
-    if target_others(game_state["self"][1], others[:, 1], len(game_state["coins"])) or not game_state["coins"]:
+    if (
+        isinstance(others, np.ndarray)
+        and others.any()
+        and target_others(game_state["self"][1], others[:, 1], len(game_state["coins"]))
+        or not game_state["coins"]
+    ):
         if not isinstance(others[:, 3], np.ndarray):
             return (0, 0), 1  # if we do not have any others
         else:
@@ -121,7 +126,10 @@ def target_others(myPoints: int, otherPoints: [], collectableCoins: int) -> bool
     if not isinstance(otherPoints, np.ndarray):
         return False
 
-    return myPoints + collectableCoins < max(otherPoints) or collectableCoins + max(otherPoints) < myPoints
+    return (
+        myPoints + collectableCoins < max(otherPoints)
+        or collectableCoins + max(otherPoints) < myPoints
+    )
 
 
 def relative_position_coins(items: List[Tuple]) -> List[Tuple]:
@@ -210,7 +218,9 @@ def vision_field(game_state: Dict) -> List[Tuple]:
     down = max(0, self_pos[1] - vision)
     top = min(16, self_pos[1] + vision)
 
-    return field[left:right + 1, down:top + 1].flatten()  #ToDo gleiche state größe erzwingen
+    return field[
+        left : right + 1, down : top + 1
+    ].flatten()  # ToDo gleiche state größe erzwingen
 
 
 def danger(game_state: Dict):
@@ -252,8 +262,18 @@ def danger(game_state: Dict):
                     rightWall = True
 
         for pos in bombs:
-            np.put(field[pos[0], :], dangerPosX, np.full(len(dangerPosX), 2, dtype=int), mode='clip')
-            np.put(field[:, pos[1]], dangerPosY, np.full(len(dangerPosY), 2, dtype=int), mode='clip')
+            np.put(
+                field[pos[0], :],
+                dangerPosX,
+                np.full(len(dangerPosX), 2, dtype=int),
+                mode="clip",
+            )
+            np.put(
+                field[:, pos[1]],
+                dangerPosY,
+                np.full(len(dangerPosY), 2, dtype=int),
+                mode="clip",
+            )
 
         return field
     return game_state["field"]
