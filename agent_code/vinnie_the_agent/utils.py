@@ -9,6 +9,7 @@ from math import cos, sin, pi
 # So we do not have to maintain this in multiple locations
 ACTIONS = np.array(["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"])
 rotation_param = 0
+pivotPoint_param = (1, 1)
 matrix_rot_param = 0
 transformation_param = np.array([0, 0])
 
@@ -166,23 +167,23 @@ def action_rotation(game_state: Dict):
     elif game_state["self"][3] == (1, 15):
         # Rechtsrotation unten links
         ACTIONS = np.array(["LEFT", "UP", "RIGHT", "DOWN", "WAIT", "BOMB"])
-        rotation_param = pi / 180 * -90
         matrix_rot_param = 3
+        rotation_param = np.deg2rad(90)
         transformation_param[0] = 0
         transformation_param[1] = -14
 
     elif game_state["self"][3] == (15, 1):
         # Linksrotation oben rechts
         ACTIONS = np.array(["RIGHT", "DOWN", "LEFT", "UP", "WAIT", "BOMB"])
-        rotation_param = pi / 180 * 90
         matrix_rot_param = 1
+        rotation_param = np.deg2rad(-90)
         transformation_param[0] = -14
         transformation_param[1] = 0
 
     elif game_state["self"][3] == (15, 15):
         # 180 Grad unten rechts
         ACTIONS = np.array(["DOWN", "LEFT", "UP", "RIGHT", "WAIT", "BOMB"])
-        rotation_param = pi / 180 * 180
+        rotation_param = np.deg2rad(-180)
         matrix_rot_param = 2
         transformation_param[0] = -14
         transformation_param[1] = -14
@@ -192,11 +193,19 @@ def action_rotation(game_state: Dict):
 
 def rotate_and_transform(xy):
     x, y = xy
-    x, y = x + transformation_param[0], y + transformation_param[1]
-    x = int(x * cos(rotation_param) - y * sin(rotation_param))
-    y = int(x * sin(rotation_param) + y * cos(rotation_param))
+    cx, cy = pivotPoint_param
+    px, py = x + transformation_param[0], y + transformation_param[1]
 
-    return x, y
+    px -= cx
+    py -= cy
+
+    xnew = round(px * cos(rotation_param) - py * sin(rotation_param))
+    ynew = round(px * sin(rotation_param) + py * cos(rotation_param))
+
+    px = xnew + cx
+    py = ynew + cy
+
+    return px, py
 
 
 def vision_field(game_state: Dict) -> List[Tuple]:
