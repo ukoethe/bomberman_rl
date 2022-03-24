@@ -1,14 +1,7 @@
-from collections import defaultdict
 import os
 import dill as pickle
-import random
-from typing import Dict, List, Tuple
-from unicodedata import category
-from .train import setup_training, train_act
+from .train import train_act
 from .utils import state_to_features, ACTIONS
-from .model import Q_Table
-import numpy as np
-from random import shuffle
 
 
 def setup(self):

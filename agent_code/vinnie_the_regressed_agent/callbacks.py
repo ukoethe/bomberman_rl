@@ -4,7 +4,6 @@ from typing import Dict, List, Tuple
 from unicodedata import category
 from .train import train_act
 from .utils import state_to_features, ACTIONS, action_rotation
-from environment import GenericWorld
 
 
 def setup(self):
@@ -53,7 +52,9 @@ def act(self, game_state: dict) -> str:
     """
 
     if self.currentRound < game_state["round"]:
-        action_rotation(game_state)
+        action_rotation(
+            game_state
+        )  # TODO self.model.actions = action_rotation(game_state)
         self.currentRound = game_state["round"]
 
     features = state_to_features(game_state)

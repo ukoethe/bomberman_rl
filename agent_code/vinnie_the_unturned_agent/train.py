@@ -3,7 +3,6 @@ from random import sample
 import numpy as np
 from typing import List
 import agent_code.rule_based_agent.callbacks as rb_agent
-from agent_code.rule_based_agent.callbacks import act as rb_act, setup as rb_setup
 import events as e
 from .model import Q_Table
 from .utils import state_to_features, ACTIONS
@@ -50,17 +49,17 @@ def setup_training(self):
             pickle.dump(self.model, file)
 
     self.batch_size = 10
-    #rb_setup(self)
+    # rb_setup(self)
     rb_agent.setup(self)
 
 
 def train_act(self, game_state: dict):
 
-    features = state_to_features(game_state)
     if random.uniform(0, 1) > self.model.epsilon:
         # self.action is the unique action chosen by the agent
         action = rb_agent.act(self, game_state)
     else:
+        features = state_to_features(game_state)
         action = self.model.choose_action(features)
 
     self.logger.debug(f"Action taken:{action}")
@@ -168,7 +167,7 @@ def reward_from_events(self, events: List[str]) -> int:
         e.COIN_FOUND: 7,
         e.KILLED_SELF: -20,
         e.GOT_KILLED: -10,
-        e.SURVIVED_ROUND: 20
+        e.SURVIVED_ROUND: 20,
     }
     reward_sum = 0
     for event in events:

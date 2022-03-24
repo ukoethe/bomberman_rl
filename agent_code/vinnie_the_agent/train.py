@@ -54,11 +54,11 @@ def setup_training(self):
 
 def train_act(self, game_state):
 
-    features = state_to_features(game_state)
     if random.uniform(0, 1) > self.model.epsilon:
         # self.action is the unique action chosen by the agent
         action = rb_act(self, game_state)
     else:
+        features = state_to_features(game_state)
         action = self.model.choose_action(features)
 
     self.logger.debug(f"Action taken:{action}")
@@ -128,7 +128,6 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
     self.logger.debug(
         f'Encountered event(s) {", ".join(map(repr, events))} in final step'
     )
-    # self.transitions.append(Transition(state_to_features(last_game_state), last_action, None, reward_from_events(self, events)))
 
     self.transitions.append(
         Transition(
@@ -166,7 +165,7 @@ def reward_from_events(self, events: List[str]) -> int:
         e.COIN_FOUND: 7,
         e.KILLED_SELF: -20,
         e.GOT_KILLED: -10,
-        e.SURVIVED_ROUND: 20
+        e.SURVIVED_ROUND: 20,
     }
     reward_sum = 0
     for event in events:

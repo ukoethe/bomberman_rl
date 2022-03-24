@@ -1,14 +1,14 @@
 import numpy as np
-from collections import defaultdict
 from random import shuffle
 from typing import Dict, List, Tuple
-from settings import BOMB_POWER, SCENARIOS
-from math import cos, sin, pi
+from settings import BOMB_POWER
+from math import cos, sin
 
 
 # So we do not have to maintain this in multiple locations
 ACTIONS = np.array(["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"])
 rotation_param = 0
+pivotPoint_param = (1, 1)
 matrix_rot_param = 0
 transformation_param = np.array([0, 0])
 
@@ -33,8 +33,11 @@ def state_to_features(game_state: dict) -> np.array:
 
     vision = list(vision_field(game_state))
     target = closest_target(game_state)
+    ownPosition = rotate_and_transform(game_state["self"][3])
 
-    vision += target
+    vision.extend(list(ownPosition))
+    vision.extend(list(target[0]))
+    vision.append(target[1])
 
     # active bomb
     vision.append(game_state["self"][2])
@@ -47,24 +50,17 @@ def closest_target(game_state):
 
     free_space = game_state["field"] == 0
 
-    others = np.array(game_state["others"], dtype=object)
-    targeting_mode = 0  # 'friendly'
+    if not game_state["coins"]:
+        if game_state["others"]:
+            others = np.array(game_state["others"], dtype=object)
 
-    # What should be prioritised
-
-    if (
-        isinstance(others, np.ndarray)
-        and others.any()
-        and target_others(game_state["self"][1], others[:, 1], len(game_state["coins"]))
-        or not game_state["coins"]
-    ):
-        if not isinstance(others.any() and others[:, 3], np.ndarray):
-            return (0, 0), 1  # if we do not have any others
-        else:
             targets = others[:, 3]
             targeting_mode = 1  # 'hostile'
+        else:
+            return (1, 1), 1  # if we do not have any coins or enemy's
     else:
         targets = game_state["coins"]
+        targeting_mode = 0  # 'friendly'
 
     """Find direction of closest target that can be reached via free tiles.
 
@@ -122,8 +118,16 @@ def closest_target(game_state):
         current = parent_dict[current]
 
 
-def target_others(myPoints: int, otherPoints: [], collectableCoins: int) -> bool:
+def target_others(self, myPoints: int, otherPoints: [], collectableCoins: int) -> bool:
     # cant win with only collecting coins or do not need to collect coins anymore
+
+    if len(otherPoints) == 3:
+        self.currentCoins = 9 - (
+            myPoints + sum(otherPoints)
+        )  # 9 oder 50 bei Coin_heaven #ToDo target crates
+    else:
+        self.currentCoins = self.currentCoins
+
     if not isinstance(otherPoints, np.ndarray):
         return False
 
@@ -138,8 +142,6 @@ def relative_position_coins(items: List[Tuple]) -> List[Tuple]:
     Takes the original coordinates and recalculates them relative to the start position defined in action_rotation
     This limits possible states without losing information
     """
-    # TODO: Clean this up, the slight alteration item[0] is needed because bomb tuple is ((X,Y),Turns) and Coins just (X,Y)
-    # TODO: Only take in vision / target
     return [rotate_and_transform(item) for item in items]
 
 
@@ -168,45 +170,58 @@ def action_rotation(game_state: Dict):
         transformation_param[0] = 0
         transformation_param[1] = 0
 
-    if game_state["self"][3] == (15, 1):
+    elif game_state["self"][3] == (1, 15):
         # Rechtsrotation unten links
         ACTIONS = np.array(["LEFT", "UP", "RIGHT", "DOWN", "WAIT", "BOMB"])
-        rotation_param = pi / 180 * -90
         matrix_rot_param = 3
-        transformation_param[0] = -15
-        transformation_param[1] = 0
+        rotation_param = np.deg2rad(90)
+        transformation_param[0] = 0
+        transformation_param[1] = -14
 
-    if game_state["self"][3] == (1, 15):
+    elif game_state["self"][3] == (15, 1):
         # Linksrotation oben rechts
         ACTIONS = np.array(["RIGHT", "DOWN", "LEFT", "UP", "WAIT", "BOMB"])
-        rotation_param = pi / 180 * 90
         matrix_rot_param = 1
-        transformation_param[0] = 0
-        transformation_param[1] = -15
+        rotation_param = np.deg2rad(-90)
+        transformation_param[0] = -14
+        transformation_param[1] = 0
 
-    if game_state["self"][3] == (15, 15):
+    elif game_state["self"][3] == (15, 15):
         # 180 Grad unten rechts
         ACTIONS = np.array(["DOWN", "LEFT", "UP", "RIGHT", "WAIT", "BOMB"])
-        rotation_param = pi / 180 * 180
+        rotation_param = np.deg2rad(-180)
         matrix_rot_param = 2
-        transformation_param[0] = -15
-        transformation_param[1] = -15
+        transformation_param[0] = -14
+        transformation_param[1] = -14
+
+    return ACTIONS
 
 
 def rotate_and_transform(xy):
     x, y = xy
-    x, y = x - transformation_param[0], y - transformation_param[1]
-    x = int(x * cos(rotation_param) - y * sin(rotation_param))
-    y = int(x * sin(rotation_param) + y * cos(rotation_param))
+    cx, cy = pivotPoint_param
+    px, py = x + transformation_param[0], y + transformation_param[1]
 
-    return x, y
+    px -= cx
+    py -= cy
+
+    xnew = round(px * cos(rotation_param) - py * sin(rotation_param))
+    ynew = round(px * sin(rotation_param) + py * cos(rotation_param))
+
+    px = xnew + cx
+    py = ynew + cy
+
+    return px, py
 
 
 def vision_field(game_state: Dict) -> List[Tuple]:
     # Position of the agent
     explosion_map = game_state["explosion_map"] == 1
     game_state["field"][explosion_map] = -1
-    field = np.rot90(danger(game_state), k=matrix_rot_param)  # game_state["field"]
+    field = np.rot90(
+        danger(np.copy(game_state["field"]), game_state["bombs"]), k=matrix_rot_param
+    )  # game_state["field"]
+
     self_pos = rotate_and_transform(game_state["self"][3])  # game_state["self"][3]
 
     # How far can you look
@@ -224,57 +239,51 @@ def vision_field(game_state: Dict) -> List[Tuple]:
     ].flatten()  # ToDo gleiche state größe erzwingen
 
 
-def danger(game_state: Dict):
+def danger(field, bombs):
     # implement danger posed by bombs that are about to set off
-    if game_state["bombs"]:
-        bombs = np.array(game_state["bombs"])[:, 0]
-        field = game_state["field"]
-        dangerPosX = []
-        dangerPosY = []
+    if bombs:
+        bombs = np.array(bombs, dtype=object)[:, 0]
 
         # Todo optimize only one np.put
         # Todo custom event for 2
+
+        # t = np.full((17, 17), 0)
 
         for pos in bombs:
             upWall = False
             downWall = False
             leftWall = False
             rightWall = False
+            # dangerPosX = []
+            # dangerPosY = []
 
             for i in range(BOMB_POWER):
-                if downWall is False and field[(pos[0] - i,), pos[1]] == 0:
-                    dangerPosY.append([(pos[0] - i,)])
+                if downWall is False and field[(pos[0] - i,), pos[1]] != -1:
+                    field[(pos[0] - i,), pos[1]] = 2
+                    # dangerPosX.append([(pos[0] - i,)])
                 else:
                     downWall = True
 
-                if upWall is False and field[(pos[0] + i,), pos[1]] == 0:
-                    dangerPosY.append([(pos[0] + i,)])
+                if upWall is False and field[(pos[0] + i,), pos[1]] != -1:
+                    field[(pos[0] + i,), pos[1]] = 2
+                    # dangerPosX.append([(pos[0] + i,)])
                 else:
                     upWall = True
 
-                if leftWall is False and field[pos[0], (pos[1] - i,)] == 0:
-                    dangerPosX.append([(pos[1] - i,)])
+                if leftWall is False and field[pos[0], (pos[1] - i,)] != -1:
+                    field[pos[0], (pos[1] - i,)] = 2
+                    # dangerPosY.append([(pos[1] - i,)])
                 else:
                     leftWall = True
 
-                if rightWall is False and field[pos[0], (pos[1] + i,)] == 0:
-                    dangerPosX.append([(pos[1] + i,)])
+                if rightWall is False and field[pos[0], (pos[1] + i,)] != -1:
+                    field[pos[0], (pos[1] + i,)] = 2
+                    # dangerPosY.append([(pos[1] + i,)])
                 else:
                     rightWall = True
 
-        for pos in bombs:
-            np.put(
-                field[pos[0], :],
-                dangerPosX,
-                np.full(len(dangerPosX), 2, dtype=int),
-                mode="clip",
-            )
-            np.put(
-                field[:, pos[1]],
-                dangerPosY,
-                np.full(len(dangerPosY), 2, dtype=int),
-                mode="clip",
-            )
+            # np.put(field[pos[0], :], dangerPosY, np.full(len(dangerPosY), 2, dtype=int), mode='clip')
+            # np.put(field[:, pos[1]], dangerPosX, np.full(len(dangerPosX), 2, dtype=int), mode='clip')
 
         return field
-    return game_state["field"]
+    return field

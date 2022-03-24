@@ -1,9 +1,8 @@
 import numpy as np
-from collections import defaultdict
 from random import shuffle
 from typing import Dict, List, Tuple
-from settings import BOMB_POWER, SCENARIOS
-from math import cos, sin, pi
+from settings import BOMB_POWER
+from math import cos, sin
 
 
 # So we do not have to maintain this in multiple locations
@@ -50,7 +49,6 @@ def closest_target(game_state):
     _, _, _, start = game_state["self"]
 
     free_space = game_state["field"] == 0
-
 
     if not game_state["coins"]:
         if game_state["others"]:
@@ -124,7 +122,9 @@ def target_others(self, myPoints: int, otherPoints: [], collectableCoins: int) -
     # cant win with only collecting coins or do not need to collect coins anymore
 
     if len(otherPoints) == 3:
-        self.currentCoins = 9 - (myPoints + sum(otherPoints))  # 9 oder 50 bei Coin_heaven #ToDo target crates
+        self.currentCoins = 9 - (
+            myPoints + sum(otherPoints)
+        )  # 9 oder 50 bei Coin_heaven #ToDo target crates
     else:
         self.currentCoins = self.currentCoins
 
@@ -218,8 +218,9 @@ def vision_field(game_state: Dict) -> List[Tuple]:
     # Position of the agent
     explosion_map = game_state["explosion_map"] == 1
     game_state["field"][explosion_map] = -1
-    field = np.rot90(danger(np.copy(game_state["field"]), game_state["bombs"]),
-                     k=matrix_rot_param)  # game_state["field"]
+    field = np.rot90(
+        danger(np.copy(game_state["field"]), game_state["bombs"]), k=matrix_rot_param
+    )  # game_state["field"]
 
     self_pos = rotate_and_transform(game_state["self"][3])  # game_state["self"][3]
 
@@ -233,7 +234,9 @@ def vision_field(game_state: Dict) -> List[Tuple]:
     down = max(0, self_pos[1] - vision)
     top = min(16, self_pos[1] + vision)
 
-    return field[left:right + 1, down:top + 1].flatten()  # ToDo gleiche state größe erzwingen
+    return field[
+        left : right + 1, down : top + 1
+    ].flatten()  # ToDo gleiche state größe erzwingen
 
 
 def danger(field, bombs):
@@ -281,6 +284,6 @@ def danger(field, bombs):
 
             # np.put(field[pos[0], :], dangerPosY, np.full(len(dangerPosY), 2, dtype=int), mode='clip')
             # np.put(field[:, pos[1]], dangerPosX, np.full(len(dangerPosX), 2, dtype=int), mode='clip')
-            
+
         return field
     return field

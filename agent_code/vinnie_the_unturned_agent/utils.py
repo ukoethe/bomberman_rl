@@ -1,10 +1,7 @@
 import numpy as np
-from collections import defaultdict
 from random import shuffle
 from typing import Dict, List, Tuple
-from settings import BOMB_POWER, SCENARIOS
-
-from math import cos, sin, pi
+from settings import BOMB_POWER
 
 # So we do not have to maintain this in multiple locations
 ACTIONS = np.array(["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"])
@@ -51,7 +48,7 @@ def closest_target(game_state):
             targets = others[:, 3]
             targeting_mode = 1  # 'hostile'
         else:
-            return(1, 1), 1  # if we do not have any coins or enemy's
+            return (1, 1), 1  # if we do not have any coins or enemy's
     else:
         targets = game_state["coins"]
         targeting_mode = 0  # 'friendly'
@@ -131,7 +128,9 @@ def vision_field(game_state: Dict) -> List[Tuple]:
     down = max(0, self_pos[1] - vision)
     top = min(16, self_pos[1] + vision)
 
-    return field[left:right + 1, down:top + 1].flatten()  #ToDo gleiche state größe erzwingen
+    return field[
+        left : right + 1, down : top + 1
+    ].flatten()  # ToDo gleiche state größe erzwingen
 
 
 def danger(field, bombs):
@@ -142,43 +141,43 @@ def danger(field, bombs):
         # Todo optimize only one np.put
         # Todo custom event for 2
 
-        #t = np.full((17, 17), 0)
+        # t = np.full((17, 17), 0)
 
         for pos in bombs:
             upWall = False
             downWall = False
             leftWall = False
             rightWall = False
-            #dangerPosX = []
-            #dangerPosY = []
+            # dangerPosX = []
+            # dangerPosY = []
 
             for i in range(BOMB_POWER):
                 if downWall is False and field[(pos[0] - i,), pos[1]] != -1:
                     field[(pos[0] - i,), pos[1]] = 2
-                    #dangerPosX.append([(pos[0] - i,)])
+                    # dangerPosX.append([(pos[0] - i,)])
                 else:
                     downWall = True
 
                 if upWall is False and field[(pos[0] + i,), pos[1]] != -1:
                     field[(pos[0] + i,), pos[1]] = 2
-                    #dangerPosX.append([(pos[0] + i,)])
+                    # dangerPosX.append([(pos[0] + i,)])
                 else:
                     upWall = True
 
                 if leftWall is False and field[pos[0], (pos[1] - i,)] != -1:
                     field[pos[0], (pos[1] - i,)] = 2
-                    #dangerPosY.append([(pos[1] - i,)])
+                    # dangerPosY.append([(pos[1] - i,)])
                 else:
                     leftWall = True
 
                 if rightWall is False and field[pos[0], (pos[1] + i,)] != -1:
                     field[pos[0], (pos[1] + i,)] = 2
-                    #dangerPosY.append([(pos[1] + i,)])
+                    # dangerPosY.append([(pos[1] + i,)])
                 else:
                     rightWall = True
 
-            #np.put(field[pos[0], :], dangerPosY, np.full(len(dangerPosY), 2, dtype=int), mode='clip')
-            #np.put(field[:, pos[1]], dangerPosX, np.full(len(dangerPosX), 2, dtype=int), mode='clip')
+            # np.put(field[pos[0], :], dangerPosY, np.full(len(dangerPosY), 2, dtype=int), mode='clip')
+            # np.put(field[:, pos[1]], dangerPosX, np.full(len(dangerPosX), 2, dtype=int), mode='clip')
 
         return field
     return field
