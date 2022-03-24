@@ -59,7 +59,7 @@ def train_act(self, game_state: dict):
     features = state_to_features(game_state)
     if random.uniform(0, 1) > self.model.epsilon:
         # self.action is the unique action chosen by the agent
-        action = rb_act(self, game_state)
+        action = rb_agent.act(self, game_state)
     else:
         action = self.model.choose_action(features)
 

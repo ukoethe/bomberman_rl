@@ -36,8 +36,9 @@ def state_to_features(game_state: dict) -> np.array:
     target = closest_target(game_state)
     ownPosition = rotate_and_transform(game_state["self"][3])
 
-    vision.extend(list(tuple(ownPosition)))
-    vision.extend(list(target))
+    vision.extend(list(ownPosition))
+    vision.extend(list(target[0]))
+    vision.append(target[1])
 
     # active bomb
     vision.append(game_state["self"][2])
