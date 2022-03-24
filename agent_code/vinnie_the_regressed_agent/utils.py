@@ -30,19 +30,23 @@ def state_to_features(game_state: dict) -> np.array:
     # This is the dict before the game begins and after it ends
     if game_state is None:
         return None
+    feature = list()
+    vision = vision_field(game_state)  # The Game we can see
+    target = closest_target(
+        game_state
+    )  # In which direction is the next target and in what 'mode' are we
+    ownPosition = rotate_and_transform(game_state["self"][3])  # Where are we
 
-    vision = list(vision_field(game_state))
-    target = closest_target(game_state)
-    ownPosition = rotate_and_transform(game_state["self"][3])
+    feature.extend(vision)
+    feature.extend(list(ownPosition))
+    feature.extend(list(target[0]))
+    feature.append(target[1])
+    feature.append(int(game_state["self"][2]))  # Can we set a bomb ?
 
-    vision.extend(list(ownPosition))
-    vision.extend(list(target[0]))
-    vision.append(target[1])
-
-    # active bomb
-    vision.append(game_state["self"][2])
-
-    return tuple(vision)
+    # return np.array([vision, list(ownPosition), list(target[0]), target[1], int(game_state["self"][2])]).flatten()
+    return feature
+    # assert len(feature) == 31, "this cant be"
+    # return tuple(feature)
 
 
 def closest_target(game_state):
@@ -118,7 +122,9 @@ def closest_target(game_state):
         current = parent_dict[current]
 
 
-def target_others(self, myPoints: int, otherPoints: [], collectableCoins: int) -> bool:
+def target_others(
+    self, myPoints: int, otherPoints: List, collectableCoins: int
+) -> bool:
     # cant win with only collecting coins or do not need to collect coins anymore
 
     if len(otherPoints) == 3:
@@ -234,9 +240,20 @@ def vision_field(game_state: Dict) -> List[Tuple]:
     down = max(0, self_pos[1] - vision)
     top = min(16, self_pos[1] + vision)
 
-    return field[
-        left : right + 1, down : top + 1
-    ].flatten()  # ToDo gleiche state größe erzwingen
+    vision_field = field[left : right + 1, down : top + 1]
+
+    # Thanks to this the features always have the same shape
+    if self_pos[0] - vision < 0:
+        vision_field = np.insert(vision_field, 0, values=-1, axis=0)
+    elif self_pos[0] + vision > 16:
+        vision_field = np.insert(vision_field, -1, values=-1, axis=0)
+    if self_pos[1] - vision < 0:
+        vision_field = np.insert(vision_field, 0, values=-1, axis=1)
+    elif self_pos[1] + vision > 16:
+        vision_field = np.insert(vision_field, -1, values=-1, axis=1)
+
+    # assert len(vision_field.flatten()) == 25, "somethings off"
+    return vision_field.flatten()
 
 
 def danger(field, bombs):

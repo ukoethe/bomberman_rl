@@ -45,7 +45,7 @@
             ]
         },
         {
-            "name": "Forest Train",
+            "name": "Forest Train Heaven",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}\\main.py",
@@ -60,6 +60,27 @@
                 "coin-heaven",
                 "--n-rounds",
                 "10_000",
+                "--no-gui",
+            ]
+        },
+        {
+            "name": "Forest Train",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "play",
+                "--train=1",
+                "--agent",
+                "vinnie_the_regressed_agent",
+                "rule_based_agent",
+                "rule_based_agent",
+                "rule_based_agent",
+                "--n-rounds",
+                "10_000",
+                "--no-gui",
             ]
         },
         {
