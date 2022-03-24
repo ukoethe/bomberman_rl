@@ -52,16 +52,15 @@ def setup_training(self):
     rb_setup(self)
 
 
-def train_act(self, gamestate):
+def train_act(self, game_state):
 
-    features = state_to_features(gamestate)
-    #if random.uniform(0, 1) > self.model.epsilon:
-    #    # self.action is the unique action chosen by the agent
-    #    action = rb_act(self, gamestate)
-    #else:
-    #    action = self.model.choose_action(features)
+    features = state_to_features(game_state)
+    if random.uniform(0, 1) > self.model.epsilon:
+        # self.action is the unique action chosen by the agent
+        action = rb_act(self, game_state)
+    else:
+        action = self.model.choose_action(features)
 
-    action = rb_act(self, gamestate)
     self.logger.debug(f"Action taken:{action}")
     return action
 
