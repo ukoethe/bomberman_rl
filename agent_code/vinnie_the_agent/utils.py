@@ -3,8 +3,8 @@ from collections import defaultdict
 from random import shuffle
 from typing import Dict, List, Tuple
 from settings import BOMB_POWER, SCENARIOS
-
 from math import cos, sin, pi
+
 
 # So we do not have to maintain this in multiple locations
 ACTIONS = np.array(["UP", "RIGHT", "DOWN", "LEFT", "WAIT", "BOMB"])
@@ -51,9 +51,11 @@ def closest_target(game_state):
 
     free_space = game_state["field"] == 0
 
+
     if not game_state["coins"]:
         if game_state["others"]:
             others = np.array(game_state["others"], dtype=object)
+
             targets = others[:, 3]
             targeting_mode = 1  # 'hostile'
         else:
@@ -129,7 +131,10 @@ def target_others(self, myPoints: int, otherPoints: [], collectableCoins: int) -
     if not isinstance(otherPoints, np.ndarray):
         return False
 
-    return myPoints + collectableCoins < max(otherPoints) or collectableCoins + max(otherPoints) < myPoints
+    return (
+        myPoints + collectableCoins < max(otherPoints)
+        or collectableCoins + max(otherPoints) < myPoints
+    )
 
 
 def relative_position_coins(items: List[Tuple]) -> List[Tuple]:
@@ -276,6 +281,6 @@ def danger(field, bombs):
 
             # np.put(field[pos[0], :], dangerPosY, np.full(len(dangerPosY), 2, dtype=int), mode='clip')
             # np.put(field[:, pos[1]], dangerPosX, np.full(len(dangerPosX), 2, dtype=int), mode='clip')
-
+            
         return field
     return field

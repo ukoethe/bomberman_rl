@@ -1,14 +1,10 @@
-from collections import defaultdict
 import os
 import dill as pickle
-import random
 from typing import Dict, List, Tuple
 from unicodedata import category
-from .train import setup_training, train_act
+from .train import train_act
 from .utils import state_to_features, ACTIONS, action_rotation
-from .model import Q_Table
-import numpy as np
-from random import shuffle
+from environment import GenericWorld
 
 
 def setup(self):
@@ -58,17 +54,20 @@ def act(self, game_state: dict) -> str:
 
     if(self.currentRound < game_state["round"]):
         self.model.actions = action_rotation(game_state)
+
         self.currentRound = game_state["round"]
 
     features = state_to_features(game_state)
+    self.logger.debug(f"Features are\n{features}")
 
     if self.train:
         action = train_act(self, game_state)
         return action
 
-    # self.logger.debug("Querying model for action")
     action = self.model.choose_action(features)
+
     self.logger.debug(f"Model returned action: {action}")
+
 
     return action
 
