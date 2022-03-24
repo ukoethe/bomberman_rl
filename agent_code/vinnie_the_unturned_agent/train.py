@@ -2,6 +2,7 @@ from collections import namedtuple, deque
 from random import sample
 import numpy as np
 from typing import List
+import agent_code.rule_based_agent.callbacks as rb_agent
 from agent_code.rule_based_agent.callbacks import act as rb_act, setup as rb_setup
 import events as e
 from .model import Q_Table
@@ -49,15 +50,16 @@ def setup_training(self):
             pickle.dump(self.model, file)
 
     self.batch_size = 10
-    rb_setup(self)
+    #rb_setup(self)
+    rb_agent.setup(self)
 
 
-def train_act(self, game_state):
+def train_act(self, game_state: dict):
 
     features = state_to_features(game_state)
     if random.uniform(0, 1) > self.model.epsilon:
         # self.action is the unique action chosen by the agent
-        action = rb_act(self, game_state)
+        action = rb_agent.act(self, game_state)
     else:
         action = self.model.choose_action(features)
 
