@@ -39,6 +39,7 @@ class DQNSolver:
             return
         batch = random.sample(transitions, int(len(transitions) / 1))
         X = []
+        state_size = 31
         targets = []
         for state, action, state_next, reward in batch:
             q_update = reward
@@ -54,9 +55,6 @@ class DQNSolver:
 
             q_values[0][action] = q_update
 
-            # print(state)
-            # print(action)
-            # print(q_values)
             X.append(state)
             targets.append(q_values[0])
         # print(X)
