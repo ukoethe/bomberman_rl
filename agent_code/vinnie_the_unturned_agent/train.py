@@ -63,7 +63,6 @@ def train_act(self, game_state: dict):
     else:
         action = self.model.choose_action(features)
 
-    action = rb_agent.act(self, game_state)
     self.logger.debug(f"Action taken:{action}")
     return action
 
