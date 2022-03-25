@@ -49,6 +49,11 @@ def state_to_features(game_state: dict) -> np.array:
     # return tuple(feature)
 
 
+def predict_input(input):
+    # Forest Classifier expects 2D array for multiple predicts at once but we only do one at a time
+    return np.array(input).reshape(1, -1)
+
+
 def closest_target(game_state):
     _, _, _, start = game_state["self"]
 

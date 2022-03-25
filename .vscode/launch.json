@@ -84,6 +84,25 @@
             ]
         },
         {
+            "name": "Forest Play",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}\\main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "play",
+                "--train=0",
+                "--agent",
+                "vinnie_the_regressed_agent",
+                "rule_based_agent",
+                "rule_based_agent",
+                "rule_based_agent",
+                "--n-rounds",
+                "10",
+            ]
+        },
+        {
             "name": "Baseline Play",
             "type": "python",
             "request": "launch",

@@ -5,7 +5,7 @@ from typing import List
 from agent_code.rule_based_agent.callbacks import act as rb_act, setup as rb_setup
 import events as e
 from .model import DQNSolver
-from .utils import state_to_features, ACTIONS
+from .utils import state_to_features, ACTIONS, predict_input
 import random
 import dill as pickle
 
@@ -57,9 +57,10 @@ def train_act(self, gamestate):
 
     if np.random.rand() < self.model.exploration_rate:
         return rb_act(self, gamestate)
-    if self.isFit == True:
+    elif self.model.isFit == True:
         features = state_to_features(gamestate)
-        q_values = self.model.classifier.predict(features)
+        q_values = self.model.classifier.predict(predict_input(features))
+        self.logger.debug(f"Log Probabilities of choosing actions {q_values}")
     else:
         q_values = np.zeros(self.action_space).reshape(1, -1)
     return self.model.actions[np.argmax(q_values[0])]
@@ -133,12 +134,15 @@ def end_of_round(self, last_game_state: dict, last_action: str, events: List[str
             reward_from_events(self, events),
         )
     )
+    try:
+        self.model.experience_replay(self.transitions, self.batch_size)
 
-    self.model.experience_replay(self.transitions, self.batch_size)
-
-    # Store the model
-    with open("model.pt", "wb") as file:
-        pickle.dump(self.model, file)
+        # Store the model
+        with open("model.pt", "wb") as file:
+            pickle.dump(self.model, file)
+    except KeyboardInterrupt:
+        self.logger.debug("You interrupted the training with a KeyboardInterrupt")
+        raise KeyboardInterrupt
 
 
 def reward_from_events(self, events: List[str]) -> int:

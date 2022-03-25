@@ -3,7 +3,8 @@ import dill as pickle
 from typing import Dict, List, Tuple
 from unicodedata import category
 from .train import train_act
-from .utils import state_to_features, ACTIONS, action_rotation
+import numpy as np
+from .utils import state_to_features, ACTIONS, action_rotation, predict_input
 
 
 def setup(self):
@@ -64,7 +65,8 @@ def act(self, game_state: dict) -> str:
         action = train_act(self, game_state)
         return action
 
-    action = self.model.choose_action(features)
+    q_values = self.model.classifier.predict(predict_input(features))
+    action = self.model.actions[np.argmax(q_values[0])]
     self.logger.debug("Model returned action: ", action)
 
     return action
