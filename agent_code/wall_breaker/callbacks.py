@@ -5,6 +5,12 @@ import numpy as np
 
 import settings as s
 
+# the callback functions used by this agent are 4:
+#      look_for_targets : find closest target
+#                 setup : initializes data structures before a set of games
+#            reset_self : called once at the beginning of each round
+#                   act : called at each step to perform next move
+
 
 def look_for_targets(free_space, start, targets, logger=None):
     """Find direction of closest target that can be reached via free tiles.
