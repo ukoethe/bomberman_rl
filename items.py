@@ -46,7 +46,7 @@ class Bomb(Item):
         self.avatar = bomb_sprite
 
     def get_state(self):
-        return (self.x, self.y), self.timer
+        return (self.x, self.y), self.timer, self.owner.name
 
     def get_blast_coords(self, arena):
         x, y = self.x, self.y
