@@ -57,11 +57,12 @@ class Agent:
         self.backend = backend
 
         # Load custom avatar or standard robot avatar of assigned color
+        game_dir = os.path.dirname(__file__)
         try:
             if isinstance(avatar_sprite_desc, bytes):
                 self.avatar = pygame.image.load(BytesIO(avatar_sprite_desc))
             else:
-                self.avatar = pygame.image.load(f'agent_code/{code_name}/avatar.png')
+                self.avatar = pygame.image.load(f'{game_dir}/agent_code/{code_name}/avatar.png')
             assert self.avatar.get_size() == (30, 30)
         except Exception as e:
             self.avatar = pygame.image.load(s.ASSET_DIR / f'robot_{avatar_sprite_desc}.png')
@@ -70,7 +71,7 @@ class Agent:
             if isinstance(avatar_sprite_desc, bytes):
                 self.bomb_sprite = pygame.image.load(BytesIO(bomb_sprite_desc))
             else:
-                self.bomb_sprite = pygame.image.load(f'agent_code/{code_name}/bomb.png')
+                self.bomb_sprite = pygame.image.load(f'{game_dir}/agent_code/{code_name}/bomb.png')
             assert self.bomb_sprite.get_size() == (30, 30)
         except Exception as e:
             self.bomb_sprite = pygame.image.load(s.ASSET_DIR / f'bomb_{bomb_sprite_desc}.png')
@@ -201,9 +202,9 @@ class AgentRunner:
         self.code_name = code_name
         self.result_queue = result_queue
 
-        self.callbacks = importlib.import_module('agent_code.' + self.code_name + '.callbacks')
+        self.callbacks = importlib.import_module(f'agent_code.{self.code_name}.callbacks')
         if train:
-            self.train = importlib.import_module('agent_code.' + self.code_name + '.train')
+            self.train = importlib.import_module(f'agent_code.{self.code_name}.train')
         for module_name in ["callbacks"] + (["train"] if train else []):
             module = getattr(self, module_name)
             for event_name, event_args in AGENT_API[module_name].items():
@@ -218,12 +219,11 @@ class AgentRunner:
 
         self.fake_self = SimpleNamespace()
         self.fake_self.train = train
-
         self.wlogger = logging.getLogger(self.agent_name + '_wrapper')
         self.wlogger.setLevel(s.LOG_AGENT_WRAPPER)
         self.fake_self.logger = logging.getLogger(self.agent_name + '_code')
         self.fake_self.logger.setLevel(s.LOG_AGENT_CODE)
-        log_dir = f'agent_code/{self.code_name}/logs/'
+        log_dir = f'{os.path.dirname(__file__)}/agent_code/{self.code_name}/logs/'
         if not os.path.exists(log_dir): os.makedirs(log_dir)
         handler = logging.FileHandler(f'{log_dir}{self.agent_name}.log', mode="w")
         handler.setLevel(logging.DEBUG)
