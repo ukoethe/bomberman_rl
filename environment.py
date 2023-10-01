@@ -488,6 +488,7 @@ class BombeRLeWorld(GenericWorld):
         # Clean up survivors
         for a in self.active_agents:
             a.add_event(e.SURVIVED_ROUND)
+            a.store_game_state(self.get_state_for_agent(a))
 
         # Send final event to agents that expect them
         for a in self.agents:
