@@ -1,0 +1,756 @@
+2023-09-30 18:03:34,204 [temp_code] INFO: Setting up model from scratch.
+2023-09-30 18:03:34,209 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,210 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 1
+2023-09-30 18:03:34,224 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,245 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,245 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,259 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,260 [temp_code] DEBUG: Encountered game event(s) 'MOVED_LEFT' in step 2
+2023-09-30 18:03:34,272 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:34,285 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:34,285 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:34,291 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,291 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 3
+2023-09-30 18:03:34,295 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,310 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,310 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,317 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,317 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 4
+2023-09-30 18:03:34,323 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,335 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,335 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,340 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,341 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 5
+2023-09-30 18:03:34,345 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,354 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,354 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,359 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,360 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 6
+2023-09-30 18:03:34,365 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,375 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,376 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,381 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,381 [temp_code] DEBUG: Encountered game event(s) 'WAITED' in step 7
+2023-09-30 18:03:34,387 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:34,397 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:34,397 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:34,402 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,403 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 8
+2023-09-30 18:03:34,407 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,418 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,418 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,424 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,424 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 9
+2023-09-30 18:03:34,429 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,439 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,439 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,444 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,444 [temp_code] DEBUG: Encountered game event(s) 'WAITED' in step 10
+2023-09-30 18:03:34,449 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:34,458 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:34,458 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:34,463 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,463 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 11
+2023-09-30 18:03:34,467 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,475 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,475 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,481 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,481 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 12
+2023-09-30 18:03:34,486 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,494 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,494 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,500 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,500 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 13
+2023-09-30 18:03:34,504 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,514 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,514 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,519 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,519 [temp_code] DEBUG: Encountered game event(s) 'MOVED_RIGHT' in step 14
+2023-09-30 18:03:34,525 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:34,535 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:34,535 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:34,542 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,542 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 15
+2023-09-30 18:03:34,547 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:34,557 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:34,557 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:34,562 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,562 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 16
+2023-09-30 18:03:34,567 [temp_code] INFO: Awarded 5 for events MOVED_DOWN, MOVES_TOWARD_TARGET
+2023-09-30 18:03:34,577 [temp_code] INFO: Awarded 5 for events MOVED_DOWN, MOVES_TOWARD_TARGET
+2023-09-30 18:03:34,577 [temp_code] INFO: Awarded 5 for events MOVED_DOWN, MOVES_TOWARD_TARGET
+2023-09-30 18:03:34,581 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,582 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 17
+2023-09-30 18:03:34,586 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,596 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,596 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,600 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,601 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 18
+2023-09-30 18:03:34,605 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,614 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,614 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,619 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,619 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 19
+2023-09-30 18:03:34,624 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:34,632 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:34,632 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:34,638 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,638 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 20
+2023-09-30 18:03:34,643 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:34,652 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:34,652 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:34,657 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,657 [temp_code] DEBUG: Encountered game event(s) 'MOVED_LEFT' in step 21
+2023-09-30 18:03:34,662 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:34,672 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:34,672 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:34,677 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,677 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 22
+2023-09-30 18:03:34,683 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,695 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,695 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,700 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,700 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 23
+2023-09-30 18:03:34,705 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,715 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,715 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,719 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,720 [temp_code] DEBUG: Encountered game event(s) 'BOMB_DROPPED' in step 24
+2023-09-30 18:03:34,724 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:34,734 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:34,734 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:34,739 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,739 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 25
+2023-09-30 18:03:34,744 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,754 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,754 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,758 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,758 [temp_code] DEBUG: Encountered game event(s) 'MOVED_RIGHT' in step 26
+2023-09-30 18:03:34,763 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:34,773 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:34,773 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:34,778 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,778 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 27
+2023-09-30 18:03:34,783 [temp_code] INFO: Awarded 5 for events MOVED_DOWN, MOVES_TOWARD_TARGET
+2023-09-30 18:03:34,795 [temp_code] INFO: Awarded 5 for events MOVED_DOWN, MOVES_TOWARD_TARGET
+2023-09-30 18:03:34,795 [temp_code] INFO: Awarded 5 for events MOVED_DOWN, MOVES_TOWARD_TARGET
+2023-09-30 18:03:34,801 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,802 [temp_code] DEBUG: Encountered game event(s) 'WAITED', 'BOMB_EXPLODED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'CRATE_DESTROYED' in step 28
+2023-09-30 18:03:34,807 [temp_code] INFO: Awarded -4 for events WAITED, BOMB_EXPLODED, CRATE_DESTROYED, CRATE_DESTROYED, CRATE_DESTROYED, BAD_MOVE
+2023-09-30 18:03:34,818 [temp_code] INFO: Awarded -4 for events WAITED, BOMB_EXPLODED, CRATE_DESTROYED, CRATE_DESTROYED, CRATE_DESTROYED, BAD_MOVE
+2023-09-30 18:03:34,818 [temp_code] INFO: Awarded -4 for events WAITED, BOMB_EXPLODED, CRATE_DESTROYED, CRATE_DESTROYED, CRATE_DESTROYED, BAD_MOVE
+2023-09-30 18:03:34,822 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,823 [temp_code] DEBUG: Encountered event(s) 'MOVED_UP', 'KILLED_SELF', 'GOT_KILLED' in final step
+2023-09-30 18:03:34,828 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:34,828 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:34,829 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,830 [temp_code] DEBUG: Encountered game event(s) 'BOMB_DROPPED' in step 1
+2023-09-30 18:03:34,835 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:34,845 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:34,845 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:34,851 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,851 [temp_code] DEBUG: Encountered game event(s) 'WAITED' in step 2
+2023-09-30 18:03:34,857 [temp_code] INFO: Awarded -150 for events WAITED, DEADLY_MOVE
+2023-09-30 18:03:34,867 [temp_code] INFO: Awarded -150 for events WAITED, DEADLY_MOVE
+2023-09-30 18:03:34,867 [temp_code] INFO: Awarded -150 for events WAITED, DEADLY_MOVE
+2023-09-30 18:03:34,872 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,872 [temp_code] DEBUG: Encountered game event(s) 'WAITED' in step 3
+2023-09-30 18:03:34,877 [temp_code] INFO: Awarded -150 for events WAITED, DEADLY_MOVE
+2023-09-30 18:03:34,887 [temp_code] INFO: Awarded -150 for events WAITED, DEADLY_MOVE
+2023-09-30 18:03:34,887 [temp_code] INFO: Awarded -150 for events WAITED, DEADLY_MOVE
+2023-09-30 18:03:34,892 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,892 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 4
+2023-09-30 18:03:34,897 [temp_code] INFO: Awarded -150 for events MOVED_DOWN, DEADLY_MOVE
+2023-09-30 18:03:34,905 [temp_code] INFO: Awarded -150 for events MOVED_DOWN, DEADLY_MOVE
+2023-09-30 18:03:34,905 [temp_code] INFO: Awarded -150 for events MOVED_DOWN, DEADLY_MOVE
+2023-09-30 18:03:34,911 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,912 [temp_code] DEBUG: Encountered event(s) 'INVALID_ACTION', 'BOMB_EXPLODED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'KILLED_SELF', 'GOT_KILLED' in final step
+2023-09-30 18:03:34,916 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:34,916 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:34,917 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,917 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 1
+2023-09-30 18:03:34,922 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,931 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,931 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,936 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,936 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 2
+2023-09-30 18:03:34,941 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,950 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,950 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,955 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,955 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 3
+2023-09-30 18:03:34,959 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:34,969 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:34,969 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:34,974 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,974 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 4
+2023-09-30 18:03:34,979 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,988 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,988 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:34,993 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:34,993 [temp_code] DEBUG: Encountered game event(s) 'BOMB_DROPPED' in step 5
+2023-09-30 18:03:34,999 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:35,007 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:35,007 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:35,014 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,014 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 6
+2023-09-30 18:03:35,020 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,029 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,029 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,034 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,035 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 7
+2023-09-30 18:03:35,040 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:35,049 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:35,049 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:35,054 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,054 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 8
+2023-09-30 18:03:35,059 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,068 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,068 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,072 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,073 [temp_code] DEBUG: Encountered event(s) 'INVALID_ACTION', 'BOMB_EXPLODED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'COIN_FOUND', 'KILLED_SELF', 'GOT_KILLED' in final step
+2023-09-30 18:03:35,078 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:35,078 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:35,079 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,079 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 1
+2023-09-30 18:03:35,084 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,093 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,093 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,099 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,099 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 2
+2023-09-30 18:03:35,103 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,113 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,113 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,118 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,119 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 3
+2023-09-30 18:03:35,124 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,135 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,135 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,141 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,142 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 4
+2023-09-30 18:03:35,148 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,158 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,158 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,163 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,163 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 5
+2023-09-30 18:03:35,168 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,177 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,177 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,181 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,182 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 6
+2023-09-30 18:03:35,188 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,197 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,197 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,201 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,201 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 7
+2023-09-30 18:03:35,206 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,215 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,215 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,221 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,221 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 8
+2023-09-30 18:03:35,226 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:35,235 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:35,235 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:35,240 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,240 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 9
+2023-09-30 18:03:35,245 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,254 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,254 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,259 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,259 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 10
+2023-09-30 18:03:35,264 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:35,273 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:35,273 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:35,278 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,279 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 11
+2023-09-30 18:03:35,283 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,292 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,292 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,297 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,298 [temp_code] DEBUG: Encountered game event(s) 'MOVED_LEFT' in step 12
+2023-09-30 18:03:35,302 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,311 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,311 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,315 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,315 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 13
+2023-09-30 18:03:35,321 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,329 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,329 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,334 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,334 [temp_code] DEBUG: Encountered game event(s) 'WAITED' in step 14
+2023-09-30 18:03:35,340 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:35,349 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:35,349 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:35,354 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,355 [temp_code] DEBUG: Encountered game event(s) 'MOVED_RIGHT' in step 15
+2023-09-30 18:03:35,360 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:35,368 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:35,368 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:35,373 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,373 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 16
+2023-09-30 18:03:35,378 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,387 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,387 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,392 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,393 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 17
+2023-09-30 18:03:35,398 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,407 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,407 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,412 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,412 [temp_code] DEBUG: Encountered game event(s) 'BOMB_DROPPED' in step 18
+2023-09-30 18:03:35,417 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:35,426 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:35,427 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:35,432 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,432 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 19
+2023-09-30 18:03:35,437 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:35,447 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:35,447 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:35,452 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,453 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 20
+2023-09-30 18:03:35,457 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,466 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,466 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,471 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,471 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 21
+2023-09-30 18:03:35,475 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,487 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,487 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,492 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,493 [temp_code] DEBUG: Encountered event(s) 'INVALID_ACTION', 'BOMB_EXPLODED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'KILLED_SELF', 'GOT_KILLED' in final step
+2023-09-30 18:03:35,498 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:35,498 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:35,499 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,500 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 1
+2023-09-30 18:03:35,505 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,518 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,518 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,525 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,525 [temp_code] DEBUG: Encountered game event(s) 'BOMB_DROPPED' in step 2
+2023-09-30 18:03:35,531 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:35,542 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:35,542 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:35,548 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,548 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 3
+2023-09-30 18:03:35,553 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,565 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,565 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,573 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,574 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 4
+2023-09-30 18:03:35,580 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,593 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,593 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,598 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,598 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 5
+2023-09-30 18:03:35,604 [temp_code] INFO: Awarded -150 for events MOVED_UP, DEADLY_MOVE
+2023-09-30 18:03:35,615 [temp_code] INFO: Awarded -150 for events MOVED_UP, DEADLY_MOVE
+2023-09-30 18:03:35,615 [temp_code] INFO: Awarded -150 for events MOVED_UP, DEADLY_MOVE
+2023-09-30 18:03:35,620 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,621 [temp_code] DEBUG: Encountered event(s) 'INVALID_ACTION', 'BOMB_EXPLODED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'KILLED_SELF', 'GOT_KILLED' in final step
+2023-09-30 18:03:35,625 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:35,625 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:35,628 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,629 [temp_code] DEBUG: Encountered game event(s) 'MOVED_LEFT' in step 1
+2023-09-30 18:03:35,643 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,670 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,670 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,675 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,675 [temp_code] DEBUG: Encountered game event(s) 'MOVED_LEFT' in step 2
+2023-09-30 18:03:35,681 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,691 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,691 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,697 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,697 [temp_code] DEBUG: Encountered game event(s) 'WAITED' in step 3
+2023-09-30 18:03:35,704 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:35,717 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:35,717 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:35,725 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,725 [temp_code] DEBUG: Encountered game event(s) 'WAITED' in step 4
+2023-09-30 18:03:35,732 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:35,744 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:35,744 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:35,750 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,750 [temp_code] DEBUG: Encountered game event(s) 'BOMB_DROPPED' in step 5
+2023-09-30 18:03:35,755 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:35,767 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:35,767 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:35,772 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,772 [temp_code] DEBUG: Encountered game event(s) 'MOVED_RIGHT' in step 6
+2023-09-30 18:03:35,778 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:35,789 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:35,790 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:35,795 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,797 [temp_code] DEBUG: Encountered game event(s) 'MOVED_RIGHT' in step 7
+2023-09-30 18:03:35,803 [temp_code] INFO: Awarded 5 for events MOVED_RIGHT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,814 [temp_code] INFO: Awarded 5 for events MOVED_RIGHT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,814 [temp_code] INFO: Awarded 5 for events MOVED_RIGHT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,820 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,821 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 8
+2023-09-30 18:03:35,826 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,837 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,837 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,842 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,843 [temp_code] DEBUG: Encountered event(s) 'INVALID_ACTION', 'BOMB_EXPLODED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'KILLED_SELF', 'GOT_KILLED' in final step
+2023-09-30 18:03:35,849 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:35,849 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:35,850 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,850 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 1
+2023-09-30 18:03:35,854 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,862 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,862 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,867 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,868 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 2
+2023-09-30 18:03:35,872 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,880 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,880 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,884 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,885 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 3
+2023-09-30 18:03:35,889 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,896 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,896 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:35,901 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,901 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 4
+2023-09-30 18:03:35,905 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,912 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,912 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,916 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,916 [temp_code] DEBUG: Encountered game event(s) 'MOVED_RIGHT' in step 5
+2023-09-30 18:03:35,920 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:35,928 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:35,928 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:35,932 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,932 [temp_code] DEBUG: Encountered game event(s) 'MOVED_LEFT' in step 6
+2023-09-30 18:03:35,936 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,946 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,946 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:35,951 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,951 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 7
+2023-09-30 18:03:35,955 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,965 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,965 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,969 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,970 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 8
+2023-09-30 18:03:35,975 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,985 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,985 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:35,991 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:35,991 [temp_code] DEBUG: Encountered game event(s) 'MOVED_RIGHT' in step 9
+2023-09-30 18:03:35,995 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:36,002 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:36,002 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:36,007 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,007 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 10
+2023-09-30 18:03:36,011 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,017 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,017 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,022 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,022 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 11
+2023-09-30 18:03:36,025 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,033 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,033 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,037 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,037 [temp_code] DEBUG: Encountered game event(s) 'WAITED' in step 12
+2023-09-30 18:03:36,041 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:36,049 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:36,049 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:36,053 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,054 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 13
+2023-09-30 18:03:36,057 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,065 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,065 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,071 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,071 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 14
+2023-09-30 18:03:36,075 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,085 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,085 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,089 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,089 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 15
+2023-09-30 18:03:36,094 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,101 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,101 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,105 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,105 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 16
+2023-09-30 18:03:36,109 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,117 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,117 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,121 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,121 [temp_code] DEBUG: Encountered game event(s) 'MOVED_LEFT' in step 17
+2023-09-30 18:03:36,125 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,133 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,133 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,137 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,138 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 18
+2023-09-30 18:03:36,141 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,148 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,148 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,152 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,152 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 19
+2023-09-30 18:03:36,156 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,164 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,164 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,167 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,168 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 20
+2023-09-30 18:03:36,171 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,179 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,179 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,183 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,183 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 21
+2023-09-30 18:03:36,188 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,194 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,195 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,199 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,199 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 22
+2023-09-30 18:03:36,203 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,210 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,210 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,214 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,215 [temp_code] DEBUG: Encountered game event(s) 'MOVED_RIGHT' in step 23
+2023-09-30 18:03:36,220 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:36,229 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:36,229 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:36,234 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,234 [temp_code] DEBUG: Encountered game event(s) 'WAITED' in step 24
+2023-09-30 18:03:36,240 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:36,248 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:36,248 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:36,252 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,252 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 25
+2023-09-30 18:03:36,256 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,264 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,264 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,267 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,267 [temp_code] DEBUG: Encountered game event(s) 'MOVED_LEFT' in step 26
+2023-09-30 18:03:36,271 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,279 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,279 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,283 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,283 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 27
+2023-09-30 18:03:36,286 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,295 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,295 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,299 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,300 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 28
+2023-09-30 18:03:36,305 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,313 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,313 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,317 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,318 [temp_code] DEBUG: Encountered game event(s) 'BOMB_DROPPED' in step 29
+2023-09-30 18:03:36,321 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:36,329 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:36,329 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:36,333 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,333 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 30
+2023-09-30 18:03:36,338 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,347 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,347 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,351 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,352 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 31
+2023-09-30 18:03:36,355 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,364 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,364 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,368 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,368 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 32
+2023-09-30 18:03:36,372 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,380 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,380 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,384 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,385 [temp_code] DEBUG: Encountered event(s) 'INVALID_ACTION', 'BOMB_EXPLODED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'KILLED_SELF', 'GOT_KILLED' in final step
+2023-09-30 18:03:36,388 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:36,388 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:36,389 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,389 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 1
+2023-09-30 18:03:36,394 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,403 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,403 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,409 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,409 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 2
+2023-09-30 18:03:36,414 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,423 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,423 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,430 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,430 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 3
+2023-09-30 18:03:36,435 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,444 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,444 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,449 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,449 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 4
+2023-09-30 18:03:36,454 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,464 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,464 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,468 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,468 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 5
+2023-09-30 18:03:36,473 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,484 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,484 [temp_code] INFO: Awarded 5 for events MOVED_UP, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,488 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,488 [temp_code] DEBUG: Encountered game event(s) 'BOMB_DROPPED' in step 6
+2023-09-30 18:03:36,493 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:36,502 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:36,502 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:36,508 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,508 [temp_code] DEBUG: Encountered game event(s) 'MOVED_LEFT' in step 7
+2023-09-30 18:03:36,514 [temp_code] INFO: Awarded -150 for events MOVED_LEFT, DEADLY_MOVE
+2023-09-30 18:03:36,523 [temp_code] INFO: Awarded -150 for events MOVED_LEFT, DEADLY_MOVE
+2023-09-30 18:03:36,523 [temp_code] INFO: Awarded -150 for events MOVED_LEFT, DEADLY_MOVE
+2023-09-30 18:03:36,528 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,529 [temp_code] DEBUG: Encountered game event(s) 'WAITED' in step 8
+2023-09-30 18:03:36,533 [temp_code] INFO: Awarded -150 for events WAITED, DEADLY_MOVE
+2023-09-30 18:03:36,542 [temp_code] INFO: Awarded -150 for events WAITED, DEADLY_MOVE
+2023-09-30 18:03:36,542 [temp_code] INFO: Awarded -150 for events WAITED, DEADLY_MOVE
+2023-09-30 18:03:36,548 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,548 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 9
+2023-09-30 18:03:36,553 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,563 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,563 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,567 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,567 [temp_code] DEBUG: Encountered event(s) 'INVALID_ACTION', 'BOMB_EXPLODED', 'CRATE_DESTROYED', 'COIN_FOUND', 'KILLED_SELF', 'GOT_KILLED' in final step
+2023-09-30 18:03:36,572 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:36,572 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:36,573 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,573 [temp_code] DEBUG: Encountered game event(s) 'MOVED_LEFT' in step 1
+2023-09-30 18:03:36,579 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,589 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,589 [temp_code] INFO: Awarded 5 for events MOVED_LEFT, MOVES_TOWARD_TARGET
+2023-09-30 18:03:36,595 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,595 [temp_code] DEBUG: Encountered game event(s) 'MOVED_RIGHT' in step 2
+2023-09-30 18:03:36,600 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:36,612 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:36,612 [temp_code] INFO: Awarded -4 for events MOVED_RIGHT, BAD_MOVE
+2023-09-30 18:03:36,617 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,618 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 3
+2023-09-30 18:03:36,623 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,633 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,633 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,639 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,640 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 4
+2023-09-30 18:03:36,645 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:36,655 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:36,655 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:36,661 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,661 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 5
+2023-09-30 18:03:36,666 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,675 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,675 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,682 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,683 [temp_code] DEBUG: Encountered game event(s) 'WAITED' in step 6
+2023-09-30 18:03:36,688 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:36,698 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:36,698 [temp_code] INFO: Awarded -4 for events WAITED, BAD_MOVE
+2023-09-30 18:03:36,704 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,704 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 7
+2023-09-30 18:03:36,710 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:36,720 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:36,720 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:36,725 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,725 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 8
+2023-09-30 18:03:36,732 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,741 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,741 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,747 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,747 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 9
+2023-09-30 18:03:36,753 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,763 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,763 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,769 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,769 [temp_code] DEBUG: Encountered game event(s) 'BOMB_DROPPED' in step 10
+2023-09-30 18:03:36,774 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:36,785 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:36,785 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:36,791 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,791 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 11
+2023-09-30 18:03:36,796 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,807 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,807 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,813 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,813 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 12
+2023-09-30 18:03:36,818 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,830 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,830 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,837 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,837 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 13
+2023-09-30 18:03:36,843 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,853 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,853 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,858 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,859 [temp_code] DEBUG: Encountered event(s) 'INVALID_ACTION', 'BOMB_EXPLODED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'KILLED_SELF', 'GOT_KILLED' in final step
+2023-09-30 18:03:36,864 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:36,864 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:36,865 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,865 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 1
+2023-09-30 18:03:36,871 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:36,880 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:36,880 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:36,887 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,887 [temp_code] DEBUG: Encountered game event(s) 'MOVED_DOWN' in step 2
+2023-09-30 18:03:36,892 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,901 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,901 [temp_code] INFO: Awarded -4 for events MOVED_DOWN, BAD_MOVE
+2023-09-30 18:03:36,905 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,906 [temp_code] DEBUG: Encountered game event(s) 'MOVED_UP' in step 3
+2023-09-30 18:03:36,910 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:36,920 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:36,920 [temp_code] INFO: Awarded -4 for events MOVED_UP, BAD_MOVE
+2023-09-30 18:03:36,925 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,925 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 4
+2023-09-30 18:03:36,930 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,938 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,938 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,942 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,943 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 5
+2023-09-30 18:03:36,947 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,955 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,955 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,961 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,961 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 6
+2023-09-30 18:03:36,965 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,973 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,973 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,979 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,979 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 7
+2023-09-30 18:03:36,983 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,993 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,994 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:36,999 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:36,999 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 8
+2023-09-30 18:03:37,003 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,012 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,012 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,016 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:37,016 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 9
+2023-09-30 18:03:37,021 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,031 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,031 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,036 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:37,036 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 10
+2023-09-30 18:03:37,040 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,049 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,049 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,054 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:37,054 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 11
+2023-09-30 18:03:37,059 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,066 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,066 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,071 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:37,072 [temp_code] DEBUG: Encountered game event(s) 'BOMB_DROPPED' in step 12
+2023-09-30 18:03:37,077 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:37,085 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:37,085 [temp_code] INFO: Awarded 10 for events BOMB_DROPPED, GOOD_BOMB_PLACEMENT
+2023-09-30 18:03:37,089 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:37,089 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 13
+2023-09-30 18:03:37,094 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,104 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,104 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,108 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:37,108 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 14
+2023-09-30 18:03:37,113 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,123 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,123 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,129 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:37,129 [temp_code] DEBUG: Encountered game event(s) 'INVALID_ACTION' in step 15
+2023-09-30 18:03:37,135 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,145 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,145 [temp_code] INFO: Awarded -80 for events INVALID_ACTION
+2023-09-30 18:03:37,150 [temp_code] DEBUG: Choosing action purely at random.
+2023-09-30 18:03:37,151 [temp_code] DEBUG: Encountered event(s) 'WAITED', 'BOMB_EXPLODED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'CRATE_DESTROYED', 'KILLED_SELF', 'GOT_KILLED' in final step
+2023-09-30 18:03:37,155 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
+2023-09-30 18:03:37,155 [temp_code] INFO: Awarded 0 for events round, step, field, self, others, bombs, coins, user_input, explosion_map
